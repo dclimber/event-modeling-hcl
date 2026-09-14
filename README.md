@@ -46,8 +46,9 @@ compatibility executable. Verify a downloaded archive with that release's
 `checksums.txt`:
 
 ```bash
-sha256sum -c checksums.txt
-# macOS: shasum -a 256 -c checksums.txt
+archive=emhcl_0.6.0_linux_amd64.tar.gz
+grep " ${archive}$" checksums.txt | sha256sum -c -
+# macOS: grep " ${archive}$" checksums.txt | shasum -a 256 -c -
 ```
 
 Stable release archives and `checksums.txt` also have GitHub build provenance.
