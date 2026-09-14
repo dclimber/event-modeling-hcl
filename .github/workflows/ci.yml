@@ -51,7 +51,7 @@ jobs:
         with:
           go-version: "1.26.x"
           cache-dependency-path: go.sum
-      - run: go build ./cmd/eventmodeling-hcl
+      - run: go build ./cmd/emhcl
         env:
           CGO_ENABLED: "0"
           GOOS: ${{ matrix.goos }}

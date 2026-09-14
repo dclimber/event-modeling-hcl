@@ -5,7 +5,7 @@
   "use strict";
 
   var status = document.getElementById("status");
-  var assetURL = new URL("eventmodeling-hcl.wasm", document.currentScript.src);
+  var assetURL = new URL("emhcl.wasm", document.currentScript.src);
   var go = new Go();
 
   fetch(assetURL)
@@ -25,6 +25,6 @@
     })
     .then(function (result) { go.run(result.instance); })
     .catch(function (err) {
-      status.textContent = "Failed to load eventmodeling-hcl.wasm: " + err;
+      status.textContent = "Failed to load emhcl.wasm: " + err;
     });
 })();

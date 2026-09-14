@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ func TestParseCommand_RecognizesValidateInvocation(t *testing.T) {
 	args := []string{"validate", "model.em.hcl"}
 
 	// When its command is parsed.
-	command, err := parseCommand(args)
+	command, err := parseCommand("emhcl", args)
 
 	// Then it produces a validate command without an error.
 	if err != nil {
@@ -28,7 +28,7 @@ func TestParseCommand_RecognizesValidateInvocation(t *testing.T) {
 }
 
 func TestParseCommand_RecognizesValidationProfile(t *testing.T) {
-	command, err := parseCommand([]string{"validate", "--profile", "strict", "model.em.hcl"})
+	command, err := parseCommand("emhcl", []string{"validate", "--profile", "strict", "model.em.hcl"})
 
 	if err != nil {
 		t.Fatalf("err = %q, want nil", err)
@@ -46,7 +46,7 @@ func TestParseCommand_RecognizesFormatterInvocations(t *testing.T) {
 		{args: []string{"fmt", "model.em.hcl"}},
 		{args: []string{"fmt", "-w", "model.em.hcl"}, write: true},
 	} {
-		command, err := parseCommand(test.args)
+		command, err := parseCommand("emhcl", test.args)
 		if err != nil {
 			t.Fatalf("parseCommand(%q): %v", test.args, err)
 		}
@@ -66,7 +66,7 @@ func TestParseCommand_RecognizesDiagramInvocations(t *testing.T) {
 		{args: []string{"diagram", "--output", "model.html", "model.em.hcl"}, output: "model.html"},
 	}
 	for _, test := range tests {
-		command, err := parseCommand(test.args)
+		command, err := parseCommand("emhcl", test.args)
 		if err != nil {
 			t.Fatalf("parseCommand(%q): %v", test.args, err)
 		}
@@ -81,7 +81,7 @@ func TestParseCommand_RecognizesServeInvocation(t *testing.T) {
 	args := []string{"serve", "model.em.hcl"}
 
 	// When its command is parsed.
-	command, err := parseCommand(args)
+	command, err := parseCommand("emhcl", args)
 
 	// Then it produces a serve command with the documented defaults.
 	if err != nil {
@@ -95,7 +95,7 @@ func TestParseCommand_RecognizesServeInvocation(t *testing.T) {
 
 func TestParseCommand_RejectsServePortsOutsideTheTCPRange(t *testing.T) {
 	for _, port := range []string{"-1", "65536"} {
-		_, err := parseCommand([]string{"serve", "--port", port, "model.em.hcl"})
+		_, err := parseCommand("emhcl", []string{"serve", "--port", port, "model.em.hcl"})
 		if err == nil || !strings.Contains(err.Error(), "between 0 and 65535") {
 			t.Errorf("port %s error = %v, want TCP range error", port, err)
 		}
@@ -107,7 +107,7 @@ func TestParseCommand_RecognizesServeFlags(t *testing.T) {
 	args := []string{"serve", "--addr", "127.0.0.1", "--port", "9090", "--profile", "strict", "model.em.hcl"}
 
 	// When its command is parsed.
-	command, err := parseCommand(args)
+	command, err := parseCommand("emhcl", args)
 
 	// Then every flag is reflected in the resulting command.
 	if err != nil {
@@ -120,37 +120,39 @@ func TestParseCommand_RecognizesServeFlags(t *testing.T) {
 }
 
 func TestParseCommand_RejectsServeWithoutModelPath(t *testing.T) {
-	_, err := parseCommand([]string{"serve"})
+	_, err := parseCommand("emhcl", []string{"serve"})
 	if err == nil {
 		t.Fatal("expected an error for a serve invocation with no model path")
 	}
 }
 
 func TestParseCommand_RejectsServeNonNumericPort(t *testing.T) {
-	_, err := parseCommand([]string{"serve", "--port", "notanumber", "model.em.hcl"})
+	_, err := parseCommand("emhcl", []string{"serve", "--port", "notanumber", "model.em.hcl"})
 	if err == nil {
 		t.Fatal("expected an error for a non-numeric --port")
 	}
 }
 
 func TestParseCommand_RejectsServeInvalidProfile(t *testing.T) {
-	_, err := parseCommand([]string{"serve", "--profile", "bogus", "model.em.hcl"})
+	_, err := parseCommand("emhcl", []string{"serve", "--profile", "bogus", "model.em.hcl"})
 	if got, want := err, "profile must be workshop, valid, or strict"; got == nil || got.Error() != want {
 		t.Fatalf("err = %v, want %q", got, want)
 	}
 }
 
 func TestParseCommand_RejectsServeUnsupportedExtension(t *testing.T) {
-	_, err := parseCommand([]string{"serve", "model.hcl"})
+	_, err := parseCommand("emhcl", []string{"serve", "model.hcl"})
 	if got, want := err, "model file must use the .em.hcl extension"; got == nil || got.Error() != want {
 		t.Fatalf("err = %v, want %q", got, want)
 	}
 }
 
 func TestUsageMessage_DocumentsServe(t *testing.T) {
-	want := "usage: eventmodeling-hcl <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve> <model.em.hcl> [diagram: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
-	if usageMessage != want {
-		t.Fatalf("usageMessage = %q, want %q", usageMessage, want)
+	for _, name := range []string{"emhcl", "eventmodeling-hcl"} {
+		want := "usage: " + name + " <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve> <model.em.hcl> [diagram: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
+		if got := usageMessage(name); got != want {
+			t.Fatalf("usageMessage(%q) = %q, want %q", name, got, want)
+		}
 	}
 }
 
@@ -159,7 +161,7 @@ func TestParseCommand_RejectsUnsupportedExtension(t *testing.T) {
 	args := []string{"validate", "model.hcl"}
 
 	// When its command is parsed.
-	_, err := parseCommand(args)
+	_, err := parseCommand("emhcl", args)
 
 	// Then it produces the extension error.
 	if got, want := err, "model file must use the .em.hcl extension"; got == nil || got.Error() != want {
@@ -462,7 +464,7 @@ func TestRun_RejectsInvalidArguments(t *testing.T) {
 			if result.exitCode != 2 {
 				t.Fatalf("exit code = %d, want 2; stderr = %q", result.exitCode, result.stderr)
 			}
-			if got, want := result.stderr, usageMessage+"\n"; got != want {
+			if got, want := result.stderr, usageMessage("emhcl")+"\n"; got != want {
 				t.Fatalf("stderr = %q, want %q", got, want)
 			}
 		})
@@ -490,20 +492,22 @@ func TestRun_ValidateSyntaxErrorIncludesSourceLocation(t *testing.T) {
 }
 
 func TestRun_VersionPrintsBuildVersion(t *testing.T) {
-	// Given the validator's development build version.
+	for _, name := range []string{"emhcl", "eventmodeling-hcl"} {
+		t.Run(name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			exitCode := Run(name, "v0.6.0", []string{"version"}, &stdout, &stderr)
 
-	// When the version command runs.
-	result := runCLI(t, "version")
-
-	// Then it prints the exact version without diagnostics.
-	if result.exitCode != 0 {
-		t.Fatalf("exit code = %d, stderr = %q", result.exitCode, result.stderr)
-	}
-	if got, want := result.stdout, "eventmodeling-hcl dev\n"; got != want {
-		t.Fatalf("stdout = %q, want %q", got, want)
-	}
-	if result.stderr != "" {
-		t.Fatalf("stderr = %q, want empty", result.stderr)
+			if exitCode != 0 {
+				t.Fatalf("exit code = %d, stderr = %q", exitCode, stderr.String())
+			}
+			if got, want := stdout.String(), name+" v0.6.0\n"; got != want {
+				t.Fatalf("stdout = %q, want %q", got, want)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("stderr = %q, want empty", stderr.String())
+			}
+		})
 	}
 }
 
@@ -518,7 +522,7 @@ func runCLI(t *testing.T, args ...string) cliResult {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	return cliResult{
-		exitCode: run(args, &stdout, &stderr),
+		exitCode: Run("emhcl", "dev", args, &stdout, &stderr),
 		stdout:   stdout.String(),
 		stderr:   stderr.String(),
 	}

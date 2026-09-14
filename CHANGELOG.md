@@ -6,6 +6,31 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ## [Unreleased]
 
+## [v0.6.0] - 2026-09-14
+
+This release renames the command-line tool to `emhcl` and adds reproducible,
+versioned installation through `go install`. The Event Modeling HCL language is
+unchanged and still implements Specification v0.3.0.
+
+### Added
+
+- Install the canonical command for the current user with
+  `go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.6.0`.
+  Versioned Go installs report `emhcl v0.6.0`.
+- Release archives include both the canonical `emhcl` executable and the
+  v0.6-only compatibility executable.
+
+### Changed
+
+- Renamed the command, release archives, rendered-diagram attribution, and
+  playground branding from `eventmodeling-hcl` to `emhcl`.
+
+### Deprecated
+
+- The `eventmodeling-hcl` executable and
+  `github.com/event-modeling-hcl/eventmodeling-hcl/cmd/eventmodeling-hcl`
+  install path remain functional for v0.6.0 and will be removed in v0.7.0.
+
 ## [v0.5.0] - 2026-09-10
 
 This release adds interactive ways to author and preview models, improves the

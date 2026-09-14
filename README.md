@@ -4,7 +4,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/event-modeling-hcl/eventmodeling-hcl.svg)](https://pkg.go.dev/github.com/event-modeling-hcl/eventmodeling-hcl)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-`eventmodeling-hcl` v0.5.0 implements Event Modeling HCL Specification v0.3.0.
+`emhcl` v0.6.0 implements Event Modeling HCL Specification v0.3.0.
 This repository provides a strict validator, canonical formatter, typed semantic model,
 normative language documentation, and executable examples. The domain reference is the upstream [Event Modeling
 Specification](https://github.com/dilgerma/event-modeling-spec); the HCL
@@ -19,16 +19,31 @@ preserve the rules and durable artifacts of an Event Modeling session.
 
 ## Requirements and Installation
 
-Install Go 1.25 or newer and build the validator from this checkout:
+Install the tagged command with Go 1.25 or newer:
 
 ```bash
-go build -o bin/eventmodeling-hcl ./cmd/eventmodeling-hcl
+go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.6.0
+```
+
+Go writes the executable to `GOBIN`, or to `$(go env GOPATH)/bin` when
+`GOBIN` is unset. Add that directory to `PATH`, then verify the installation:
+
+```bash
+export PATH="$(go env GOPATH)/bin:$PATH"
+emhcl version
+```
+
+To build from this checkout instead:
+
+```bash
+go build -o bin/emhcl ./cmd/emhcl
 ```
 
 Published release archives for Linux, macOS, and Windows are available from
 the [GitHub Releases page](https://github.com/event-modeling-hcl/eventmodeling-hcl/releases).
-Verify a downloaded release archive with that release's `checksums.txt` before
-use:
+Each v0.6.0 archive contains `emhcl` and the deprecated `eventmodeling-hcl`
+compatibility executable. Verify a downloaded archive with that release's
+`checksums.txt`:
 
 ```bash
 sha256sum -c checksums.txt
@@ -40,18 +55,27 @@ With GitHub CLI 2.49.0 or newer, verify the downloaded archive was produced by
 this repository's release workflow:
 
 ```bash
-gh attestation verify eventmodeling-hcl_0.5.0_linux_amd64.tar.gz \
+gh attestation verify emhcl_0.6.0_linux_amd64.tar.gz \
   --repo event-modeling-hcl/eventmodeling-hcl
 ```
+
+`eventmodeling-hcl` remains available for one transition release:
+
+```bash
+go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/eventmodeling-hcl@v0.6.0
+```
+
+It is deprecated in v0.6.0 and will be removed in v0.7.0. New scripts and
+documentation should use `emhcl`.
 
 Validate one complete model per invocation:
 
 ```bash
-./bin/eventmodeling-hcl validate examples/minimal.em.hcl
-./bin/eventmodeling-hcl validate examples/complete.em.hcl
-./bin/eventmodeling-hcl validate examples/pet-management-detailed.em.hcl
-./bin/eventmodeling-hcl validate --profile strict examples/complete.em.hcl
-./bin/eventmodeling-hcl fmt -w examples/complete.em.hcl
+emhcl validate examples/minimal.em.hcl
+emhcl validate examples/complete.em.hcl
+emhcl validate examples/pet-management-detailed.em.hcl
+emhcl validate --profile strict examples/complete.em.hcl
+emhcl fmt -w examples/complete.em.hcl
 ```
 
 A valid document prints `<path> valid`. Diagnostics use the form
@@ -61,7 +85,7 @@ escalates unreasoned commands and open hotspots to errors.
 
 Model files must use the `.em.hcl` extension. HCL is the language; the suffix
 identifies a complete Event Modeling document to this validator. Check the
-installed binary version with `eventmodeling-hcl version`.
+installed binary version with `emhcl version`.
 
 Render a valid model as a self-contained, interactive HTML canvas with
 content-adaptive slices, left-to-right flow stages, dedicated screen,
@@ -69,8 +93,8 @@ processor, model, and event swimlanes, typed flow arrows, and scenarios
 available from each slice:
 
 ```bash
-./bin/eventmodeling-hcl diagram examples/complete.em.hcl -o complete.html
-./bin/eventmodeling-hcl diagram examples/complete.em.hcl > complete.html
+emhcl diagram examples/complete.em.hcl -o complete.html
+emhcl diagram examples/complete.em.hcl > complete.html
 ```
 
 The `diagram` command validates with the default `valid` profile before
@@ -88,7 +112,7 @@ For a local edit-and-render loop, serve one model and keep the browser open
 while the file changes:
 
 ```bash
-eventmodeling-hcl serve examples/minimal.em.hcl
+emhcl serve examples/minimal.em.hcl
 ```
 
 `serve` binds to `127.0.0.1:8080` by default. Use `--port 0` to request an

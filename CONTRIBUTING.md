@@ -31,7 +31,7 @@ make verify
   belongs to `internal/validator`.
 - Prefer table-driven tests with `t.Run` subtests, matching the existing style
   in `internal/validator/validator_test.go` and
-  `cmd/eventmodeling-hcl/main_test.go`.
+  `internal/cli/cli_test.go`.
 - Diagnostics use `hcl.Diagnostics`: a short, no-period `Summary` and a full
   sentence `Detail`, matching the existing HCL/Terraform ecosystem
   convention.

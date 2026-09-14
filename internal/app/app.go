@@ -1,4 +1,4 @@
-// Package app composes the eventmodeling-hcl pipeline — parse, validate,
+// Package app composes the emhcl pipeline — parse, validate,
 // build, render/format — exactly once per operation, and defines the single
 // plain Diagnostic type every entrypoint (CLI, WASM, serve) reports through.
 // Each entrypoint used to assemble internal/syntax, internal/validator,
@@ -62,7 +62,7 @@ type Diagnostic struct {
 // RenderResult is the output of Render.
 type RenderResult struct {
 	// HTML is the self-contained interactive canvas document — the same
-	// bytes `eventmodeling-hcl diagram` would write to a file — or empty
+	// bytes `emhcl diagram` would write to a file — or empty
 	// when Diagnostics contains an error.
 	HTML        string      `json:"html"`
 	Diagnostics Diagnostics `json:"diagnostics"`
@@ -111,7 +111,7 @@ type FormatResult struct {
 }
 
 // Format canonicalizes source's whitespace and attribute order, the same
-// transformation `eventmodeling-hcl fmt` applies. Formatting only requires
+// transformation `emhcl fmt` applies. Formatting only requires
 // source to parse as HCL; it does not run Event Modeling validation.
 func Format(filename string, source []byte) FormatResult {
 	formatted, diagnostics := formatter.Format(filename, source)
@@ -205,7 +205,7 @@ func toDiagnostics(diagnostics hcl.Diagnostics) Diagnostics {
 
 // toDiagnostic converts a single *hcl.Diagnostic, extracting the stable
 // EMxxx code and the source position the same way the CLI's own
-// formatDiagnostic used to (cmd/eventmodeling-hcl/main.go), so a diagnostic
+// formatDiagnostic does (internal/cli/cli.go), so a diagnostic
 // looks identical whether it reached you via the terminal, the browser
 // editor, or `serve`.
 func toDiagnostic(diagnostic *hcl.Diagnostic) Diagnostic {

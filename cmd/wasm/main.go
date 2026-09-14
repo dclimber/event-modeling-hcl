@@ -1,4 +1,4 @@
-// Command wasm compiles the eventmodeling-hcl core to WebAssembly and
+// Command wasm compiles the emhcl core to WebAssembly and
 // exposes it to a browser as two global functions, eventModelingRender and
 // eventModelingFormat. It holds no logic of its own beyond marshaling
 // js.Value arguments into internal/app calls and its plain result structs

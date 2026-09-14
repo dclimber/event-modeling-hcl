@@ -1,4 +1,4 @@
-// Command eventmodeling-hcl is the deprecated v0.6 compatibility name for emhcl.
+// Command emhcl validates, formats, renders, and serves Event Modeling HCL models.
 package main
 
 import (
@@ -11,5 +11,5 @@ import (
 var buildVersion = "dev"
 
 func main() {
-	os.Exit(cli.Run("eventmodeling-hcl", version.ToolVersion(buildVersion), os.Args[1:], os.Stdout, os.Stderr))
+	os.Exit(cli.Run("emhcl", version.ToolVersion(buildVersion), os.Args[1:], os.Stdout, os.Stderr))
 }

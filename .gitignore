@@ -25,6 +25,7 @@ bin/
 dist/
 
 # WebAssembly playground build artifacts (built by `make build-wasm`)
+/web/playground/emhcl.wasm
 /web/playground/eventmodeling-hcl.wasm
 /web/playground/wasm_exec.js
 /web/playground/seed.js

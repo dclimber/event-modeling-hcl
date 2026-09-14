@@ -1,5 +1,5 @@
 GO ?= go
-BINARY := bin/eventmodeling-hcl
+BINARY := bin/emhcl
 EXAMPLES := $(wildcard examples/*.em.hcl)
 WASM_DIR := web/playground
 
@@ -14,7 +14,7 @@ build: $(BINARY) ## Build the validator into bin/.
 
 $(BINARY): $(shell find cmd internal -type f -name '*.go') go.mod go.sum
 	@mkdir -p $(@D)
-	$(GO) build -o $@ ./cmd/eventmodeling-hcl
+	$(GO) build -o $@ ./cmd/emhcl
 
 test: ## Run unit and fixture tests.
 	$(GO) test ./...
@@ -52,7 +52,7 @@ validate-examples: build ## Validate every shipped Event Modeling example.
 build-wasm: ## Build the WebAssembly playground module into web/playground/.
 	@mkdir -p $(WASM_DIR)
 	$(GO) run ./cmd/playground-seed examples/minimal.em.hcl > $(WASM_DIR)/seed.js
-	GOOS=js GOARCH=wasm $(GO) build -o $(WASM_DIR)/eventmodeling-hcl.wasm ./cmd/wasm
+	GOOS=js GOARCH=wasm $(GO) build -o $(WASM_DIR)/emhcl.wasm ./cmd/wasm
 	@wasm_exec="$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js"; \
 	if [ ! -f "$$wasm_exec" ]; then wasm_exec="$$($(GO) env GOROOT)/misc/wasm/wasm_exec.js"; fi; \
 	if [ ! -f "$$wasm_exec" ]; then \
@@ -60,12 +60,12 @@ build-wasm: ## Build the WebAssembly playground module into web/playground/.
 		exit 1; \
 	fi; \
 	cp "$$wasm_exec" $(WASM_DIR)/wasm_exec.js
-	@ls -lh $(WASM_DIR)/eventmodeling-hcl.wasm $(WASM_DIR)/wasm_exec.js
+	@ls -lh $(WASM_DIR)/emhcl.wasm $(WASM_DIR)/wasm_exec.js
 
 wasm-check: ## Verify the WebAssembly module still compiles for js/wasm.
 	@temporary=$$(mktemp -d); \
 	trap 'rm -rf "$$temporary"' EXIT; \
-	GOOS=js GOARCH=wasm $(GO) build -o "$$temporary/eventmodeling-hcl.wasm" ./cmd/wasm
+	GOOS=js GOARCH=wasm $(GO) build -o "$$temporary/emhcl.wasm" ./cmd/wasm
 
 release-tag-check: ## Test the stable semantic-version tag validator.
 	sh scripts/test-require-stable-tag.sh
@@ -73,16 +73,18 @@ release-tag-check: ## Test the stable semantic-version tag validator.
 release-annotation-check: ## Test annotated-tag verification from a tagless checkout.
 	sh scripts/test-require-annotated-tag.sh
 
-release-version-check: ## Verify linker-injected release versions are reported by the binary.
+release-version-check: ## Verify linker-injected release versions are reported by both v0.6 commands.
 	@temporary=$$(mktemp -d); \
 	trap 'rm -rf "$$temporary"' EXIT; \
-	$(GO) build -ldflags '-X main.version=v0.5.0' -o "$$temporary/eventmodeling-hcl" ./cmd/eventmodeling-hcl; \
-	test "$$($$temporary/eventmodeling-hcl version)" = 'eventmodeling-hcl v0.5.0'
+	$(GO) build -ldflags '-X main.buildVersion=v0.6.0' -o "$$temporary/emhcl" ./cmd/emhcl; \
+	$(GO) build -ldflags '-X main.buildVersion=v0.6.0' -o "$$temporary/eventmodeling-hcl" ./cmd/eventmodeling-hcl; \
+	test "$$($$temporary/emhcl version)" = 'emhcl v0.6.0'; \
+	test "$$($$temporary/eventmodeling-hcl version)" = 'eventmodeling-hcl v0.6.0'
 
 verify: fmt-check tidy-check vet test test-race staticcheck exhaustive vulncheck validate-examples wasm-check release-tag-check release-annotation-check release-version-check ## Run the complete local verification suite.
 
 clean: ## Remove locally built artifacts.
-	rm -rf bin dist $(WASM_DIR)/eventmodeling-hcl.wasm $(WASM_DIR)/wasm_exec.js $(WASM_DIR)/seed.js
+	rm -rf bin dist $(WASM_DIR)/emhcl.wasm $(WASM_DIR)/eventmodeling-hcl.wasm $(WASM_DIR)/wasm_exec.js $(WASM_DIR)/seed.js
 
 # -- pre-commit --
 .PHONY: pre-commit-install pre-commit-run

@@ -90,7 +90,7 @@ func shellPage() []byte {
 <html>
 <head>
 <meta charset="utf-8">
-<title>eventmodeling-hcl serve</title>
+<title>emhcl serve</title>
 <style>html,body,iframe{margin:0;padding:0;border:0;width:100%;height:100%;display:block}</style>
 </head>
 <body>
@@ -125,7 +125,7 @@ func diagnosticsPage(diagnostics []app.Diagnostic) []byte {
 
 	return []byte(`<!doctype html>
 <html>
-<head><meta charset="utf-8"><title>eventmodeling-hcl: diagnostics</title></head>
+<head><meta charset="utf-8"><title>emhcl: diagnostics</title></head>
 <body>
 <h1>This model does not currently render</h1>
 <ul>
@@ -210,7 +210,7 @@ func watch(ctx context.Context, env environment, s *state, filePath string, prof
 				continue
 			}
 			if err := regenerate(env, s, filePath, profile); err != nil {
-				fmt.Fprintf(env.stderr, "eventmodeling-hcl serve: regeneration error: %v\n", err)
+				fmt.Fprintf(env.stderr, "emhcl serve: regeneration error: %v\n", err)
 				continue
 			}
 			lastSourceHash = currentSourceHash

@@ -1,6 +1,6 @@
 # Architecture Guide
 
-This guide describes how `eventmodeling-hcl` is organized and how its design
+This guide describes how `emhcl` is organized and how its design
 uses Axiomatic Design to keep changes predictable. It is descriptive of the
 current repository. The language contract itself remains in the
 [Event Modeling HCL specification](https://github.com/event-modeling-hcl/spec).
