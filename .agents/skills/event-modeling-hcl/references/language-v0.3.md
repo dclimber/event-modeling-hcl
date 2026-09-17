@@ -316,10 +316,10 @@ workflow-qualified element such as `processor.capture_payment.gateway`.
 Use a CLI implementing specification v0.3.0 (implementation v0.4.0+):
 
 ```text
-eventmodeling-hcl fmt -w model.em.hcl
-eventmodeling-hcl validate model.em.hcl
-eventmodeling-hcl validate --profile strict model.em.hcl
-eventmodeling-hcl diagram model.em.hcl -o model.html
+emhcl fmt -w model.em.hcl
+emhcl validate model.em.hcl
+emhcl validate --profile strict model.em.hcl
+emhcl diagram model.em.hcl -o model.html
 ```
 
 Profiles: `workshop` reports judgment diagnostics as information; default

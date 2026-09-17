@@ -10,7 +10,7 @@ description: >-
   completeness, or Given/When/Then scenarios—even if they do not name HCL.
 compatibility: >-
   Targets Event Modeling HCL Specification v0.3.0. For machine verification,
-  use eventmodeling-hcl v0.4.0 or newer implementing specification v0.3.0.
+  use emhcl v0.4.0 or newer implementing specification v0.3.0.
 metadata:
   version: "1.0.0"
   author: workspace
@@ -202,14 +202,14 @@ not install tooling or execute untrusted downloads without the user's request.
 Run:
 
 ```text
-eventmodeling-hcl fmt -w <model.em.hcl>
-eventmodeling-hcl validate <model.em.hcl>
+emhcl fmt -w <model.em.hcl>
+emhcl validate <model.em.hcl>
 ```
 
 For an implementation-ready model, also run:
 
 ```text
-eventmodeling-hcl validate --profile strict <model.em.hcl>
+emhcl validate --profile strict <model.em.hcl>
 ```
 
 Repair source errors rather than suppressing diagnostics. Stable diagnostic
