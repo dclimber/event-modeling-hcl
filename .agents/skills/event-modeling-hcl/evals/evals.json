@@ -1,0 +1,47 @@
+{
+  "skill_name": "event-modeling-hcl",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create `borrowing.em.hcl` for a library. A member uses a checkout screen to borrow an available book copy. Borrow Book produces Book Borrowed; reject an attempt when the copy is already on loan. Members can view their current loans. When a loan becomes overdue, the system should request an overdue notice without human input. Include UUID member_id and copy_id contracts, concrete Read Model questions, and scenarios. Write the file in the current directory and validate it if the Event Modeling HCL CLI is available.",
+      "expected_output": "A coherent valid v0.3.0 model containing State Change, State View, and Automation workflows with owned Events, reusable field types, canonical flows, and pattern-correct scenarios.",
+      "files": [],
+      "expectations": [
+        "The output is a `.em.hcl` file with lower-snake-case block labels and context-owned Events.",
+        "Borrowing is a state_change with Screen to Command and Command to Event expressed in canonical direction.",
+        "Current loans is a state_view whose Read Model has a concrete question and whose scenario has Given Event and Then Read Model with no When step.",
+        "The overdue notice reaction is an automation consuming only internal Events and includes a machine-action scenario.",
+        "member_id and copy_id are reusable UUID field types and connected contract fields pass an information-provenance review.",
+        "The already-on-loan rule appears as an observable error scenario rather than invented implementation logic."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "From this requirement, create `payment-activation.em.hcl`: Stripe sends Payment Captured. Our Subscriptions domain uses that fact to Activate Subscription and records Subscription Activated. The payment message contains payment_id, subscription_id, amount, and currency. We do not yet know whether partial payments activate a subscription. Model that uncertainty rather than choosing a rule. Include a success scenario and validate the model if possible.",
+      "expected_output": "A Translation workflow from an external Stripe-owned Event to an internal Subscription Event, preserving the partial-payment question as an attached open hotspot.",
+      "files": [],
+      "expectations": [
+        "Stripe is represented by an external system and an external bounded context that owns Payment Captured.",
+        "The workflow is translation, not automation, and consumes the external Event through canonical `from` flow.",
+        "The internal Command and Event use Subscriptions domain language and are connected in canonical direction.",
+        "payment_id, subscription_id, amount, and currency are represented with reusable typed contracts and traceable flow.",
+        "A pattern-correct success scenario is present.",
+        "The partial-payment uncertainty is an open hotspot attached to a relevant workflow or element; no activation rule is fabricated."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review and replace the following idea with a valid `order-status.em.hcl` model: 'Create a query command called GetOrderStatus. It reads OrderPlaced, OrderShipped, and OrderDelivered and returns OrderStatusDto. The screen points backward to the DTO.' Model what an authenticated customer needs to see, include order_id and status fields, and add scenarios for placed and delivered orders. Keep the business behavior but correct Event Modeling and HCL mistakes. Validate if tooling is available.",
+      "expected_output": "A State View model with catalog Events, a question-driven Read Model, canonical Event-to-Read-Model-to-Screen flow, and Given/Then scenarios without a fake query Command.",
+      "files": [],
+      "expectations": [
+        "The model contains no Query concept, fake GetOrderStatus Command, or `query` attribute.",
+        "OrderPlaced, OrderShipped, and OrderDelivered are past-tense Events owned by a bounded context.",
+        "The State View Read Model asks one concrete order-status question and consumes Events using `from`.",
+        "The Read Model points to the Screen with `to`; the Screen does not point backward with `from`.",
+        "Both scenarios use Given Event then Read Model and contain no When step.",
+        "order_id and status have valid field typing and their Read Model provenance is visible."
+      ]
+    }
+  ]
+}
