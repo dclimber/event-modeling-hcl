@@ -6,6 +6,39 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ## [Unreleased]
 
+## [v0.7.0] - 2026-09-21
+
+This release adds two new rendered views to the diagram canvas and completes
+the `eventmodeling-hcl` removal scheduled in v0.6.0. The Event Modeling HCL
+language is unchanged and still implements Specification v0.3.0.
+
+### Added
+
+- `Storming` view: renders the model as tactical Event Storming, one row per
+  workflow with sticky notes for screens, commands, aggregates, events,
+  automations/translations, and read models. An actor card renders beside
+  every screen that has one (to the screen's left when the screen precedes a
+  command, to its right when the screen follows a read model). A workflow
+  connected to another by an edge is placed to the right of the workflow it
+  depends on; independent workflows run in parallel rows. Hotspots render as
+  a bigger sticky that also shows its question once field details are
+  enabled. A reading-note banner clarifies how tactical Event Storming and
+  Event Modeling differ as methodologies.
+- `Context Map` view **(experimental)**: derives a DDD bounded-context map
+  from cross-context event consumption — one node per bounded context, with
+  upstream → downstream edges labeled customer/supplier, or anti-corruption
+  when the consumer is a `translation` workflow. The heuristic derivation and
+  the layout may still change in a future release.
+- An in-page `Model` / `Storming` / `Context Map` view switcher in the
+  masthead. `diagram`, `serve`, and the WebAssembly playground all render
+  every view from the same generated document; no CLI flags changed.
+
+### Removed
+
+- The deprecated `eventmodeling-hcl` executable and its
+  `github.com/event-modeling-hcl/eventmodeling-hcl/cmd/eventmodeling-hcl`
+  install path, as scheduled in v0.6.0. Use `emhcl`.
+
 ## [v0.6.0] - 2026-09-14
 
 This release renames the command-line tool to `emhcl` and adds reproducible,

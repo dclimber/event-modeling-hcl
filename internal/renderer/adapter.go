@@ -55,6 +55,7 @@ func BuildViewModel(filename string, source *model.Model) *ViewModel {
 	a.placeEvents(view)
 	a.assignLayout(view)
 	view.Chapters = adaptChapters(source.Chapters)
+	view.ContextMap = a.buildContextMap()
 	view.Hotspots = a.adaptHotspots(source.Hotspots)
 	return view
 }
@@ -313,6 +314,109 @@ func (a *adapter) referenceTitle(workflowID, reference string) string {
 		return title
 	}
 	return a.titles[workflowID+"::"+reference]
+}
+
+func (a *adapter) buildContextMap() ContextMap {
+	contextMap := ContextMap{
+		Nodes: make([]ContextNode, 0, len(a.model.Contexts)),
+		Edges: make([]ContextEdge, 0),
+	}
+	for _, context := range a.model.Contexts {
+		contextMap.Nodes = append(contextMap.Nodes, ContextNode{
+			ID: context.ID, Title: context.Title, External: context.External,
+			Team: a.ownerTitle(context.Owner), Events: len(context.Events), Aggregates: len(context.Aggregates),
+		})
+	}
+
+	edges := map[string]*ContextEdge{}
+	workflows := map[string]map[string]bool{}
+	for _, workflow := range a.model.Workflows {
+		produced := map[string][]int{}
+		consumed := map[string][]int{}
+		for _, edge := range a.model.Edges {
+			if edge.WorkflowID != workflow.ID {
+				continue
+			}
+			recordEventReference(edge.To, 0, produced)
+			recordEventReference(edge.From, 0, consumed)
+		}
+		for _, scenario := range workflow.Scenarios {
+			for _, step := range scenario.Steps {
+				if step.Target != "event" {
+					continue
+				}
+				switch step.Kind {
+				case model.Given:
+					recordEventReference(step.Ref, 0, consumed)
+				case model.Then:
+					recordEventReference(step.Ref, 0, produced)
+				case model.When:
+				}
+			}
+		}
+
+		homeContexts := map[string]bool{}
+		for address := range produced {
+			if entry, ok := a.events[address]; ok && !entry.external {
+				homeContexts[entry.contextID] = true
+			}
+		}
+		home := ""
+		for _, context := range a.model.Contexts {
+			if homeContexts[context.ID] {
+				home = context.ID
+				break
+			}
+		}
+		if home == "" {
+			for _, element := range workflow.Elements {
+				if ctx := contextFromAggregate(element.Semantic.Aggregate); ctx != "" {
+					home = ctx
+					break
+				}
+			}
+		}
+		if home == "" {
+			continue
+		}
+
+		for address := range consumed {
+			entry, ok := a.events[address]
+			if !ok || entry.contextID == home {
+				continue
+			}
+			key := entry.contextID + ">" + home
+			edge := edges[key]
+			if edge == nil {
+				edge = &ContextEdge{
+					Upstream: entry.contextID, Downstream: home, Pattern: "customer_supplier",
+				}
+				edges[key] = edge
+				workflows[key] = map[string]bool{}
+			}
+			if workflow.Kind == model.Translation {
+				edge.Pattern = "anticorruption"
+			}
+			workflows[key][workflow.ID] = true
+		}
+	}
+
+	contextMap.Edges = make([]ContextEdge, 0, len(edges))
+	for key, edge := range edges {
+		edge.Via = make([]string, 0, len(workflows[key]))
+		for workflowID := range workflows[key] {
+			edge.Via = append(edge.Via, workflowID)
+		}
+		sort.Strings(edge.Via)
+		contextMap.Edges = append(contextMap.Edges, *edge)
+	}
+	sort.Slice(contextMap.Edges, func(i, j int) bool {
+		if contextMap.Edges[i].Upstream == contextMap.Edges[j].Upstream {
+			return contextMap.Edges[i].Downstream < contextMap.Edges[j].Downstream
+		}
+		return contextMap.Edges[i].Upstream < contextMap.Edges[j].Upstream
+	})
+	return contextMap
 }
 
 func (a *adapter) adaptEdges() []Edge {

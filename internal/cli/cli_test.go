@@ -148,11 +148,10 @@ func TestParseCommand_RejectsServeUnsupportedExtension(t *testing.T) {
 }
 
 func TestUsageMessage_DocumentsServe(t *testing.T) {
-	for _, name := range []string{"emhcl", "eventmodeling-hcl"} {
-		want := "usage: " + name + " <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve> <model.em.hcl> [diagram: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
-		if got := usageMessage(name); got != want {
-			t.Fatalf("usageMessage(%q) = %q, want %q", name, got, want)
-		}
+	name := "emhcl"
+	want := "usage: " + name + " <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve> <model.em.hcl> [diagram: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
+	if got := usageMessage(name); got != want {
+		t.Fatalf("usageMessage(%q) = %q, want %q", name, got, want)
 	}
 }
 
@@ -492,22 +491,18 @@ func TestRun_ValidateSyntaxErrorIncludesSourceLocation(t *testing.T) {
 }
 
 func TestRun_VersionPrintsBuildVersion(t *testing.T) {
-	for _, name := range []string{"emhcl", "eventmodeling-hcl"} {
-		t.Run(name, func(t *testing.T) {
-			var stdout bytes.Buffer
-			var stderr bytes.Buffer
-			exitCode := Run(name, "v0.6.0", []string{"version"}, &stdout, &stderr)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := Run("emhcl", "v0.6.0", []string{"version"}, &stdout, &stderr)
 
-			if exitCode != 0 {
-				t.Fatalf("exit code = %d, stderr = %q", exitCode, stderr.String())
-			}
-			if got, want := stdout.String(), name+" v0.6.0\n"; got != want {
-				t.Fatalf("stdout = %q, want %q", got, want)
-			}
-			if stderr.Len() != 0 {
-				t.Fatalf("stderr = %q, want empty", stderr.String())
-			}
-		})
+	if exitCode != 0 {
+		t.Fatalf("exit code = %d, stderr = %q", exitCode, stderr.String())
+	}
+	if got, want := stdout.String(), "emhcl v0.6.0\n"; got != want {
+		t.Fatalf("stdout = %q, want %q", got, want)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
 	}
 }
 

@@ -73,18 +73,16 @@ release-tag-check: ## Test the stable semantic-version tag validator.
 release-annotation-check: ## Test annotated-tag verification from a tagless checkout.
 	sh scripts/test-require-annotated-tag.sh
 
-release-version-check: ## Verify linker-injected release versions are reported by both v0.6 commands.
+release-version-check: ## Verify the linker-injected release version is reported by emhcl.
 	@temporary=$$(mktemp -d); \
 	trap 'rm -rf "$$temporary"' EXIT; \
-	$(GO) build -ldflags '-X main.buildVersion=v0.6.0' -o "$$temporary/emhcl" ./cmd/emhcl; \
-	$(GO) build -ldflags '-X main.buildVersion=v0.6.0' -o "$$temporary/eventmodeling-hcl" ./cmd/eventmodeling-hcl; \
-	test "$$($$temporary/emhcl version)" = 'emhcl v0.6.0'; \
-	test "$$($$temporary/eventmodeling-hcl version)" = 'eventmodeling-hcl v0.6.0'
+	$(GO) build -ldflags '-X main.buildVersion=v0.7.0' -o "$$temporary/emhcl" ./cmd/emhcl; \
+	test "$$($$temporary/emhcl version)" = 'emhcl v0.7.0'
 
 verify: fmt-check tidy-check vet test test-race staticcheck exhaustive vulncheck validate-examples wasm-check release-tag-check release-annotation-check release-version-check ## Run the complete local verification suite.
 
 clean: ## Remove locally built artifacts.
-	rm -rf bin dist $(WASM_DIR)/emhcl.wasm $(WASM_DIR)/eventmodeling-hcl.wasm $(WASM_DIR)/wasm_exec.js $(WASM_DIR)/seed.js
+	rm -rf bin dist $(WASM_DIR)/emhcl.wasm $(WASM_DIR)/wasm_exec.js $(WASM_DIR)/seed.js
 
 # -- pre-commit --
 .PHONY: pre-commit-install pre-commit-run

@@ -11,14 +11,15 @@ import (
 const specVersion = version.Spec
 
 type ViewModel struct {
-	Title    string             `json:"title"`
-	Version  string             `json:"version"`
-	Actors   map[string]Actor   `json:"actors"`
-	Contexts map[string]Context `json:"contexts"`
-	Chapters []Chapter          `json:"chapters"`
-	Hotspots []Hotspot          `json:"hotspots"`
-	Slices   []Slice            `json:"slices"`
-	Edges    []Edge             `json:"edges"`
+	Title      string             `json:"title"`
+	Version    string             `json:"version"`
+	Actors     map[string]Actor   `json:"actors"`
+	Contexts   map[string]Context `json:"contexts"`
+	ContextMap ContextMap         `json:"contextMap"`
+	Chapters   []Chapter          `json:"chapters"`
+	Hotspots   []Hotspot          `json:"hotspots"`
+	Slices     []Slice            `json:"slices"`
+	Edges      []Edge             `json:"edges"`
 }
 
 type Actor struct {
@@ -29,6 +30,27 @@ type Actor struct {
 type Context struct {
 	Title    string `json:"title"`
 	External bool   `json:"external"`
+}
+
+type ContextMap struct {
+	Nodes []ContextNode `json:"nodes"`
+	Edges []ContextEdge `json:"edges"`
+}
+
+type ContextNode struct {
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	External   bool   `json:"external,omitempty"`
+	Team       string `json:"team,omitempty"`
+	Events     int    `json:"events"`
+	Aggregates int    `json:"aggregates"`
+}
+
+type ContextEdge struct {
+	Upstream   string   `json:"upstream"`
+	Downstream string   `json:"downstream"`
+	Pattern    string   `json:"pattern"`
+	Via        []string `json:"via,omitempty"`
 }
 
 type Chapter struct {

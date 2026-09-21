@@ -29,6 +29,7 @@ const $ = (s, r=document) => r.querySelector(s);
 const el = (tag, cls, html) => { const n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmtEx = v => typeof v === "string" ? '"'+v+'"' : (typeof v === "object" ? JSON.stringify(v).replace(/"/g,'') : String(v));
+function statusVar(st){ return "var(--st-"+st+")"; }
 
 // flat index of every element across slices, + which slice it lives in
 const ELEMENTS = {};
@@ -69,460 +70,7 @@ const EDGES = [];
 const NEIGHBORS = {};
 EDGES.forEach(([a,b]) => { (NEIGHBORS[a]=NEIGHBORS[a]||new Set()).add(b); (NEIGHBORS[b]=NEIGHBORS[b]||new Set()).add(a); });
 
-/* --------------------------- build board --------------------------- */
-const board = $("#board");
-const wires = $("#wires");
-const cols = MODEL.slices.length;
-board.style.setProperty("--cols", cols);
-
-const CARD_WIDTH = 176;
-const ACTOR_WIDTH = 152;
-const STAGE_GAP = 20;
-const CELL_PADDING = 28;
-function screenActors(slice){
-  const firstScreenByActor = new Map();
-  slice.elements.filter(e=>e.kind==="screen"&&e.actor).forEach(screen=>{
-    const current = firstScreenByActor.get(screen.actor);
-    if(!current || screen.stage<current.stage) firstScreenByActor.set(screen.actor,screen);
-  });
-  return firstScreenByActor;
-}
-function stageTemplate(slice){
-  const stages = Math.max(2, slice.stageCount||1);
-  const widths = Array(stages).fill(CARD_WIDTH);
-  screenActors(slice).forEach(screen=>{
-    const stage = Math.min(screen.stage||0,stages-1);
-    widths[stage] = Math.max(widths[stage],ACTOR_WIDTH+12+CARD_WIDTH);
-  });
-  return widths.map(width=>width+"px").join(" ");
-}
-function sliceWidth(slice){
-  const widths = stageTemplate(slice).split(" ").map(width=>Number.parseInt(width,10));
-  const stageDemand = CELL_PADDING + widths.reduce((total,width)=>total+width,0) + (widths.length-1)*STAGE_GAP;
-  const events = slice.elements.filter(e=>e.kind==="event").length;
-  const eventDemand = events ? CELL_PADDING + events*CARD_WIDTH + Math.max(0,events-1)*12 : 0;
-  return Math.max(480, stageDemand, eventDemand);
-}
-const sliceWidths = MODEL.slices.map(sliceWidth);
-board.style.gridTemplateColumns = `var(--rail-w) ${sliceWidths.map(w=>w+"px").join(" ")}`;
-
-function statusVar(st){ return "var(--st-"+st+")"; }
-
-function fieldRow(f){
-  const badges = [];
-  if(f.id) badges.push('<i class="id">id</i>');
-  if(f.pii) badges.push('<i class="pii">pii</i>');
-  return `<div class="field"><span class="fn">${esc(f.name)}</span><span class="fty">${esc(f.type)}</span><span class="fb">${badges.join("")}</span></div>`;
-}
-
-function cardHTML(e){
-  const parts = [];
-  parts.push(`<div class="kind"><span class="kdot"></span><span class="kn">${KIND_LABEL[e.kind]}</span>` +
-    (e.agg ? `<span class="agg">◈ ${esc(e.agg)}</span>` : (e.ctx ? `<span class="agg">${e.external?"↗ ":""}${esc(e.ctx)}</span>` : ``)) +
-    `</div>`);
-
-  if(e.kind==="processor"){
-    parts.push(`<div class="proc-head">${GEAR_SVG}<span class="ct">${esc(e.title)}</span></div>`);
-  } else {
-    parts.push(`<div class="ct">${esc(e.title)}</div>`);
-  }
-  if(e.question) parts.push(`<div class="q">“${esc(e.question)}”</div>`);
-  if(e.api) parts.push(`<div class="api">${esc(e.api)}</div>`);
-  if(e.kind==="screen"){
-    parts.push(`<div class="wire-frame"></div>`);
-  }
-  if(e.kind==="screen_image"){
-    parts.push(`<div class="image-preview${e.imageUrl?"":" failed"}">`+
-      `<img src="${esc(e.imageUrl||"")}" alt="${esc(e.title)}" loading="lazy" referrerpolicy="no-referrer">`+
-      `<span class="image-preview-fallback">Preview unavailable</span></div>`);
-  }
-  if(e.given) parts.push(`<div class="tags"><span class="tag">given / upstream</span></div>`);
-  else if(e.tags) parts.push(`<div class="tags">${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`);
-  if(e.fields) parts.push(`<div class="fields">${e.fields.map(fieldRow).join("")}</div>`);
-
-  const c = el("div", "card "+e.kind+(e.external?" external":""), parts.join(""));
-  c.dataset.id = e.id;
-  c.dataset.slice = SLICE_OF[e.id];
-  if(e.actor) c.dataset.actor = e.actor;
-  if(e.ctx) c.dataset.ctx = e.ctx;
-  const image = c.querySelector(".image-preview img");
-  if(image) image.addEventListener("error", ()=>image.parentElement.classList.add("failed"));
-  return c;
-}
-
-function actorCard(actorID, actor, sliceIndex){
-  const button = el("button", "actor-card",
-    `<span class="person">${ACTOR_SVG}</span><span class="actor-copy"><span class="an">${esc(actor.title)}</span>`+
-    `<span class="am">Actor</span></span>${actor.authRequired?LOCK_SVG:""}`);
-  button.type = "button";
-  button.dataset.actor = actorID;
-  button.dataset.slice = sliceIndex;
-  button.setAttribute("aria-label", actor.title+(actor.authRequired?", authentication required":""));
-  return button;
-}
-
-// --- header rows + band rows, cell by cell in grid order ---
-const frag = document.createDocumentFragment();
-
-// Row 1: chapter band. Rail corner + one cell per slice, chapters span their ranges.
-const corner1 = el("div","cell rail-corner r-chapter"); frag.appendChild(corner1);
-const sliceIndexById = {}; MODEL.slices.forEach((s,i)=>sliceIndexById[s.id]=i);
-const chapterCells = MODEL.slices.map(()=>null);
-MODEL.chapters.forEach(ch => {
-  const idxs = ch.slices.map(id=>sliceIndexById[id]).filter(i=>i!=null).sort((a,b)=>a-b);
-  if(!idxs.length) return;
-  const start=idxs[0], span=idxs[idxs.length-1]-idxs[0]+1;
-  const cell = el("div","cell chap-row-cell");
-  cell.style.gridColumn = (start+2)+" / span "+span;
-  cell.appendChild(el("div","chapter",
-    `<span class="arw">▸</span><span class="nm">${esc(ch.title)}</span><span class="ct">${span} slice${span>1?"s":""}</span>`));
-  chapterCells[start] = cell;
-});
-MODEL.slices.forEach((s,i)=>{ if(chapterCells[i]) frag.appendChild(chapterCells[i]); else {
-  const gap = el("div","cell chap-row-cell"); gap.style.gridColumn=(i+2)+" / span 1"; frag.appendChild(gap);
-}});
-
-// Row 2: slice headers
-const corner2 = el("div","cell rail-corner r-header"); frag.appendChild(corner2);
-MODEL.slices.forEach((s,i)=>{
-  const h = el("div","cell slice-head");
-  h.dataset.slice = i;
-  h.dataset.nodeId = "slice__"+s.id;
-  h.innerHTML =
-    `<span class="slice-idx">${String(i+1).padStart(2,"0")}</span>`+
-    `<div class="top"><span class="pat" title="${PATTERN_LABEL[s.type]}">${PAT_SVG[s.type]||""}</span>`+
-    `<span class="ttl">${esc(s.title)}</span></div>`+
-    `<div class="btm"><span class="ptype">${PATTERN_LABEL[s.type]}</span>`+
-    `<span class="status" style="--sc:${statusVar(s.status||"created")}"><span class="sd"></span>${STATUS_LABEL[s.status||"created"]}</span></div>`;
-  frag.appendChild(h);
-});
-
-// Rows 3-6: element swimlanes
-const BANDS = [
-  {key:"screens",    name:"Screens",    sub:"interfaces"},
-  {key:"processors", name:"Processors", sub:"automation"},
-  {key:"domain",     name:"Model",      sub:"commands & views"},
-];
-BANDS.forEach(b => {
-  const rail = el("div","cell rail-lane");
-  rail.appendChild(el("div","txt", `${b.name}<small>${b.sub}</small>`));
-  frag.appendChild(rail);
-
-  MODEL.slices.forEach((s,i)=>{
-    const cell = el("div","cell band "+b.key);
-    const stages = Math.max(2,s.stageCount||1);
-    cell.style.gridTemplateColumns = stageTemplate(s);
-    if(b.key==="events"){
-      const items = s.elements.filter(e=>BAND[e.kind]===b.key);
-      if(items.length){
-        const strip = el("div","event-strip");
-        const upstream = el("div","event-group upstream");
-        const outcome = el("div","event-group outcome");
-        items.forEach(e=>(e.given?upstream:outcome).appendChild(cardHTML(e)));
-        if(upstream.childElementCount) strip.appendChild(upstream);
-        if(outcome.childElementCount) strip.appendChild(outcome);
-        cell.appendChild(strip);
-      }
-    } else {
-      const byStage = new Map();
-      const firstScreenByActor = b.key==="screens" ? screenActors(s) : new Map();
-      s.elements.filter(e=>BAND[e.kind]===b.key).forEach(e=>{
-        const stage = Math.min(e.stage||0,stages-1);
-        if(!byStage.has(stage)) byStage.set(stage,[]);
-        byStage.get(stage).push(e);
-      });
-      [...byStage.entries()].sort((a,b)=>a[0]-b[0]).forEach(([stage,items])=>{
-        const stack = el("div","stage-stack");
-        stack.style.gridColumn = (stage+1);
-        items.forEach(e=>{
-          const card = cardHTML(e);
-          if(b.key!=="screens" || !e.actor || firstScreenByActor.get(e.actor)!==e){
-            stack.appendChild(card);
-            return;
-          }
-          const pair = el("div","screen-pair");
-          const actor = MODEL.actors[e.actor];
-          if(actor) pair.appendChild(actorCard(e.actor,actor,i));
-          pair.appendChild(card);
-          stack.appendChild(pair);
-        });
-        cell.appendChild(stack);
-      });
-    }
-    frag.appendChild(cell);
-  });
-});
-
-// Event lanes: one grid row per aggregate, grouped under a bounded-context header.
-function eventLaneCell(slice, sliceIx, ctx, agg, cix, aix){
-  const cell = el("div","cell band events agg-band");
-  cell.dataset.ctx = ctx; cell.dataset.agg = agg; cell.dataset.cix = cix; cell.dataset.aix = aix;
-  if(sliceIx === 0) cell.classList.add("lane-start");
-  if(sliceIx === MODEL.slices.length - 1) cell.classList.add("lane-end");
-  cell.style.gridTemplateColumns = stageTemplate(slice);
-  const items = slice.elements.filter(e => e.kind==="event" && eventCtx(e)===ctx && (e.agg||"__none")===agg);
-  if(items.length){
-    const strip = el("div","event-strip");
-    const upstream = el("div","event-group upstream");
-    const outcome = el("div","event-group outcome");
-    items.forEach(e => (e.given?upstream:outcome).appendChild(cardHTML(e)));
-    if(upstream.childElementCount) strip.appendChild(upstream);
-    if(outcome.childElementCount) strip.appendChild(outcome);
-    cell.appendChild(strip);
-  } else {
-    cell.classList.add("lane-empty");
-    cell.appendChild(el("div","lane-empty-mark","—"));
-  }
-  return cell;
-}
-
-let aggIx = -1;
-CTX_ORDER.forEach((ctx, cix) => {
-  const aggs = CTX_AGGS[ctx];
-
-  const headRail = el("div","cell ctx-head-rail");
-  headRail.dataset.ctx = ctx; headRail.dataset.cix = cix;
-  headRail.innerHTML = `<span class="ctx-rail-tag">${esc(ctxTitle(ctx))}</span>`;
-  frag.appendChild(headRail);
-
-  const head = el("div","cell ctx-head");
-  head.dataset.ctx = ctx; head.dataset.cix = cix;
-  head.style.gridColumn = "2 / -1";
-  head.innerHTML =
-    `<button class="ctx-toggle" type="button" aria-expanded="true" data-ctx="${esc(ctx)}">`+
-      `<span class="ctx-caret" aria-hidden="true">▾</span>`+
-      `<span class="ctx-name">${esc(ctxTitle(ctx))}${ctxExternal(ctx)?' <span class="ext">↗</span>':''}</span>`+
-      `<span class="ctx-count">${aggs.length} aggregate${aggs.length>1?"s":""}</span>`+
-    `</button>`;
-  frag.appendChild(head);
-
-  aggs.forEach((agg, ai) => {
-    aggIx++;
-    const rail = el("div","cell rail-lane agg-lane"+(ai===0?" ctx-start":"")+(ai===aggs.length-1?" ctx-end":""));
-    rail.dataset.ctx = ctx; rail.dataset.agg = agg; rail.dataset.cix = cix; rail.dataset.aix = aggIx;
-    rail.innerHTML =
-      `<div class="agg-rail">`+
-        `<span class="ctx-kicker${ai===0?"":" sub"}">${esc(ctxTitle(ctx))}</span>`+
-        `<span class="agg-name">◈ ${esc(aggTitle(agg))}</span>`+
-      `</div>`;
-    frag.appendChild(rail);
-    MODEL.slices.forEach((s, si) => frag.appendChild(eventLaneCell(s, si, ctx, agg, cix, aggIx)));
-  });
-});
-
-board.appendChild(frag);
-
-// --- hotspots: pin onto visible targets; keep the rest in the legend ---
-const UNPINNED_HOTSPOTS = [];
-MODEL.hotspots.forEach(h => {
-  const target = board.querySelector('.card[data-id="'+h.onId+'"],.slice-head[data-node-id="'+h.onId+'"]');
-  if(!target){ UNPINNED_HOTSPOTS.push(h); return; }
-  const dot = el("div","hotspot");
-  dot.textContent = "?";
-  dot.setAttribute("tabindex","0");
-  dot.setAttribute("data-q", h.question + "  ·  ["+h.status+"]");
-  target.appendChild(dot);
-});
-
-/* --------------------------- wires --------------------------- */
-function nodeCenterEdges(c){
-  const br = board.getBoundingClientRect(), r = c.getBoundingClientRect();
-  return { x:r.left-br.left, y:r.top-br.top, w:r.width, h:r.height,
-           cx:r.left-br.left+r.width/2, cy:r.top-br.top+r.height/2, node:c };
-}
-function cardCenterEdges(id){
-  const c = board.querySelector('.card[data-id="'+id+'"]');
-  return c ? nodeCenterEdges(c) : null;
-}
-let pathEls = [];
-let actorLinkEls = [];
-function drawActorLinks(){
-  actorLinkEls.forEach(p=>p.remove()); actorLinkEls=[];
-  board.querySelectorAll(".actor-card").forEach(actor=>{
-    const A = nodeCenterEdges(actor);
-    const screens = [...board.querySelectorAll(".card.screen")].filter(screen=>
-      screen.dataset.slice===actor.dataset.slice && screen.dataset.actor===actor.dataset.actor);
-    screens.forEach(screen=>{
-      const B = cardCenterEdges(screen.dataset.id);
-      if(!B) return;
-      const leftToRight = B.cx>=A.cx;
-      const sx = leftToRight ? A.x+A.w : A.x;
-      const ex = leftToRight ? B.x : B.x+B.w;
-      const dx = Math.max(28,Math.abs(ex-sx)*.42);
-      const p = document.createElementNS("http://www.w3.org/2000/svg","path");
-      p.classList.add("actor-screen-link");
-      p.setAttribute("d",`M ${sx} ${A.cy} C ${sx+(leftToRight?dx:-dx)} ${A.cy} ${ex-(leftToRight?dx:-dx)} ${B.cy} ${ex} ${B.cy}`);
-      p.dataset.actor = actor.dataset.actor;
-      p.dataset.slice = actor.dataset.slice;
-      wires.appendChild(p); actorLinkEls.push(p);
-    });
-  });
-}
-function drawWires(){
-  pathEls.forEach(p=>p.remove()); pathEls=[];
-  actorLinkEls.forEach(p=>p.remove()); actorLinkEls=[];
-  const bw = board.scrollWidth, bh = board.scrollHeight;
-  wires.setAttribute("viewBox", `0 0 ${bw} ${bh}`);
-  wires.setAttribute("width", bw); wires.setAttribute("height", bh);
-  EDGES.forEach(([a,b])=>{
-    const A = cardCenterEdges(a), B = cardCenterEdges(b);
-    if(!A||!B) return;
-    let sx,sy,ex,ey,c1x,c1y,c2x,c2y;
-    const horiz = Math.abs(B.cx-A.cx) > 16;
-    if(horiz){
-      const ltr = B.cx >= A.cx;
-      sx = ltr ? A.x+A.w : A.x;  sy = A.cy;
-      ex = ltr ? B.x : B.x+B.w;  ey = B.cy;
-      const dx = Math.max(40, Math.abs(ex-sx)*0.45);
-      c1x = sx + (ltr?dx:-dx); c1y = sy; c2x = ex - (ltr?dx:-dx); c2y = ey;
-    } else {
-      const down = B.cy >= A.cy;
-      sx = A.cx; sy = down ? A.y+A.h : A.y;
-      ex = B.cx; ey = down ? B.y : B.y+B.h;
-      const dy = Math.max(28, Math.abs(ey-sy)*0.5);
-      c1x = sx; c1y = sy + (down?dy:-dy); c2x = ex; c2y = ey - (down?dy:-dy);
-    }
-    const p = document.createElementNS("http://www.w3.org/2000/svg","path");
-    p.setAttribute("d", `M ${sx} ${sy} C ${c1x} ${c1y} ${c2x} ${c2y} ${ex} ${ey}`);
-    p.setAttribute("marker-end","url(#ah)");
-    p.dataset.a=a; p.dataset.b=b;
-    if(B.cx<A.cx) p.classList.add("backward");
-    const dimmed = A.node.classList.contains("filtered") || B.node.classList.contains("filtered");
-    if(dimmed) p.classList.add("dim");
-    wires.appendChild(p); pathEls.push(p);
-  });
-  drawActorLinks();
-}
-
-/* --------------------------- hover highlight --------------------------- */
-board.addEventListener("mouseover", e=>{
-  const card = e.target.closest(".card"); if(!card) return;
-  const id = card.dataset.id;
-  const hot = new Set([id, ...(NEIGHBORS[id]||[])]);
-  board.classList.add("hovering");
-  board.querySelectorAll(".card").forEach(c=>c.classList.toggle("is-hot", hot.has(c.dataset.id)));
-  const actor = card.dataset.actor;
-  const slice = card.dataset.slice;
-  board.querySelectorAll(".actor-card").forEach(button=>button.classList.toggle("is-hot", !!actor && button.dataset.actor===actor && button.dataset.slice===slice));
-  pathEls.forEach(p=>p.classList.toggle("hot", p.dataset.a===id||p.dataset.b===id));
-  actorLinkEls.forEach(p=>p.classList.toggle("hot", !!actor && p.dataset.actor===actor && p.dataset.slice===slice));
-  pathEls.forEach(p=>{ if(p.classList.contains("hot")) p.setAttribute("marker-end","url(#ah-hot)"); });
-});
-board.addEventListener("mouseout", e=>{
-  if(e.relatedTarget && e.target.closest(".card") && e.target.closest(".card").contains(e.relatedTarget)) return;
-  if(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".actor-card")) return;
-  board.classList.remove("hovering");
-  board.querySelectorAll(".card.is-hot").forEach(c=>c.classList.remove("is-hot"));
-  board.querySelectorAll(".actor-card.is-hot").forEach(actor=>actor.classList.remove("is-hot"));
-  pathEls.forEach(p=>{ p.classList.remove("hot"); p.setAttribute("marker-end","url(#ah)"); });
-  actorLinkEls.forEach(p=>p.classList.remove("hot"));
-});
-
-function highlightActor(button, active){
-  const screenIds = new Set([...board.querySelectorAll(".card.screen")]
-    .filter(screen=>screen.dataset.slice===button.dataset.slice && screen.dataset.actor===button.dataset.actor)
-    .map(screen=>screen.dataset.id));
-  board.classList.toggle("hovering", active);
-  board.querySelectorAll(".actor-card").forEach(actor=>actor.classList.toggle("is-hot", active && actor===button));
-  board.querySelectorAll(".card").forEach(card=>card.classList.toggle("is-hot", active && screenIds.has(card.dataset.id)));
-  pathEls.forEach(path=>{
-    const hot = active && (screenIds.has(path.dataset.a)||screenIds.has(path.dataset.b));
-    path.classList.toggle("hot", hot);
-    path.setAttribute("marker-end", hot?"url(#ah-hot)":"url(#ah)");
-  });
-  actorLinkEls.forEach(path=>path.classList.toggle("hot", active && path.dataset.actor===button.dataset.actor && path.dataset.slice===button.dataset.slice));
-}
-board.querySelectorAll(".actor-card").forEach(actor=>{
-  actor.addEventListener("mouseenter",()=>highlightActor(actor,true));
-  actor.addEventListener("mouseleave",()=>highlightActor(actor,false));
-  actor.addEventListener("focus",()=>highlightActor(actor,true));
-  actor.addEventListener("blur",()=>highlightActor(actor,false));
-});
-
-/* --------------------------- filters --------------------------- */
-const state = {chapter:"__all", statuses:new Set(), context:"__all"};
-
-function applyFilters(){
-  MODEL.slices.forEach((s,i)=>{
-    const inChapter = state.chapter==="__all" ||
-      (MODEL.chapters.find(c=>c.id===state.chapter)?.slices.includes(s.id));
-    const st = s.status||"created";
-    const okStatus = state.statuses.size===0 || state.statuses.has(st);
-    const sliceVisible = inChapter && okStatus;
-    board.querySelector('.slice-head[data-slice="'+i+'"]').classList.toggle("filtered", !sliceVisible);
-    board.querySelectorAll('.actor-card[data-slice="'+i+'"]').forEach(actor=>actor.classList.toggle("filtered", !sliceVisible));
-    s.elements.forEach(e=>{
-      const c = board.querySelector('.card[data-id="'+e.id+'"]'); if(!c) return;
-      const okCtx = state.context==="__all" || !e.ctx || e.ctx===state.context;
-      c.classList.toggle("filtered", !(sliceVisible && okCtx));
-    });
-  });
-  board.querySelectorAll(".cell[data-ctx]").forEach(n => {
-    n.classList.toggle("lane-dim", state.context !== "__all" && n.dataset.ctx !== state.context);
-  });
-  requestAnimationFrame(drawWires);
-}
-
-// chapter segmented
-const fChapter = $("#f-chapter");
-[["__all","All"], ...MODEL.chapters.map(c=>[c.id,c.title])].forEach(([v,lab],i)=>{
-  const b = el("button","btn"+(v==="__all"?" on":""), esc(lab)); b.dataset.v=v;
-  b.onclick=()=>{ state.chapter=v; fChapter.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); applyFilters(); };
-  fChapter.appendChild(b);
-});
-
-// status chips (only statuses present)
-const fStatus = $("#f-status");
-const present = [...new Set(MODEL.slices.map(s=>s.status||"created"))];
-present.forEach(st=>{
-  const chip = el("button","chip", `<span class="sw" style="--c:${statusVar(st)}"></span>${STATUS_LABEL[st]}`);
-  chip.setAttribute("aria-pressed","true"); chip.dataset.st=st;
-  chip.onclick=()=>{
-    const on = chip.getAttribute("aria-pressed")==="true";
-    // treat as an active-set: click toggles membership; empty set = show all
-    if(state.statuses.size===0){ present.forEach(s=>state.statuses.add(s)); }
-    if(on){ state.statuses.delete(st); } else { state.statuses.add(st); }
-    if(state.statuses.size===present.length) state.statuses.clear();
-    fStatus.querySelectorAll(".chip").forEach(c=>{
-      const active = state.statuses.size===0 || state.statuses.has(c.dataset.st);
-      c.setAttribute("aria-pressed", active?"true":"false");
-    });
-    applyFilters();
-  };
-  fStatus.appendChild(chip);
-});
-
-// context segmented
-const fContext = $("#f-context");
-const ctxs = [["__all","All"], ...Object.entries(MODEL.contexts).map(([id,c])=>[id, c.title+(c.external?" ↗":"")])];
-ctxs.forEach(([v,lab])=>{
-  const b = el("button","btn"+(v==="__all"?" on":""), esc(lab)); b.dataset.v=v;
-  b.onclick=()=>{ state.context=v; fContext.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); applyFilters(); };
-  fContext.appendChild(b);
-});
-
-// field toggle
-$("#t-fields").addEventListener("change", e=>{
-  board.classList.toggle("show-fields", e.target.checked);
-  requestAnimationFrame(drawWires);
-});
-
-/* --------------------------- theme --------------------------- */
-const THEMES = [["auto","◐","Auto"],["light","☀","Light"],["dark","☾","Dark"]];
-let themeIx = 0;
-try{ const saved=localStorage.getItem("emc-theme"); if(saved){ themeIx=THEMES.findIndex(t=>t[0]===saved); if(themeIx<0)themeIx=0; } }catch(_){}
-function applyTheme(){
-  const [v,gl,tx]=THEMES[themeIx];
-  if(v==="auto") document.documentElement.removeAttribute("data-theme");
-  else document.documentElement.setAttribute("data-theme", v);
-  $("#theme-gl").textContent=gl; $("#theme-tx").textContent=tx;
-  try{ localStorage.setItem("emc-theme", v); }catch(_){}
-  requestAnimationFrame(drawWires);
-}
-$("#t-theme").onclick=()=>{ themeIx=(themeIx+1)%THEMES.length; applyTheme(); };
-applyTheme();
-
-/* --------------------------- drawer --------------------------- */
+/* --------------------------- shared drawer (used by every view) --------------------------- */
 const drawer = $("#drawer"), scrim = $("#scrim");
 function refChip(rk, name){
   const cl = rk==="event"?"var(--event-line)":rk==="command"?"var(--command-line)":rk==="readmodel"?"var(--read-line)":"var(--ink-faint)";
@@ -589,15 +137,499 @@ function openSlice(i){
 function closeDrawer(){ drawer.classList.remove("open"); scrim.classList.remove("open"); drawer.setAttribute("aria-hidden","true"); }
 scrim.onclick = closeDrawer;
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDrawer(); });
-board.addEventListener("click", e=>{
-  if(e.target.closest(".hotspot")) return;
-  const sh = e.target.closest(".slice-head");
-  if(sh){ openSlice(+sh.dataset.slice); return; }
-  const card = e.target.closest(".card");
-  if(card){ openSlice(+card.dataset.slice); }
-});
 
-/* --------------------------- meta + legend --------------------------- */
+/* --------------------------- shared namespace for the other views --------------------------- */
+const EMC = {
+  MODEL, ELEMENTS, SLICE_OF, EDGES, NEIGHBORS,
+  el, esc, titleize, statusVar, openSlice,
+  KIND_LABEL, PAT_SVG, PATTERN_LABEL, STATUS_LABEL, ACTOR_SVG, GEAR_SVG,
+  ctxTitle, ctxExternal, aggTitle, eventCtx,
+};
+// generalized nodeCenterEdges: rect of `node` relative to `container`
+EMC.rectIn = (container, node) => {
+  const cr = container.getBoundingClientRect(), r = node.getBoundingClientRect();
+  return { x:r.left-cr.left, y:r.top-cr.top, w:r.width, h:r.height,
+           cx:r.left-cr.left+r.width/2, cy:r.top-cr.top+r.height/2 };
+};
+
+/* --------------------------- legend content per active view --------------------------- */
+const LEGENDS = {};
+const LP = $("#legend-panel");
+
+/* --------------------------- build board (Event Model view) --------------------------- */
+let builtEventModel = false;
+function renderEventModel(){
+  if(builtEventModel) return;
+  builtEventModel = true;
+
+  const board = $("#board");
+  const wires = $("#wires");
+  const cols = MODEL.slices.length;
+  board.style.setProperty("--cols", cols);
+
+  const CARD_WIDTH = 176;
+  const ACTOR_WIDTH = 152;
+  const STAGE_GAP = 20;
+  const CELL_PADDING = 28;
+  function screenActors(slice){
+    const firstScreenByActor = new Map();
+    slice.elements.filter(e=>e.kind==="screen"&&e.actor).forEach(screen=>{
+      const current = firstScreenByActor.get(screen.actor);
+      if(!current || screen.stage<current.stage) firstScreenByActor.set(screen.actor,screen);
+    });
+    return firstScreenByActor;
+  }
+  function stageTemplate(slice){
+    const stages = Math.max(2, slice.stageCount||1);
+    const widths = Array(stages).fill(CARD_WIDTH);
+    screenActors(slice).forEach(screen=>{
+      const stage = Math.min(screen.stage||0,stages-1);
+      widths[stage] = Math.max(widths[stage],ACTOR_WIDTH+12+CARD_WIDTH);
+    });
+    return widths.map(width=>width+"px").join(" ");
+  }
+  function sliceWidth(slice){
+    const widths = stageTemplate(slice).split(" ").map(width=>Number.parseInt(width,10));
+    const stageDemand = CELL_PADDING + widths.reduce((total,width)=>total+width,0) + (widths.length-1)*STAGE_GAP;
+    const events = slice.elements.filter(e=>e.kind==="event").length;
+    const eventDemand = events ? CELL_PADDING + events*CARD_WIDTH + Math.max(0,events-1)*12 : 0;
+    return Math.max(480, stageDemand, eventDemand);
+  }
+  const sliceWidths = MODEL.slices.map(sliceWidth);
+  board.style.gridTemplateColumns = `var(--rail-w) ${sliceWidths.map(w=>w+"px").join(" ")}`;
+
+  function fieldRow(f){
+    const badges = [];
+    if(f.id) badges.push('<i class="id">id</i>');
+    if(f.pii) badges.push('<i class="pii">pii</i>');
+    return `<div class="field"><span class="fn">${esc(f.name)}</span><span class="fty">${esc(f.type)}</span><span class="fb">${badges.join("")}</span></div>`;
+  }
+
+  function cardHTML(e){
+    const parts = [];
+    parts.push(`<div class="kind"><span class="kdot"></span><span class="kn">${KIND_LABEL[e.kind]}</span>` +
+      (e.agg ? `<span class="agg">◈ ${esc(e.agg)}</span>` : (e.ctx ? `<span class="agg">${e.external?"↗ ":""}${esc(e.ctx)}</span>` : ``)) +
+      `</div>`);
+
+    if(e.kind==="processor"){
+      parts.push(`<div class="proc-head">${GEAR_SVG}<span class="ct">${esc(e.title)}</span></div>`);
+    } else {
+      parts.push(`<div class="ct">${esc(e.title)}</div>`);
+    }
+    if(e.question) parts.push(`<div class="q">“${esc(e.question)}”</div>`);
+    if(e.api) parts.push(`<div class="api">${esc(e.api)}</div>`);
+    if(e.kind==="screen"){
+      parts.push(`<div class="wire-frame"></div>`);
+    }
+    if(e.kind==="screen_image"){
+      parts.push(`<div class="image-preview${e.imageUrl?"":" failed"}">`+
+        `<img src="${esc(e.imageUrl||"")}" alt="${esc(e.title)}" loading="lazy" referrerpolicy="no-referrer">`+
+        `<span class="image-preview-fallback">Preview unavailable</span></div>`);
+    }
+    if(e.given) parts.push(`<div class="tags"><span class="tag">given / upstream</span></div>`);
+    else if(e.tags) parts.push(`<div class="tags">${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`);
+    if(e.fields) parts.push(`<div class="fields">${e.fields.map(fieldRow).join("")}</div>`);
+
+    const c = el("div", "card "+e.kind+(e.external?" external":""), parts.join(""));
+    c.dataset.id = e.id;
+    c.dataset.slice = SLICE_OF[e.id];
+    if(e.actor) c.dataset.actor = e.actor;
+    if(e.ctx) c.dataset.ctx = e.ctx;
+    const image = c.querySelector(".image-preview img");
+    if(image) image.addEventListener("error", ()=>image.parentElement.classList.add("failed"));
+    return c;
+  }
+
+  function actorCard(actorID, actor, sliceIndex){
+    const button = el("button", "actor-card",
+      `<span class="person">${ACTOR_SVG}</span><span class="actor-copy"><span class="an">${esc(actor.title)}</span>`+
+      `<span class="am">Actor</span></span>${actor.authRequired?LOCK_SVG:""}`);
+    button.type = "button";
+    button.dataset.actor = actorID;
+    button.dataset.slice = sliceIndex;
+    button.setAttribute("aria-label", actor.title+(actor.authRequired?", authentication required":""));
+    return button;
+  }
+
+  // --- header rows + band rows, cell by cell in grid order ---
+  const frag = document.createDocumentFragment();
+
+  // Row 1: chapter band. Rail corner + one cell per slice, chapters span their ranges.
+  const corner1 = el("div","cell rail-corner r-chapter"); frag.appendChild(corner1);
+  const sliceIndexById = {}; MODEL.slices.forEach((s,i)=>sliceIndexById[s.id]=i);
+  const chapterCells = MODEL.slices.map(()=>null);
+  MODEL.chapters.forEach(ch => {
+    const idxs = ch.slices.map(id=>sliceIndexById[id]).filter(i=>i!=null).sort((a,b)=>a-b);
+    if(!idxs.length) return;
+    const start=idxs[0], span=idxs[idxs.length-1]-idxs[0]+1;
+    const cell = el("div","cell chap-row-cell");
+    cell.style.gridColumn = (start+2)+" / span "+span;
+    cell.appendChild(el("div","chapter",
+      `<span class="arw">▸</span><span class="nm">${esc(ch.title)}</span><span class="ct">${span} slice${span>1?"s":""}</span>`));
+    chapterCells[start] = cell;
+  });
+  MODEL.slices.forEach((s,i)=>{ if(chapterCells[i]) frag.appendChild(chapterCells[i]); else {
+    const gap = el("div","cell chap-row-cell"); gap.style.gridColumn=(i+2)+" / span 1"; frag.appendChild(gap);
+  }});
+
+  // Row 2: slice headers
+  const corner2 = el("div","cell rail-corner r-header"); frag.appendChild(corner2);
+  MODEL.slices.forEach((s,i)=>{
+    const h = el("div","cell slice-head");
+    h.dataset.slice = i;
+    h.dataset.nodeId = "slice__"+s.id;
+    h.innerHTML =
+      `<span class="slice-idx">${String(i+1).padStart(2,"0")}</span>`+
+      `<div class="top"><span class="pat" title="${PATTERN_LABEL[s.type]}">${PAT_SVG[s.type]||""}</span>`+
+      `<span class="ttl">${esc(s.title)}</span></div>`+
+      `<div class="btm"><span class="ptype">${PATTERN_LABEL[s.type]}</span>`+
+      `<span class="status" style="--sc:${statusVar(s.status||"created")}"><span class="sd"></span>${STATUS_LABEL[s.status||"created"]}</span></div>`;
+    frag.appendChild(h);
+  });
+
+  // Rows 3-6: element swimlanes
+  const BANDS = [
+    {key:"screens",    name:"Screens",    sub:"interfaces"},
+    {key:"processors", name:"Processors", sub:"automation"},
+    {key:"domain",     name:"Model",      sub:"commands & views"},
+  ];
+  BANDS.forEach(b => {
+    const rail = el("div","cell rail-lane");
+    rail.appendChild(el("div","txt", `${b.name}<small>${b.sub}</small>`));
+    frag.appendChild(rail);
+
+    MODEL.slices.forEach((s,i)=>{
+      const cell = el("div","cell band "+b.key);
+      const stages = Math.max(2,s.stageCount||1);
+      cell.style.gridTemplateColumns = stageTemplate(s);
+      if(b.key==="events"){
+        const items = s.elements.filter(e=>BAND[e.kind]===b.key);
+        if(items.length){
+          const strip = el("div","event-strip");
+          const upstream = el("div","event-group upstream");
+          const outcome = el("div","event-group outcome");
+          items.forEach(e=>(e.given?upstream:outcome).appendChild(cardHTML(e)));
+          if(upstream.childElementCount) strip.appendChild(upstream);
+          if(outcome.childElementCount) strip.appendChild(outcome);
+          cell.appendChild(strip);
+        }
+      } else {
+        const byStage = new Map();
+        const firstScreenByActor = b.key==="screens" ? screenActors(s) : new Map();
+        s.elements.filter(e=>BAND[e.kind]===b.key).forEach(e=>{
+          const stage = Math.min(e.stage||0,stages-1);
+          if(!byStage.has(stage)) byStage.set(stage,[]);
+          byStage.get(stage).push(e);
+        });
+        [...byStage.entries()].sort((a,b)=>a[0]-b[0]).forEach(([stage,items])=>{
+          const stack = el("div","stage-stack");
+          stack.style.gridColumn = (stage+1);
+          items.forEach(e=>{
+            const card = cardHTML(e);
+            if(b.key!=="screens" || !e.actor || firstScreenByActor.get(e.actor)!==e){
+              stack.appendChild(card);
+              return;
+            }
+            const pair = el("div","screen-pair");
+            const actor = MODEL.actors[e.actor];
+            if(actor) pair.appendChild(actorCard(e.actor,actor,i));
+            pair.appendChild(card);
+            stack.appendChild(pair);
+          });
+          cell.appendChild(stack);
+        });
+      }
+      frag.appendChild(cell);
+    });
+  });
+
+  // Event lanes: one grid row per aggregate, grouped under a bounded-context header.
+  function eventLaneCell(slice, sliceIx, ctx, agg, cix, aix){
+    const cell = el("div","cell band events agg-band");
+    cell.dataset.ctx = ctx; cell.dataset.agg = agg; cell.dataset.cix = cix; cell.dataset.aix = aix;
+    if(sliceIx === 0) cell.classList.add("lane-start");
+    if(sliceIx === MODEL.slices.length - 1) cell.classList.add("lane-end");
+    cell.style.gridTemplateColumns = stageTemplate(slice);
+    const items = slice.elements.filter(e => e.kind==="event" && eventCtx(e)===ctx && (e.agg||"__none")===agg);
+    if(items.length){
+      const strip = el("div","event-strip");
+      const upstream = el("div","event-group upstream");
+      const outcome = el("div","event-group outcome");
+      items.forEach(e => (e.given?upstream:outcome).appendChild(cardHTML(e)));
+      if(upstream.childElementCount) strip.appendChild(upstream);
+      if(outcome.childElementCount) strip.appendChild(outcome);
+      cell.appendChild(strip);
+    } else {
+      cell.classList.add("lane-empty");
+      cell.appendChild(el("div","lane-empty-mark","—"));
+    }
+    return cell;
+  }
+
+  let aggIx = -1;
+  CTX_ORDER.forEach((ctx, cix) => {
+    const aggs = CTX_AGGS[ctx];
+
+    const headRail = el("div","cell ctx-head-rail");
+    headRail.dataset.ctx = ctx; headRail.dataset.cix = cix;
+    headRail.innerHTML = `<span class="ctx-rail-tag">${esc(ctxTitle(ctx))}</span>`;
+    frag.appendChild(headRail);
+
+    const head = el("div","cell ctx-head");
+    head.dataset.ctx = ctx; head.dataset.cix = cix;
+    head.style.gridColumn = "2 / -1";
+    head.innerHTML =
+      `<button class="ctx-toggle" type="button" aria-expanded="true" data-ctx="${esc(ctx)}">`+
+        `<span class="ctx-caret" aria-hidden="true">▾</span>`+
+        `<span class="ctx-name">${esc(ctxTitle(ctx))}${ctxExternal(ctx)?' <span class="ext">↗</span>':''}</span>`+
+        `<span class="ctx-count">${aggs.length} aggregate${aggs.length>1?"s":""}</span>`+
+      `</button>`;
+    frag.appendChild(head);
+
+    aggs.forEach((agg, ai) => {
+      aggIx++;
+      const rail = el("div","cell rail-lane agg-lane"+(ai===0?" ctx-start":"")+(ai===aggs.length-1?" ctx-end":""));
+      rail.dataset.ctx = ctx; rail.dataset.agg = agg; rail.dataset.cix = cix; rail.dataset.aix = aggIx;
+      rail.innerHTML =
+        `<div class="agg-rail">`+
+          `<span class="ctx-kicker${ai===0?"":" sub"}">${esc(ctxTitle(ctx))}</span>`+
+          `<span class="agg-name">◈ ${esc(aggTitle(agg))}</span>`+
+        `</div>`;
+      frag.appendChild(rail);
+      MODEL.slices.forEach((s, si) => frag.appendChild(eventLaneCell(s, si, ctx, agg, cix, aggIx)));
+    });
+  });
+
+  board.appendChild(frag);
+
+  // --- hotspots: pin onto visible targets; keep the rest in the legend ---
+  const UNPINNED_HOTSPOTS = [];
+  MODEL.hotspots.forEach(h => {
+    const target = board.querySelector('.card[data-id="'+h.onId+'"],.slice-head[data-node-id="'+h.onId+'"]');
+    if(!target){ UNPINNED_HOTSPOTS.push(h); return; }
+    const dot = el("div","hotspot");
+    dot.textContent = "?";
+    dot.setAttribute("tabindex","0");
+    dot.setAttribute("data-q", h.question + "  ·  ["+h.status+"]");
+    target.appendChild(dot);
+  });
+
+  /* --------------------------- wires --------------------------- */
+  function nodeCenterEdges(c){
+    const br = board.getBoundingClientRect(), r = c.getBoundingClientRect();
+    return { x:r.left-br.left, y:r.top-br.top, w:r.width, h:r.height,
+             cx:r.left-br.left+r.width/2, cy:r.top-br.top+r.height/2, node:c };
+  }
+  function cardCenterEdges(id){
+    const c = board.querySelector('.card[data-id="'+id+'"]');
+    return c ? nodeCenterEdges(c) : null;
+  }
+  let pathEls = [];
+  let actorLinkEls = [];
+  function drawActorLinks(){
+    actorLinkEls.forEach(p=>p.remove()); actorLinkEls=[];
+    board.querySelectorAll(".actor-card").forEach(actor=>{
+      const A = nodeCenterEdges(actor);
+      const screens = [...board.querySelectorAll(".card.screen")].filter(screen=>
+        screen.dataset.slice===actor.dataset.slice && screen.dataset.actor===actor.dataset.actor);
+      screens.forEach(screen=>{
+        const B = cardCenterEdges(screen.dataset.id);
+        if(!B) return;
+        const leftToRight = B.cx>=A.cx;
+        const sx = leftToRight ? A.x+A.w : A.x;
+        const ex = leftToRight ? B.x : B.x+B.w;
+        const dx = Math.max(28,Math.abs(ex-sx)*.42);
+        const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+        p.classList.add("actor-screen-link");
+        p.setAttribute("d",`M ${sx} ${A.cy} C ${sx+(leftToRight?dx:-dx)} ${A.cy} ${ex-(leftToRight?dx:-dx)} ${B.cy} ${ex} ${B.cy}`);
+        p.dataset.actor = actor.dataset.actor;
+        p.dataset.slice = actor.dataset.slice;
+        wires.appendChild(p); actorLinkEls.push(p);
+      });
+    });
+  }
+  function drawWires(){
+    pathEls.forEach(p=>p.remove()); pathEls=[];
+    actorLinkEls.forEach(p=>p.remove()); actorLinkEls=[];
+    const bw = board.scrollWidth, bh = board.scrollHeight;
+    wires.setAttribute("viewBox", `0 0 ${bw} ${bh}`);
+    wires.setAttribute("width", bw); wires.setAttribute("height", bh);
+    EDGES.forEach(([a,b])=>{
+      const A = cardCenterEdges(a), B = cardCenterEdges(b);
+      if(!A||!B) return;
+      let sx,sy,ex,ey,c1x,c1y,c2x,c2y;
+      const horiz = Math.abs(B.cx-A.cx) > 16;
+      if(horiz){
+        const ltr = B.cx >= A.cx;
+        sx = ltr ? A.x+A.w : A.x;  sy = A.cy;
+        ex = ltr ? B.x : B.x+B.w;  ey = B.cy;
+        const dx = Math.max(40, Math.abs(ex-sx)*0.45);
+        c1x = sx + (ltr?dx:-dx); c1y = sy; c2x = ex - (ltr?dx:-dx); c2y = ey;
+      } else {
+        const down = B.cy >= A.cy;
+        sx = A.cx; sy = down ? A.y+A.h : A.y;
+        ex = B.cx; ey = down ? B.y : B.y+B.h;
+        const dy = Math.max(28, Math.abs(ey-sy)*0.5);
+        c1x = sx; c1y = sy + (down?dy:-dy); c2x = ex; c2y = ey - (down?dy:-dy);
+      }
+      const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+      p.setAttribute("d", `M ${sx} ${sy} C ${c1x} ${c1y} ${c2x} ${c2y} ${ex} ${ey}`);
+      p.setAttribute("marker-end","url(#ah)");
+      p.dataset.a=a; p.dataset.b=b;
+      if(B.cx<A.cx) p.classList.add("backward");
+      const dimmed = A.node.classList.contains("filtered") || B.node.classList.contains("filtered");
+      if(dimmed) p.classList.add("dim");
+      wires.appendChild(p); pathEls.push(p);
+    });
+    drawActorLinks();
+  }
+  window.relayoutEventModel = drawWires;
+
+  /* --------------------------- hover highlight --------------------------- */
+  board.addEventListener("mouseover", e=>{
+    const card = e.target.closest(".card"); if(!card) return;
+    const id = card.dataset.id;
+    const hot = new Set([id, ...(NEIGHBORS[id]||[])]);
+    board.classList.add("hovering");
+    board.querySelectorAll(".card").forEach(c=>c.classList.toggle("is-hot", hot.has(c.dataset.id)));
+    const actor = card.dataset.actor;
+    const slice = card.dataset.slice;
+    board.querySelectorAll(".actor-card").forEach(button=>button.classList.toggle("is-hot", !!actor && button.dataset.actor===actor && button.dataset.slice===slice));
+    pathEls.forEach(p=>p.classList.toggle("hot", p.dataset.a===id||p.dataset.b===id));
+    actorLinkEls.forEach(p=>p.classList.toggle("hot", !!actor && p.dataset.actor===actor && p.dataset.slice===slice));
+    pathEls.forEach(p=>{ if(p.classList.contains("hot")) p.setAttribute("marker-end","url(#ah-hot)"); });
+  });
+  board.addEventListener("mouseout", e=>{
+    if(e.relatedTarget && e.target.closest(".card") && e.target.closest(".card").contains(e.relatedTarget)) return;
+    if(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".actor-card")) return;
+    board.classList.remove("hovering");
+    board.querySelectorAll(".card.is-hot").forEach(c=>c.classList.remove("is-hot"));
+    board.querySelectorAll(".actor-card.is-hot").forEach(actor=>actor.classList.remove("is-hot"));
+    pathEls.forEach(p=>{ p.classList.remove("hot"); p.setAttribute("marker-end","url(#ah)"); });
+    actorLinkEls.forEach(p=>p.classList.remove("hot"));
+  });
+
+  function highlightActor(button, active){
+    const screenIds = new Set([...board.querySelectorAll(".card.screen")]
+      .filter(screen=>screen.dataset.slice===button.dataset.slice && screen.dataset.actor===button.dataset.actor)
+      .map(screen=>screen.dataset.id));
+    board.classList.toggle("hovering", active);
+    board.querySelectorAll(".actor-card").forEach(actor=>actor.classList.toggle("is-hot", active && actor===button));
+    board.querySelectorAll(".card").forEach(card=>card.classList.toggle("is-hot", active && screenIds.has(card.dataset.id)));
+    pathEls.forEach(path=>{
+      const hot = active && (screenIds.has(path.dataset.a)||screenIds.has(path.dataset.b));
+      path.classList.toggle("hot", hot);
+      path.setAttribute("marker-end", hot?"url(#ah-hot)":"url(#ah)");
+    });
+    actorLinkEls.forEach(path=>path.classList.toggle("hot", active && path.dataset.actor===button.dataset.actor && path.dataset.slice===button.dataset.slice));
+  }
+  board.querySelectorAll(".actor-card").forEach(actor=>{
+    actor.addEventListener("mouseenter",()=>highlightActor(actor,true));
+    actor.addEventListener("mouseleave",()=>highlightActor(actor,false));
+    actor.addEventListener("focus",()=>highlightActor(actor,true));
+    actor.addEventListener("blur",()=>highlightActor(actor,false));
+  });
+
+  /* --------------------------- filters --------------------------- */
+  const state = EMC.filterState = {chapter:"__all", statuses:new Set(), context:"__all"};
+
+  function applyFilters(){
+    MODEL.slices.forEach((s,i)=>{
+      const inChapter = state.chapter==="__all" ||
+        (MODEL.chapters.find(c=>c.id===state.chapter)?.slices.includes(s.id));
+      const st = s.status||"created";
+      const okStatus = state.statuses.size===0 || state.statuses.has(st);
+      const sliceVisible = inChapter && okStatus;
+      board.querySelector('.slice-head[data-slice="'+i+'"]').classList.toggle("filtered", !sliceVisible);
+      board.querySelectorAll('.actor-card[data-slice="'+i+'"]').forEach(actor=>actor.classList.toggle("filtered", !sliceVisible));
+      s.elements.forEach(e=>{
+        const c = board.querySelector('.card[data-id="'+e.id+'"]'); if(!c) return;
+        const okCtx = state.context==="__all" || !e.ctx || e.ctx===state.context;
+        c.classList.toggle("filtered", !(sliceVisible && okCtx));
+      });
+    });
+    board.querySelectorAll(".cell[data-ctx]").forEach(n => {
+      n.classList.toggle("lane-dim", state.context !== "__all" && n.dataset.ctx !== state.context);
+    });
+    requestAnimationFrame(drawWires);
+    window.applyStormingFilters && window.applyStormingFilters(state);
+  }
+
+  // chapter segmented
+  const fChapter = $("#f-chapter");
+  [["__all","All"], ...MODEL.chapters.map(c=>[c.id,c.title])].forEach(([v,lab],i)=>{
+    const b = el("button","btn"+(v==="__all"?" on":""), esc(lab)); b.dataset.v=v;
+    b.onclick=()=>{ state.chapter=v; fChapter.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); applyFilters(); };
+    fChapter.appendChild(b);
+  });
+
+  // status chips (only statuses present)
+  const fStatus = $("#f-status");
+  const present = [...new Set(MODEL.slices.map(s=>s.status||"created"))];
+  present.forEach(st=>{
+    const chip = el("button","chip", `<span class="sw" style="--c:${statusVar(st)}"></span>${STATUS_LABEL[st]}`);
+    chip.setAttribute("aria-pressed","true"); chip.dataset.st=st;
+    chip.onclick=()=>{
+      const on = chip.getAttribute("aria-pressed")==="true";
+      // treat as an active-set: click toggles membership; empty set = show all
+      if(state.statuses.size===0){ present.forEach(s=>state.statuses.add(s)); }
+      if(on){ state.statuses.delete(st); } else { state.statuses.add(st); }
+      if(state.statuses.size===present.length) state.statuses.clear();
+      fStatus.querySelectorAll(".chip").forEach(c=>{
+        const active = state.statuses.size===0 || state.statuses.has(c.dataset.st);
+        c.setAttribute("aria-pressed", active?"true":"false");
+      });
+      applyFilters();
+    };
+    fStatus.appendChild(chip);
+  });
+
+  // context segmented
+  const fContext = $("#f-context");
+  const ctxs = [["__all","All"], ...Object.entries(MODEL.contexts).map(([id,c])=>[id, c.title+(c.external?" ↗":"")])];
+  ctxs.forEach(([v,lab])=>{
+    const b = el("button","btn"+(v==="__all"?" on":""), esc(lab)); b.dataset.v=v;
+    b.onclick=()=>{ state.context=v; fContext.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); applyFilters(); };
+    fContext.appendChild(b);
+  });
+
+  /* --------------------------- click to open drawer --------------------------- */
+  board.addEventListener("click", e=>{
+    if(e.target.closest(".hotspot")) return;
+    const sh = e.target.closest(".slice-head");
+    if(sh){ openSlice(+sh.dataset.slice); return; }
+    const card = e.target.closest(".card");
+    if(card){ openSlice(+card.dataset.slice); }
+  });
+
+  /* --------------------------- legend --------------------------- */
+  const elLeg = [
+    ["event","Domain event","var(--event-fill)","var(--event-line)"],
+    ["external-event","External event","var(--external-event-fill)","var(--external-event-line)"],
+    ["command","Command","var(--command-fill)","var(--command-line)"],
+    ["readmodel","Read model","var(--read-fill)","var(--read-line)"],
+    ["screen","Screen","var(--screen-fill)","var(--screen-line)"],
+    ["processor","Processor","var(--proc-fill)","var(--proc-line)"],
+    ["hotspot","Hotspot","var(--hot-fill)","var(--hot-line)"],
+  ].map(([k,l,f,c])=>`<div class="row"><span class="sw" style="--fl:${f};--cl:${c}"></span>${l}</div>`).join("");
+  const patLeg = Object.entries(PATTERN_LABEL).map(([k,l])=>`<div class="row"><span class="pg">${PAT_SVG[k]}</span>${l}</div>`).join("");
+  const stLeg = Object.entries(STATUS_LABEL).map(([k,l])=>`<div class="row"><span class="sd" style="background:${statusVar(k)}"></span>${l}</div>`).join("");
+  const hotspotLeg = UNPINNED_HOTSPOTS.map(h=>`<div class="row"><span class="sw" style="--fl:var(--hot-fill);--cl:var(--hot-line)"></span>`+
+    `<span>${esc(h.question)}${h.target?` · <span class="mono">${esc(h.target)}</span>`:""}</span></div>`).join("");
+  const placedActors = new Set(MODEL.slices.flatMap(slice=>slice.elements.map(element=>element.actor).filter(Boolean)));
+  const actorLeg = Object.entries(MODEL.actors).map(([id,actor])=>`<div class="row"><span class="sw" style="--fl:#8FE3D8;--cl:#5DBFB3"></span>`+
+    `<span>${esc(actor.title)}${placedActors.has(id)?"":` · <span class="mono">unassigned</span>`}</span></div>`).join("");
+  LEGENDS.model =
+    `<div class="grp"><h4>Elements</h4>${elLeg}</div>`+
+    (actorLeg?`<div class="grp"><h4>Actors</h4>${actorLeg}</div>`:"")+
+    `<div class="grp"><h4>Patterns (slice types)</h4>${patLeg}</div>`+
+    `<div class="grp"><h4>Slice status</h4>${stLeg}</div>`+
+    (hotspotLeg?`<div class="grp"><h4>Other hotspots</h4>${hotspotLeg}</div>`:"");
+
+  applyFilters();      // paints filters + first wire pass
+}
+
+/* --------------------------- meta (view-independent chrome) --------------------------- */
 $("#m-title").textContent = MODEL.title;
 $("#m-version").textContent = MODEL.version;
 const counts = {slices:MODEL.slices.length, actors:Object.keys(MODEL.actors).length};
@@ -606,34 +638,71 @@ Object.values(ELEMENTS).forEach(e=>{ if(counts[e.kind]!=null) counts[e.kind]++; 
 const statBits = [["slices","Slices"],["actors","Actors"],["event","Events"],["command","Commands"],["readmodel","Read models"],["processor","Processors"]];
 $("#m-stats").innerHTML = statBits.map(([k,lab])=>`<div class="stat"><span class="n">${counts[k]}</span><span class="k">${lab}</span></div>`).join("");
 
-const LP = $("#legend-panel");
-const elLeg = [
-  ["event","Domain event","var(--event-fill)","var(--event-line)"],
-  ["external-event","External event","var(--external-event-fill)","var(--external-event-line)"],
-  ["command","Command","var(--command-fill)","var(--command-line)"],
-  ["readmodel","Read model","var(--read-fill)","var(--read-line)"],
-  ["screen","Screen","var(--screen-fill)","var(--screen-line)"],
-  ["processor","Processor","var(--proc-fill)","var(--proc-line)"],
-  ["hotspot","Hotspot","var(--hot-fill)","var(--hot-line)"],
-].map(([k,l,f,c])=>`<div class="row"><span class="sw" style="--fl:${f};--cl:${c}"></span>${l}</div>`).join("");
-const patLeg = Object.entries(PATTERN_LABEL).map(([k,l])=>`<div class="row"><span class="pg">${PAT_SVG[k]}</span>${l}</div>`).join("");
-const stLeg = Object.entries(STATUS_LABEL).map(([k,l])=>`<div class="row"><span class="sd" style="background:${statusVar(k)}"></span>${l}</div>`).join("");
-const hotspotLeg = UNPINNED_HOTSPOTS.map(h=>`<div class="row"><span class="sw" style="--fl:var(--hot-fill);--cl:var(--hot-line)"></span>`+
-  `<span>${esc(h.question)}${h.target?` · <span class="mono">${esc(h.target)}</span>`:""}</span></div>`).join("");
-const placedActors = new Set(MODEL.slices.flatMap(slice=>slice.elements.map(element=>element.actor).filter(Boolean)));
-const actorLeg = Object.entries(MODEL.actors).map(([id,actor])=>`<div class="row"><span class="sw" style="--fl:#8FE3D8;--cl:#5DBFB3"></span>`+
-  `<span>${esc(actor.title)}${placedActors.has(id)?"":` · <span class="mono">unassigned</span>`}</span></div>`).join("");
-LP.innerHTML =
-  `<div class="grp"><h4>Elements</h4>${elLeg}</div>`+
-  (actorLeg?`<div class="grp"><h4>Actors</h4>${actorLeg}</div>`:"")+
-  `<div class="grp"><h4>Patterns (slice types)</h4>${patLeg}</div>`+
-  `<div class="grp"><h4>Slice status</h4>${stLeg}</div>`+
-  (hotspotLeg?`<div class="grp"><h4>Other hotspots</h4>${hotspotLeg}</div>`:"");
+/* --------------------------- theme --------------------------- */
+const THEMES = [["auto","◐","Auto"],["light","☀","Light"],["dark","☾","Dark"]];
+let themeIx = 0;
+try{ const saved=localStorage.getItem("emc-theme"); if(saved){ themeIx=THEMES.findIndex(t=>t[0]===saved); if(themeIx<0)themeIx=0; } }catch(_){}
+function relayoutAll(){
+  requestAnimationFrame(()=>{
+    window.relayoutEventModel && window.relayoutEventModel();
+    window.relayoutEventStorming && window.relayoutEventStorming();
+    window.relayoutContextMap && window.relayoutContextMap();
+  });
+}
+function applyTheme(){
+  const [v,gl,tx]=THEMES[themeIx];
+  if(v==="auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", v);
+  $("#theme-gl").textContent=gl; $("#theme-tx").textContent=tx;
+  try{ localStorage.setItem("emc-theme", v); }catch(_){}
+  relayoutAll();
+}
+$("#t-theme").onclick=()=>{ themeIx=(themeIx+1)%THEMES.length; applyTheme(); };
+applyTheme();
+
+/* --------------------------- view switcher --------------------------- */
+const boardModel = $("#board"), boardES = $("#board-es"), boardCM = $("#board-cm");
+const fChapterEl = $("#f-chapter"), fStatusEl = $("#f-status"), fContextEl = $("#f-context"), fFieldsEl = $("#f-fields-switch");
+const fieldPrefs = {model:true, storming:false};
+
+$("#t-fields").addEventListener("change", e=>{
+  const view = document.body.dataset.view;
+  if(view !== "model" && view !== "storming") return;
+  fieldPrefs[view] = e.target.checked;
+  (view === "model" ? boardModel : boardES).classList.toggle("show-fields", e.target.checked);
+  relayoutAll();
+});
+
+function setFiltersVisible(visible){
+  [fChapterEl, fStatusEl, fContextEl, fFieldsEl].forEach(node=>{ if(node) node.style.display = visible?"":"none"; });
+}
+
+function setView(name){
+  document.body.dataset.view = name;
+  boardModel.hidden = name !== "model";
+  boardES.hidden = name !== "storming";
+  boardCM.hidden = name !== "contextmap";
+  setFiltersVisible(name !== "contextmap");
+  if(name === "model" || name === "storming"){
+    const showFields = fieldPrefs[name];
+    $("#t-fields").checked = showFields;
+    (name === "model" ? boardModel : boardES).classList.toggle("show-fields", showFields);
+  }
+  if(name === "model") renderEventModel();
+  else if(name === "storming") window.renderEventStorming && window.renderEventStorming();
+  else if(name === "contextmap") window.renderContextMap && window.renderContextMap();
+  LP.innerHTML = LEGENDS[name] || `<div class="empty">No legend available for this view.</div>`;
+  relayoutAll();
+}
+
+const fView = $("#f-view");
+[["model","Model"],["storming","Storming"],["contextmap","Context Map"]].forEach(([v,lab])=>{
+  const b = el("button","btn"+(v==="model"?" on":""), esc(lab)); b.dataset.v=v;
+  b.onclick=()=>{ fView.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); setView(v); };
+  fView.appendChild(b);
+});
 
 /* --------------------------- go --------------------------- */
-function relayout(){ requestAnimationFrame(drawWires); }
-window.addEventListener("resize", relayout);
-$(".canvas-scroll").addEventListener("scroll", ()=>{}, {passive:true});
-applyFilters();      // paints filters + first wire pass
-relayout();
-setTimeout(drawWires, 60);   // after fonts/layout settle
+window.addEventListener("resize", relayoutAll);
+setView("model");
+setTimeout(relayoutAll, 60);   // after fonts/layout settle

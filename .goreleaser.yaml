@@ -17,26 +17,11 @@ builds:
       - arm64
     ldflags:
       - -s -w -X main.buildVersion={{ .Tag }}
-  - id: eventmodeling-hcl
-    main: ./cmd/eventmodeling-hcl
-    binary: eventmodeling-hcl
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-      - darwin
-      - windows
-    goarch:
-      - amd64
-      - arm64
-    ldflags:
-      - -s -w -X main.buildVersion={{ .Tag }}
 
 archives:
   - id: default
     ids:
       - emhcl
-      - eventmodeling-hcl
     formats:
       - tar.gz
     format_overrides:

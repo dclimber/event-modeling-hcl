@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Event Model Canvas</title>
 <style>
-__STYLES__</style>
+__STYLES__
+__STYLES_ES__
+__STYLES_CM__</style>
 </head>
 <body>
 
@@ -17,10 +19,11 @@ __STYLES__</style>
   <div class="meta" id="m-stats"></div>
 
   <div class="tools">
+    <div class="seg" id="f-view"><span class="fkey">View</span></div>
     <div class="seg" id="f-chapter"><span class="fkey">Chapter</span></div>
     <div class="chips" id="f-status"><span class="fkey">Status</span></div>
     <div class="seg" id="f-context"><span class="fkey">Context</span></div>
-    <label class="switch" title="Show field details on cards">
+    <label class="switch" id="f-fields-switch" title="Show field details on cards">
       <input type="checkbox" id="t-fields" checked>
       <span class="track"></span><span>Fields</span>
     </label>
@@ -43,6 +46,40 @@ __STYLES__</style>
       </svg>
       <!-- grid content injected by script -->
     </div>
+    <div class="board-es view show-fields" id="board-es" aria-label="Event storming canvas" hidden>
+      <svg class="wires" id="wires-es" aria-hidden="true">
+        <defs>
+          <marker id="ah-es" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 L2.4 4.5 Z" fill="var(--wire)"></path>
+          </marker>
+          <marker id="ah-es-hot" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 L2.4 4.5 Z" fill="var(--wire-hot)"></path>
+          </marker>
+        </defs>
+      </svg>
+      <div class="es-disclaimer">
+        <p><strong>Reading note —</strong> this board is an <b>Event Model</b>, rendered in a visual style inspired by Event Storming. The methods share an event-first, timeline-based way of reasoning about systems, but serve different purposes:</p>
+        <ul>
+          <li><b>Event Storming</b> is a collaborative discovery and design technique: participants explore the domain by arranging events and progressively introducing commands, policies, actors, external systems, and boundaries.</li>
+          <li><b>Event Modeling</b> turns that discovered behaviour into a more constrained system blueprint: workflows are decomposed into slices connecting screens, commands, events, read models, and automations, with concrete data and scenarios that can be used to validate and implement the system.</li>
+        </ul>
+        <p>This view is generated from Event Modeling data. Its sticky-note and timeline presentation borrows from Event Storming; the underlying semantics are Event Modeling.</p>
+      </div>
+      <!-- grid content injected by script -->
+    </div>
+    <div class="board-cm view" id="board-cm" aria-label="Context map canvas" hidden>
+      <svg class="wires" id="wires-cm" aria-hidden="true">
+        <defs>
+          <marker id="ah-cm" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 L2.4 4.5 Z" fill="var(--wire)"></path>
+          </marker>
+          <marker id="ah-cm-hot" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 L2.4 4.5 Z" fill="var(--wire-hot)"></path>
+          </marker>
+        </defs>
+      </svg>
+      <!-- grid content injected by script -->
+    </div>
   </div>
 
   <details class="legend" id="legend">
@@ -56,11 +93,15 @@ __STYLES__</style>
 
 <footer class="foot">
   <span class="label" style="color:var(--ink-soft)">How to read</span>
-  <span>Time flows left → right · columns are slices · Screens / Processors / Model rows unchanged · events are grouped by bounded context, then by aggregate · hover a note to trace its flow · click a card for its scenarios.</span>
+  <span>Three views, one model: <b>Model</b> — time flows left → right, columns are slices, events are grouped by bounded context then aggregate; <b>Storming</b> — adjacent sticky notes show local flow, dashed arrows connect sequential workflows, and independent flows run in parallel; <b>Context Map</b> — bounded contexts and the upstream/downstream relationships derived from cross-context event consumption. Hover a note to trace its flow · click a note for its scenarios.</span>
   <span style="margin-left:auto" class="mono">rendered by emhcl diagram</span>
 </footer>
 
 <script>
 __SCRIPT__</script>
+<script>
+__SCRIPT_ES__</script>
+<script>
+__SCRIPT_CM__</script>
 </body>
 </html>

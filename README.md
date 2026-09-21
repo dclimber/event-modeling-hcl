@@ -4,7 +4,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/event-modeling-hcl/eventmodeling-hcl.svg)](https://pkg.go.dev/github.com/event-modeling-hcl/eventmodeling-hcl)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-`emhcl` v0.6.0 implements Event Modeling HCL Specification v0.3.0.
+`emhcl` v0.7.0 implements Event Modeling HCL Specification v0.3.0.
 This repository provides a strict validator, canonical formatter, typed semantic model,
 normative language documentation, and executable examples. The domain reference is the upstream [Event Modeling
 Specification](https://github.com/dilgerma/event-modeling-spec); the HCL
@@ -22,7 +22,7 @@ preserve the rules and durable artifacts of an Event Modeling session.
 Install the tagged command with Go 1.25 or newer:
 
 ```bash
-go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.6.0
+go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.7.0
 ```
 
 Go writes the executable to `GOBIN`, or to `$(go env GOPATH)/bin` when
@@ -41,12 +41,10 @@ go build -o bin/emhcl ./cmd/emhcl
 
 Published release archives for Linux, macOS, and Windows are available from
 the [GitHub Releases page](https://github.com/event-modeling-hcl/eventmodeling-hcl/releases).
-Each v0.6.0 archive contains `emhcl` and the deprecated `eventmodeling-hcl`
-compatibility executable. Verify a downloaded archive with that release's
-`checksums.txt`:
+Verify a downloaded archive with that release's `checksums.txt`:
 
 ```bash
-archive=emhcl_0.6.0_linux_amd64.tar.gz
+archive=emhcl_0.7.0_linux_amd64.tar.gz
 grep " ${archive}$" checksums.txt | sha256sum -c -
 # macOS: grep " ${archive}$" checksums.txt | shasum -a 256 -c -
 ```
@@ -56,18 +54,9 @@ With GitHub CLI 2.49.0 or newer, verify the downloaded archive was produced by
 this repository's release workflow:
 
 ```bash
-gh attestation verify emhcl_0.6.0_linux_amd64.tar.gz \
+gh attestation verify emhcl_0.7.0_linux_amd64.tar.gz \
   --repo event-modeling-hcl/eventmodeling-hcl
 ```
-
-`eventmodeling-hcl` remains available for one transition release:
-
-```bash
-go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/eventmodeling-hcl@v0.6.0
-```
-
-It is deprecated in v0.6.0 and will be removed in v0.7.0. New scripts and
-documentation should use `emhcl`.
 
 Validate one complete model per invocation:
 
@@ -88,10 +77,8 @@ Model files must use the `.em.hcl` extension. HCL is the language; the suffix
 identifies a complete Event Modeling document to this validator. Check the
 installed binary version with `emhcl version`.
 
-Render a valid model as a self-contained, interactive HTML canvas with
-content-adaptive slices, left-to-right flow stages, dedicated screen,
-processor, model, and event swimlanes, typed flow arrows, and scenarios
-available from each slice:
+Render a valid model as a self-contained, interactive HTML canvas with three
+switchable views and a shared detail drawer for each slice's scenarios:
 
 ```bash
 emhcl diagram examples/complete.em.hcl -o complete.html
@@ -101,13 +88,28 @@ emhcl diagram examples/complete.em.hcl > complete.html
 The `diagram` command validates with the default `valid` profile before
 rendering. Errors prevent output; modeling warnings are reported without
 blocking the diagram. The generated file embeds its CSS, JavaScript, and model
-data. Domain events use Event Storming orange; events owned by external bounded
-contexts use pink. Events in the same slice are arranged horizontally. Each
-actor card renders directly beside its associated screen card, and flow arrows
-that point backward in the left-to-right layout (their target sits left of
-their source) use a dashed stroke, turning solid only while hovered. A
-`screen_image` retains its user-supplied URL, so that preview may load external
-media when the HTML is opened.
+data; nothing loads over the network except a user-supplied `screen_image`
+URL, if present.
+
+- **Model** — content-adaptive slices, left-to-right flow stages, dedicated
+  screen, processor, model, and event swimlanes, and typed flow arrows. Domain
+  events use Event Storming orange; events owned by external bounded contexts
+  use pink. Each actor card renders directly beside its associated screen
+  card, and flow arrows that point backward in the left-to-right layout
+  (their target sits left of their source) use a dashed stroke, turning solid
+  only while hovered.
+- **Storming** — the same model laid out as tactical Event Storming: one row
+  per workflow with sticky notes for screens, commands, aggregates, events,
+  automations/translations, and read models, plus an actor card beside every
+  screen that has one. A workflow connected to another by an edge starts to
+  the right of the workflow it depends on; independent workflows run in
+  parallel rows.
+- **Context Map** *(experimental)* — a bounded-context map derived from
+  cross-context event consumption: one node per bounded context, with
+  upstream → downstream edges labeled customer/supplier, or anti-corruption
+  when the consumer is a `translation` workflow. The derivation is heuristic
+  and both the relationship labels and the layout may change in a future
+  release.
 
 For a local edit-and-render loop, serve one model and keep the browser open
 while the file changes:

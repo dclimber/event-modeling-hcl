@@ -1,5 +1,4 @@
-// Package cli implements the command-line adapter shared by emhcl and its
-// temporary eventmodeling-hcl compatibility command.
+// Package cli implements the emhcl command-line adapter.
 package cli
 
 import (
