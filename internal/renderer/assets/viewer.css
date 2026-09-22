@@ -10,7 +10,7 @@
   color-scheme: light;
 
   --bg:        #E9EDF4;
-  --board:     #EFF2F7;
+  --board:     #fbfaf5;
   --surface:   #F7F9FC;
   --panel:     #FFFFFF;
   --ink:       #1A2230;
@@ -29,14 +29,16 @@
 
   /* Semantic sticky-note colors — domain conventions, held CONSTANT
      across themes (physical stickies stay bright on a dark board). */
-  --event-fill:#F4A63F;   --event-line:#D9832A;   --event-ink:#3c2810;
-  --external-event-fill:#F3B6D2; --external-event-line:#D76A9D; --external-event-ink:#4D1831;
-  --command-fill:#BCD8F0; --command-line:#5F9AD1; --command-ink:#123049;
-  --read-fill:#C6E3B4;    --read-line:#7FB562;    --read-ink:#203e18;
-  --screen-fill:#FCFDFF;  --screen-line:#C3CBD9;  --screen-ink:#2A3340;
-  --proc-fill:#E6E9EF;    --proc-line:#A7B0BF;    --proc-ink:#2b3340;
-  --table-fill:#F2EEE4;   --table-line:#CDC5B3;   --table-ink:#3a342a;
+  --event-fill:#f5a14a; --event-line:#d77c27; --event-ink:#402810;
+  --external-event-fill:#ef9fbe; --external-event-line:#ce7395; --external-event-ink:#4d1831;
+  --command-fill:#70d0e9; --command-line:#42a9c4; --command-ink:#153743;
+  --read-fill:#c8e98e; --read-line:#93bc58; --read-ink:#263b16;
+  --screen-fill:#f2eee4; --screen-line:#c8bdab; --screen-ink:#342f28;
+  --proc-fill:#c18acb; --proc-line:#9e64aa; --proc-ink:#35203b;
+  --table-fill:#f6eda0; --table-line:#d4c663; --table-ink:#423a12;
   --hot-fill:#F7C2C2;     --hot-line:#DC6A6A;     --hot-ink:#5b1a1a;
+  --sticky-shadow:0 2px 2px rgba(48,38,22,.12),0 7px 12px rgba(48,38,22,.18);
+  --sticky-shadow-hot:0 3px 4px rgba(48,38,22,.14),0 12px 20px rgba(48,38,22,.22);
 
   /* Status hues (semantic; independent of accent) */
   --st-created:#8792a6;
@@ -225,6 +227,7 @@ button{font-family:inherit}
   --h-chapter:38px; --h-header:70px;
   width:max-content;
 }
+.board::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.22; background-image:radial-gradient(#c9c0b1 .65px,transparent .65px); background-size:18px 18px}
 
 /* wire layer sits above band backgrounds, below cards */
 .wires{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; overflow:visible}
@@ -337,12 +340,13 @@ button{font-family:inherit}
 .board .cell.lane-dim{opacity:.26; transition:opacity .14s}
 
 .actor-card{appearance:none; position:relative; z-index:4; width:100%; min-height:42px;
-  display:flex; align-items:center; gap:9px; padding:8px 10px; border:1px solid #5DBFB3;
-  border-radius:8px; background:#8FE3D8; color:#0D3F39; box-shadow:var(--shadow-sm);
-  font:inherit; text-align:left; cursor:default; transition:transform .12s,box-shadow .12s,opacity .14s}
-.actor-card:hover,.actor-card:focus-visible{transform:translateY(-2px); box-shadow:var(--shadow)}
+  display:flex; align-items:center; gap:9px; padding:8px 10px; border:0;
+  border-radius:1px; background:#f5e84f; color:#3b3510; box-shadow:var(--sticky-shadow);
+  font:inherit; text-align:left; cursor:default; transform:rotate(-.35deg);
+  transition:transform .14s,box-shadow .14s,opacity .14s}
+.actor-card:hover,.actor-card:focus-visible{transform:translateY(-4px) rotate(0); box-shadow:var(--sticky-shadow-hot)}
 .actor-card .person{width:24px; height:24px; flex:none; display:grid; place-items:center;
-  border-radius:50%; background:rgba(13,63,57,.12)}
+  border-radius:50%; background:rgba(59,53,16,.14)}
 .actor-card .person svg{width:15px; height:15px}
 .actor-card .actor-copy{display:flex; min-width:0; flex-direction:column; gap:2px}
 .actor-card .an{font-weight:700; font-size:12px; line-height:1.15}
@@ -350,18 +354,22 @@ button{font-family:inherit}
 .actor-card .lock{margin-left:auto; width:14px; height:14px; opacity:.72}
 
 /* ------------------------- sticky cards ----------------------- */
-.card{position:relative; z-index:4; border-radius:8px; padding:9px 11px;
-  border:1.5px solid var(--cl); background:var(--fl); color:var(--ik);
-  box-shadow:var(--shadow-sm); cursor:pointer;
-  transition:transform .12s, box-shadow .12s, opacity .14s;
+.card{position:relative; z-index:4; border-radius:1px; padding:9px 11px;
+  border:0; background:var(--fl); color:var(--ik);
+  box-shadow:var(--sticky-shadow); cursor:pointer;
+  transition:transform .14s, box-shadow .14s, opacity .14s;
+  transform:rotate(-.35deg);
   --fl:var(--panel); --cl:var(--line); --ik:var(--ink)}
-.card:hover{transform:translateY(-2px); box-shadow:var(--shadow)}
+.card:hover{transform:translateY(-4px) rotate(0); box-shadow:var(--sticky-shadow-hot)}
+.card:nth-child(even){transform:rotate(.28deg)}
+.card:nth-child(3n){transform:rotate(-.18deg) translateY(2px)}
+.card:hover,.card.is-hot{transform:translateY(-4px) rotate(0)}
 .card .kind{display:flex; align-items:center; gap:6px; margin-bottom:3px}
 .card .kind .kdot{width:8px;height:8px;border-radius:2px;background:var(--cl)}
-.card .kind .kn{font-family:var(--font-cond); font-weight:700; font-stretch:condensed;
-  text-transform:uppercase; letter-spacing:.08em; font-size:9.5px; opacity:.72}
+.card .kind .kn{font-family:var(--font-cond); font-weight:800; font-stretch:condensed;
+  text-transform:uppercase; letter-spacing:.08em; font-size:9px; color:color-mix(in srgb,var(--ik) 68%,transparent)}
 .card .kind .agg{margin-left:auto; font-family:var(--font-mono); font-size:9px; opacity:.6}
-.card .ct{font-weight:700; font-size:13px; line-height:1.2}
+.card .ct{font-weight:750; font-size:14px; line-height:1.2; margin-top:2px}
 .card .q{font-size:11px; line-height:1.35; margin-top:4px; opacity:.82; font-style:italic}
 .card .api{font-family:var(--font-mono); font-size:10px; margin-top:5px; opacity:.72}
 .card .id{font-family:var(--font-mono); font-size:9.5px; opacity:.55; margin-top:4px}
@@ -375,7 +383,7 @@ button{font-family:inherit}
 .card.screen,.card.screen_image{--fl:var(--screen-fill); --cl:var(--screen-line); --ik:var(--screen-ink)}
 
 .card .tags{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px}
-.card .tag{font-family:var(--font-mono); font-size:9px; padding:1px 6px; border-radius:5px;
+.card .tag{font-family:var(--font-mono); font-size:9px; padding:1px 6px; border-radius:2px;
   background:color-mix(in srgb, var(--ik) 12%, transparent); opacity:.8}
 
 /* processor gear + screen wireframe */
@@ -384,14 +392,14 @@ button{font-family:inherit}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){ .gear{animation:none} .card{transition:none} .canvas-scroll{scroll-behavior:auto} }
 
-.wire-frame{height:38px; margin:6px -2px 2px; border:1px solid var(--screen-line);
-  border-radius:5px; background:
+.wire-frame{height:28px; margin:6px -2px 2px; border:1px solid var(--screen-line);
+  border-radius:2px; background:
     linear-gradient(var(--screen-line),var(--screen-line)) 8px 8px/34px 4px no-repeat,
     linear-gradient(var(--screen-line),var(--screen-line)) 8px 16px/58px 3px no-repeat,
     linear-gradient(var(--screen-line),var(--screen-line)) 8px 23px/44px 3px no-repeat,
     color-mix(in srgb, var(--screen-line) 14%, transparent);
   opacity:.9}
-.image-preview{height:108px; margin-top:7px; border-radius:5px; border:1px dashed var(--screen-line);
+.image-preview{height:108px; margin-top:7px; border-radius:2px; border:1px dashed var(--screen-line);
   display:grid; place-items:center; overflow:hidden; background:var(--surface); position:relative}
 .image-preview img{width:100%; height:100%; object-fit:contain; display:block}
 .image-preview-fallback{display:none; padding:10px; text-align:center; font-family:var(--font-mono);
@@ -427,7 +435,7 @@ button{font-family:inherit}
 .card.filtered, .actor-card.filtered, .slice-head.filtered{opacity:.2; pointer-events:none; filter:saturate(.4)}
 .board.hovering .card:not(.is-hot){opacity:.32}
 .board.hovering .actor-card:not(.is-hot){opacity:.32}
-.board.hovering .card.is-hot{box-shadow:var(--shadow); transform:translateY(-2px)}
+.board.hovering .card.is-hot{box-shadow:var(--sticky-shadow-hot); transform:translateY(-4px) rotate(0)}
 
 /* -------------------------- legend bar ------------------------ */
 .legend{position:absolute; left:14px; bottom:14px; z-index:24; max-width:min(94vw, 720px)}
