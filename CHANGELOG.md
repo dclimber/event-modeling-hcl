@@ -6,6 +6,16 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ## [Unreleased]
 
+## [v0.7.1] - 2026-09-22
+
+This release updates the styling of Event Modeling diagrams - it's now consistent
+with the presentation of the `Storming` view.
+
+### Changed
+
+- Event Modeling and Context map diagrams now use a style similar to that of the Storming
+view.
+
 ## [v0.7.0] - 2026-09-21
 
 This release adds two new rendered views to the diagram canvas and completes
