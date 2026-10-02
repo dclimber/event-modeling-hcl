@@ -20,6 +20,7 @@ __STYLES_CM__</style>
 
   <div class="tools">
     <div class="seg" id="f-view"><span class="fkey">View</span></div>
+    <div class="seg" id="f-zoom"><span class="fkey">Zoom</span><button class="btn" id="z-out" title="Zoom out (-)" aria-label="Zoom out">−</button><button class="btn zoom-level" id="z-reset" title="Reset zoom to 100% (0)" aria-label="Reset zoom">100%</button><button class="btn" id="z-in" title="Zoom in (+)" aria-label="Zoom in">+</button><button class="btn" id="z-fit" title="Fit width (F)" aria-label="Fit to width">Fit</button></div>
     <div class="seg" id="f-chapter"><span class="fkey">Chapter</span></div>
     <div class="chips" id="f-status"><span class="fkey">Status</span></div>
     <div class="seg" id="f-context"><span class="fkey">Context</span></div>
@@ -93,7 +94,7 @@ __STYLES_CM__</style>
 
 <footer class="foot">
   <span class="label" style="color:var(--ink-soft)">How to read</span>
-  <span>Three views, one model: <b>Model</b> — time flows left → right, columns are slices, events are grouped by bounded context then aggregate; <b>Storming</b> — adjacent sticky notes show local flow, dashed arrows connect sequential workflows, and independent flows run in parallel; <b>Context Map</b> — bounded contexts and the upstream/downstream relationships derived from cross-context event consumption. Hover a note to trace its flow · click a note for its scenarios.</span>
+  <span>Three views, one model: <b>Model</b> — time flows left → right, columns are slices, events are grouped by bounded context then aggregate; <b>Storming</b> — adjacent sticky notes show local flow, dashed arrows connect sequential workflows, and independent flows run in parallel; <b>Context Map</b> — bounded contexts and the upstream/downstream relationships derived from cross-context event consumption. Hover a note to trace its flow · click a note for its scenarios. · Ctrl/⌘ + scroll (or pinch) to zoom, +/−/0 keys.</span>
   <span style="margin-left:auto" class="mono">rendered by emhcl diagram</span>
 </footer>
 

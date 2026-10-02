@@ -4,7 +4,21 @@ This repository records implementation releases of the validator, formatter,
 and typed IR. The authoritative Event Modeling HCL language history is in the
 [specification changelog](https://github.com/event-modeling-hcl/spec/blob/main/CHANGELOG.md).
 
-## [Unreleased]
+## [v0.7.2] - 2026-10-02
+
+### Added
+
+- Zoom for the `Model` and `Storming` diagram views: toolbar controls
+  (−, reset to 100%, +, Fit width), Ctrl/⌘ + scroll or trackpad pinch anchored
+  at the cursor, and `+`/`-`/`0`/`F` keys. Range 25%–200%; each view keeps its
+  own zoom level.
+
+### Changed
+
+- Hotspots in the `Model` view render as large red sticky notes (~60% of the
+  pinned card) showing the question, instead of a small `?` badge. Slice
+  hotspots sit in the slice's Screens row, under the slice title and above
+  its actors and screens.
 
 ## [v0.7.1] - 2026-09-22
 

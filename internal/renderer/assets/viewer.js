@@ -148,8 +148,9 @@ const EMC = {
 // generalized nodeCenterEdges: rect of `node` relative to `container`
 EMC.rectIn = (container, node) => {
   const cr = container.getBoundingClientRect(), r = node.getBoundingClientRect();
-  return { x:r.left-cr.left, y:r.top-cr.top, w:r.width, h:r.height,
-           cx:r.left-cr.left+r.width/2, cy:r.top-cr.top+r.height/2 };
+  const s = cr.width && container.offsetWidth ? cr.width / container.offsetWidth : 1;
+  return { x:(r.left-cr.left)/s, y:(r.top-cr.top)/s, w:r.width/s, h:r.height/s,
+           cx:(r.left-cr.left+r.width/2)/s, cy:(r.top-cr.top+r.height/2)/s };
 };
 
 /* --------------------------- legend content per active view --------------------------- */
@@ -293,6 +294,14 @@ function renderEventModel(){
     {key:"processors", name:"Processors", sub:"automation"},
     {key:"domain",     name:"Model",      sub:"commands & views"},
   ];
+  const sliceHotspots = new Map();
+  const placedSliceHotspots = new Set();
+  MODEL.hotspots.forEach(h => {
+    const i = MODEL.slices.findIndex(s => h.onId === "slice__"+s.id);
+    if(i < 0) return;
+    if(!sliceHotspots.has(i)) sliceHotspots.set(i, []);
+    sliceHotspots.get(i).push(h);
+  });
   BANDS.forEach(b => {
     const rail = el("div","cell rail-lane");
     rail.appendChild(el("div","txt", `${b.name}<small>${b.sub}</small>`));
@@ -321,6 +330,14 @@ function renderEventModel(){
           if(!byStage.has(stage)) byStage.set(stage,[]);
           byStage.get(stage).push(e);
         });
+        const hasSliceHs = b.key==="screens" && sliceHotspots.has(i);
+        if(hasSliceHs){
+          const row = el("div","slice-hotspots");
+          row.style.gridColumn = "1 / -1";
+          row.style.gridRow = "1";
+          sliceHotspots.get(i).forEach(h=>{ row.appendChild(hotspotNote(h)); placedSliceHotspots.add(h); });
+          cell.appendChild(row);
+        }
         [...byStage.entries()].sort((a,b)=>a[0]-b[0]).forEach(([stage,items])=>{
           const stack = el("div","stage-stack");
           stack.style.gridColumn = (stage+1);
@@ -336,6 +353,7 @@ function renderEventModel(){
             pair.appendChild(card);
             stack.appendChild(pair);
           });
+          if(hasSliceHs) stack.style.gridRow = "2";
           cell.appendChild(stack);
         });
       }
@@ -404,21 +422,26 @@ function renderEventModel(){
 
   // --- hotspots: pin onto visible targets; keep the rest in the legend ---
   const UNPINNED_HOTSPOTS = [];
-  MODEL.hotspots.forEach(h => {
-    const target = board.querySelector('.card[data-id="'+h.onId+'"],.slice-head[data-node-id="'+h.onId+'"]');
-    if(!target){ UNPINNED_HOTSPOTS.push(h); return; }
+  function hotspotNote(h){
     const dot = el("div","hotspot");
-    dot.textContent = "?";
+    dot.innerHTML = '<span class="hs-mark">?!</span><span class="hs-label">Hotspot</span><span class="hs-q">'+esc(h.question)+'</span>';
     dot.setAttribute("tabindex","0");
     dot.setAttribute("data-q", h.question + "  ·  ["+h.status+"]");
-    target.appendChild(dot);
+    return dot;
+  }
+  MODEL.hotspots.forEach(h => {
+    if(placedSliceHotspots.has(h)) return;
+    const target = board.querySelector('.card[data-id="'+h.onId+'"]');
+    if(!target){ UNPINNED_HOTSPOTS.push(h); return; }
+    target.appendChild(hotspotNote(h));
   });
 
   /* --------------------------- wires --------------------------- */
   function nodeCenterEdges(c){
     const br = board.getBoundingClientRect(), r = c.getBoundingClientRect();
-    return { x:r.left-br.left, y:r.top-br.top, w:r.width, h:r.height,
-             cx:r.left-br.left+r.width/2, cy:r.top-br.top+r.height/2, node:c };
+    const s = br.width && board.offsetWidth ? br.width / board.offsetWidth : 1;
+    return { x:(r.left-br.left)/s, y:(r.top-br.top)/s, w:r.width/s, h:r.height/s,
+             cx:(r.left-br.left+r.width/2)/s, cy:(r.top-br.top+r.height/2)/s, node:c };
   }
   function cardCenterEdges(id){
     const c = board.querySelector('.card[data-id="'+id+'"]');
@@ -610,11 +633,11 @@ function renderEventModel(){
     ["readmodel","Read model","var(--read-fill)","var(--read-line)"],
     ["screen","Screen","var(--screen-fill)","var(--screen-line)"],
     ["processor","Processor","var(--proc-fill)","var(--proc-line)"],
-    ["hotspot","Hotspot","var(--hot-fill)","var(--hot-line)"],
+    ["hotspot","Hotspot","var(--hot-sticky-fill)","var(--hot-sticky-line)"],
   ].map(([k,l,f,c])=>`<div class="row"><span class="sw" style="--fl:${f};--cl:${c}"></span>${l}</div>`).join("");
   const patLeg = Object.entries(PATTERN_LABEL).map(([k,l])=>`<div class="row"><span class="pg">${PAT_SVG[k]}</span>${l}</div>`).join("");
   const stLeg = Object.entries(STATUS_LABEL).map(([k,l])=>`<div class="row"><span class="sd" style="background:${statusVar(k)}"></span>${l}</div>`).join("");
-  const hotspotLeg = UNPINNED_HOTSPOTS.map(h=>`<div class="row"><span class="sw" style="--fl:var(--hot-fill);--cl:var(--hot-line)"></span>`+
+  const hotspotLeg = UNPINNED_HOTSPOTS.map(h=>`<div class="row"><span class="sw" style="--fl:var(--hot-sticky-fill);--cl:var(--hot-sticky-line)"></span>`+
     `<span>${esc(h.question)}${h.target?` · <span class="mono">${esc(h.target)}</span>`:""}</span></div>`).join("");
   const placedActors = new Set(MODEL.slices.flatMap(slice=>slice.elements.map(element=>element.actor).filter(Boolean)));
   const actorLeg = Object.entries(MODEL.actors).map(([id,actor])=>`<div class="row"><span class="sw" style="--fl:#8FE3D8;--cl:#5DBFB3"></span>`+
@@ -660,6 +683,89 @@ function applyTheme(){
 $("#t-theme").onclick=()=>{ themeIx=(themeIx+1)%THEMES.length; applyTheme(); };
 applyTheme();
 
+/* --------------------------- zoom --------------------------- */
+const ZOOM_MIN = 0.25, ZOOM_MAX = 2, ZOOM_STEPS = [0.25,0.33,0.5,0.67,0.8,0.9,1,1.1,1.25,1.5,1.75,2];
+const zoomByView = {model:1, storming:1};
+const fZoomEl = $("#f-zoom");
+function zoomBoard(){
+  const v = document.body.dataset.view;
+  return v === "model" ? boardModel : v === "storming" ? boardES : null;
+}
+function updateZoomLabel(){
+  const v = document.body.dataset.view;
+  $("#z-reset").textContent = Math.round((zoomByView[v] || 1) * 100) + "%";
+}
+function scrollNoSmooth(sc, fn){
+  const prev = sc.style.scrollBehavior;
+  sc.style.scrollBehavior = "auto";
+  fn();
+  sc.style.scrollBehavior = prev;
+}
+function setZoom(z, anchor){
+  const board = zoomBoard();
+  if(!board) return;
+  const v = document.body.dataset.view;
+  z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+  const old = zoomByView[v];
+  if(z === old){ updateZoomLabel(); return; }
+  const sc = document.querySelector(".canvas-scroll");
+  const sr = sc.getBoundingClientRect(), br = board.getBoundingClientRect();
+  if(!anchor) anchor = {x:sr.left + sr.width/2, y:sr.top + sr.height/2};
+  const px = (anchor.x - br.left) / old, py = (anchor.y - br.top) / old;
+  board.style.zoom = z === 1 ? "" : String(z);
+  zoomByView[v] = z;
+  const br2 = board.getBoundingClientRect();
+  scrollNoSmooth(sc, ()=>{
+    sc.scrollLeft += (br2.left + px*z) - anchor.x;
+    sc.scrollTop += (br2.top + py*z) - anchor.y;
+  });
+  updateZoomLabel();
+  relayoutAll();
+}
+function zoomIn(){
+  const cur = zoomByView[document.body.dataset.view];
+  const next = ZOOM_STEPS.find(s => s > cur + 0.001);
+  if(next !== undefined) setZoom(next);
+}
+function zoomOut(){
+  const cur = zoomByView[document.body.dataset.view];
+  const prev = [...ZOOM_STEPS].reverse().find(s => s < cur - 0.001);
+  if(prev !== undefined) setZoom(prev);
+}
+function zoomFit(){
+  const board = zoomBoard();
+  if(!board) return;
+  const sc = document.querySelector(".canvas-scroll");
+  const cs = getComputedStyle(sc);
+  const avail = sc.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  setZoom(Math.min(1, Math.max(ZOOM_MIN, avail / board.scrollWidth)));
+  scrollNoSmooth(sc, ()=>{ sc.scrollLeft = 0; });
+}
+$("#z-out").onclick = zoomOut;
+$("#z-in").onclick = zoomIn;
+$("#z-reset").onclick = () => setZoom(1);
+$("#z-fit").onclick = zoomFit;
+document.querySelector(".canvas-scroll").addEventListener("wheel", e=>{
+  if(!(e.ctrlKey || e.metaKey)) return;
+  if(!zoomBoard()) return;
+  e.preventDefault();
+  const f = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0015));
+  setZoom(zoomByView[document.body.dataset.view] * f, {x:e.clientX, y:e.clientY});
+}, {passive:false});
+document.addEventListener("keydown", e=>{
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  if(t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+  if($("#drawer").getAttribute("aria-hidden") !== "true") return;
+  if(!zoomBoard()) return;
+  if(e.key === "+" || e.key === "=") zoomIn();
+  else if(e.key === "-" || e.key === "_") zoomOut();
+  else if(e.key === "0") setZoom(1);
+  else if(e.key === "f" || e.key === "F") zoomFit();
+  else return;
+  e.preventDefault();
+});
+
 /* --------------------------- view switcher --------------------------- */
 const boardModel = $("#board"), boardES = $("#board-es"), boardCM = $("#board-cm");
 const fChapterEl = $("#f-chapter"), fStatusEl = $("#f-status"), fContextEl = $("#f-context"), fFieldsEl = $("#f-fields-switch");
@@ -683,6 +789,8 @@ function setView(name){
   boardES.hidden = name !== "storming";
   boardCM.hidden = name !== "contextmap";
   setFiltersVisible(name !== "contextmap");
+  fZoomEl.style.display = (name === "model" || name === "storming") ? "" : "none";
+  updateZoomLabel();
   if(name === "model" || name === "storming"){
     const showFields = fieldPrefs[name];
     $("#t-fields").checked = showFields;

@@ -37,6 +37,7 @@
   --proc-fill:#c18acb; --proc-line:#9e64aa; --proc-ink:#35203b;
   --table-fill:#f6eda0; --table-line:#d4c663; --table-ink:#423a12;
   --hot-fill:#F7C2C2;     --hot-line:#DC6A6A;     --hot-ink:#5b1a1a;
+  --hot-sticky-fill:#E5484D; --hot-sticky-line:#B4232A; --hot-sticky-ink:#FFFFFF;
   --sticky-shadow:0 2px 2px rgba(48,38,22,.12),0 7px 12px rgba(48,38,22,.18);
   --sticky-shadow-hot:0 3px 4px rgba(48,38,22,.14),0 12px 20px rgba(48,38,22,.22);
 
@@ -178,6 +179,7 @@ button{font-family:inherit}
 .btn:hover{color:var(--ink); background:var(--accent-soft)}
 .btn[aria-pressed="true"], .seg .btn.on{
   background:var(--accent); color:#fff; box-shadow:var(--shadow-sm)}
+.zoom-level{min-width:48px; font-variant-numeric:tabular-nums; text-align:center}
 .chip{
   display:inline-flex; align-items:center; gap:6px;
   border:1px solid var(--line); background:var(--panel);
@@ -417,16 +419,31 @@ button{font-family:inherit}
 .field .fb i.id{background:#d9b23a; color:#3a2c00}
 .field .fb i.pii{background:#e08aa0; color:#40101f}
 
-/* hotspot marker pinned to a card */
-.hotspot{position:absolute; z-index:6; top:-11px; right:-11px; width:24px; height:24px;
-  border-radius:50%; background:var(--hot-fill); border:1.5px solid var(--hot-line); color:var(--hot-ink);
-  display:grid; place-items:center; font-weight:800; font-size:13px; cursor:help;
-  box-shadow:var(--shadow); transform:rotate(6deg)}
-.hotspot::after{content:attr(data-q); position:absolute; bottom:130%; right:-6px; width:210px;
-  background:var(--hot-fill); color:var(--hot-ink); border:1px solid var(--hot-line);
-  border-radius:8px; padding:8px 10px; font-size:11px; font-weight:600; line-height:1.35;
+/* hotspot: shared base (Storming's .es-hotspot relies on this positioning) */
+.hotspot{position:absolute; z-index:6; cursor:help}
+/* Model view: big red sticky, ~60% of the pinned card, hanging off its top-right corner */
+.board .hotspot{top:0; right:0; z-index:7; width:60%; min-width:84px; max-width:140px; aspect-ratio:1;
+  box-sizing:border-box; padding:8px 7px; border-radius:1px; border:0;
+  background:var(--hot-sticky-fill); color:var(--hot-sticky-ink);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-align:center;
+  box-shadow:var(--sticky-shadow); transform:translate(60%,-55%) rotate(4deg);
+  transition:transform .14s, box-shadow .14s}
+.board .hotspot:hover, .board .hotspot:focus-visible{z-index:9; transform:translate(60%,-55%) rotate(0); box-shadow:var(--sticky-shadow-hot)}
+.board .hotspot .hs-mark{font-size:22px; font-weight:900; line-height:1}
+.board .hotspot .hs-label{font-family:var(--font-cond); font-stretch:condensed; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; opacity:.9}
+.board .hotspot .hs-q{font-size:10px; font-weight:650; line-height:1.2; overflow:hidden; overflow-wrap:anywhere;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical}
+.board .hotspot::after{content:attr(data-q); position:absolute; bottom:104%; right:0; width:220px;
+  background:var(--hot-sticky-fill); color:var(--hot-sticky-ink); border:1px solid var(--hot-sticky-line);
+  border-radius:2px; padding:8px 10px; font-size:11px; font-weight:600; line-height:1.35; text-align:left;
   box-shadow:var(--shadow); opacity:0; pointer-events:none; transform:translateY(4px); transition:opacity .14s, transform .14s}
-.hotspot:hover::after, .hotspot:focus-visible::after{opacity:1; transform:translateY(0)}
+.board .hotspot:hover::after, .board .hotspot:focus-visible::after{opacity:1; transform:translateY(0)}
+/* slice-level hotspots: in-flow row atop the Screens band, under the slice title */
+.slice-hotspots{display:flex; flex-wrap:wrap; gap:12px; margin-bottom:14px; min-width:0}
+.board .slice-hotspots .hotspot{position:relative; top:auto; right:auto; flex:0 0 auto; width:106px; min-width:0; max-width:none;
+  transform:rotate(-2deg)}
+.board .slice-hotspots .hotspot:hover, .board .slice-hotspots .hotspot:focus-visible{transform:rotate(0)}
+.board .slice-hotspots .hotspot::after{bottom:auto; top:104%; right:auto; left:0}
 
 /* filtering + hover dimming */
 .card.filtered, .actor-card.filtered, .slice-head.filtered{opacity:.2; pointer-events:none; filter:saturate(.4)}

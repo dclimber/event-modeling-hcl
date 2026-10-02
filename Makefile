@@ -76,8 +76,8 @@ release-annotation-check: ## Test annotated-tag verification from a tagless chec
 release-version-check: ## Verify the linker-injected release version is reported by emhcl.
 	@temporary=$$(mktemp -d); \
 	trap 'rm -rf "$$temporary"' EXIT; \
-	$(GO) build -ldflags '-X main.buildVersion=v0.7.1' -o "$$temporary/emhcl" ./cmd/emhcl; \
-	test "$$($$temporary/emhcl version)" = 'emhcl v0.7.1'
+	$(GO) build -ldflags '-X main.buildVersion=v0.7.2' -o "$$temporary/emhcl" ./cmd/emhcl; \
+	test "$$($$temporary/emhcl version)" = 'emhcl v0.7.2'
 
 verify: fmt-check tidy-check vet test test-race staticcheck exhaustive vulncheck validate-examples wasm-check release-tag-check release-annotation-check release-version-check ## Run the complete local verification suite.
 
