@@ -4,7 +4,7 @@ This repository records implementation releases of the validator, formatter,
 and typed IR. The authoritative Event Modeling HCL language history is in the
 [specification changelog](https://github.com/event-modeling-hcl/spec/blob/main/CHANGELOG.md).
 
-## [Unreleased]
+## [v0.7.3]
 
 ### Added
 
