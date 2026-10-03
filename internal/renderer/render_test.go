@@ -22,7 +22,7 @@ func TestRenderHTML_InjectsEscapedModelIntoSelfContainedPage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("render HTML: %v", err)
 	}
-	for _, expected := range []string{"<!doctype html>", "const MODEL =", `\u003c/script\u003e`, "image-preview-fallback"} {
+	for _, expected := range []string{"<!doctype html>", "const MODEL =", `\u003c/script\u003e`, "image-preview-fallback", `id="board-compact"`, "Compact"} {
 		if !strings.Contains(html, expected) {
 			t.Errorf("HTML missing %q", expected)
 		}
@@ -35,6 +35,12 @@ func TestRenderHTML_InjectsEscapedModelIntoSelfContainedPage(t *testing.T) {
 	}
 	if strings.Contains(html, "https://") {
 		t.Fatal("template contains an external application dependency")
+	}
+	if strings.Contains(html, stylesCompactMarker) {
+		t.Fatal("HTML still contains compact styles marker")
+	}
+	if strings.Contains(html, scriptCompactMarker) {
+		t.Fatal("HTML still contains compact script marker")
 	}
 }
 

@@ -7,7 +7,8 @@
 <style>
 __STYLES__
 __STYLES_ES__
-__STYLES_CM__</style>
+__STYLES_CM__
+__STYLES_COMPACT__</style>
 </head>
 <body>
 
@@ -25,8 +26,8 @@ __STYLES_CM__</style>
     <div class="chips" id="f-status"><span class="fkey">Status</span></div>
     <div class="seg" id="f-context"><span class="fkey">Context</span></div>
     <label class="switch" id="f-fields-switch" title="Show field details on cards">
-      <input type="checkbox" id="t-fields" checked>
-      <span class="track"></span><span>Fields</span>
+      <input type="checkbox" id="t-fields">
+      <div class="track"></div>
     </label>
     <button class="toolbtn" id="t-theme" title="Cycle theme"><span class="gl" id="theme-gl">◐</span><span id="theme-tx">Auto</span></button>
   </div>
@@ -81,6 +82,12 @@ __STYLES_CM__</style>
       </svg>
       <!-- grid content injected by script -->
     </div>
+    <div class="board board-compact view" id="board-compact" aria-label="Event Modeling compact view" hidden>
+      <svg class="wires" id="wires-compact" aria-hidden="true"><defs>
+        <marker id="ah-compact" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 L2.4 4.5 Z" fill="var(--wire)"></path></marker>
+        <marker id="ah-compact-hot" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 L2.4 4.5 Z" fill="var(--wire-hot)"></path></marker>
+      </defs></svg>
+    </div>
   </div>
 
   <details class="legend" id="legend">
@@ -94,7 +101,7 @@ __STYLES_CM__</style>
 
 <footer class="foot">
   <span class="label" style="color:var(--ink-soft)">How to read</span>
-  <span>Three views, one model: <b>Model</b> — time flows left → right, columns are slices, events are grouped by bounded context then aggregate; <b>Storming</b> — adjacent sticky notes show local flow, dashed arrows connect sequential workflows, and independent flows run in parallel; <b>Context Map</b> — bounded contexts and the upstream/downstream relationships derived from cross-context event consumption. Hover a note to trace its flow · click a note for its scenarios. · Ctrl/⌘ + scroll (or pinch) to zoom, +/−/0 keys.</span>
+  <span>Four views, one model: <b>Model</b> — time flows left → right, columns are slices, events are grouped by bounded context then aggregate; <b>Storming</b> — adjacent sticky notes show local flow, dashed arrows connect sequential workflows, and independent flows run in parallel; <b>Context Map</b> — bounded contexts and the upstream/downstream relationships derived from cross-context event consumption; <b>Compact</b> — the same slices, but every event sits in one row inside a dashed rounded box coloured per bounded context; arrows still run command → event → read model, the aggregate sits beside its event, and an external system is a pink sticky beside the events it emits. Hover a note to trace its flow · click a note for its scenarios. · Ctrl/⌘ + scroll (or pinch) to zoom, +/−/0 keys.</span>
   <span style="margin-left:auto" class="mono">rendered by emhcl diagram</span>
 </footer>
 
@@ -104,5 +111,7 @@ __SCRIPT__</script>
 __SCRIPT_ES__</script>
 <script>
 __SCRIPT_CM__</script>
+<script>
+__SCRIPT_COMPACT__</script>
 </body>
 </html>

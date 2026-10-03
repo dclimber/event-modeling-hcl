@@ -77,7 +77,7 @@ Model files must use the `.em.hcl` extension. HCL is the language; the suffix
 identifies a complete Event Modeling document to this validator. Check the
 installed binary version with `emhcl version`.
 
-Render a valid model as a self-contained, interactive HTML canvas with three
+Render a valid model as a self-contained, interactive HTML canvas with four
 switchable views and a shared detail drawer for each slice's scenarios:
 
 ```bash
@@ -110,6 +110,7 @@ URL, if present.
   when the consumer is a `translation` workflow. The derivation is heuristic
   and both the relationship labels and the layout may change in a future
   release.
+- **Compact** — the same slices and cards as Model, with one events row instead of a lane per aggregate. Within a slice, a bounded context's box always sits to the right of the command that emits its events and to the left of the read model its events feed; an automation or translation slice therefore shows the upstream (given) event's box first, left of its read model, then the box for the event the command produces. Each bounded context is a dashed, rounded rectangle with a translucent colour and its title. Colours are assigned in context order (colour 1 to the first non-external context, colour 2 to the next); they are not part of the HCL spec. External bounded contexts are always pink. Arrows go from commands to events (solid) and from events to read models, exactly as in Model; the event's aggregate sits next to it as a card with no arrows of its own. An external event shows a pink sticky note for that external system next to it in place of the aggregate.
 
 For a local edit-and-render loop, serve one model and keep the browser open
 while the file changes:

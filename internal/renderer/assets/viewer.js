@@ -576,6 +576,7 @@ function renderEventModel(){
     });
     requestAnimationFrame(drawWires);
     window.applyStormingFilters && window.applyStormingFilters(state);
+    window.applyCompactFilters && window.applyCompactFilters(state);
   }
 
   // chapter segmented
@@ -670,6 +671,7 @@ function relayoutAll(){
     window.relayoutEventModel && window.relayoutEventModel();
     window.relayoutEventStorming && window.relayoutEventStorming();
     window.relayoutContextMap && window.relayoutContextMap();
+    window.relayoutCompact && window.relayoutCompact();
   });
 }
 function applyTheme(){
@@ -685,11 +687,11 @@ applyTheme();
 
 /* --------------------------- zoom --------------------------- */
 const ZOOM_MIN = 0.25, ZOOM_MAX = 2, ZOOM_STEPS = [0.25,0.33,0.5,0.67,0.8,0.9,1,1.1,1.25,1.5,1.75,2];
-const zoomByView = {model:1, storming:1};
+const zoomByView = {model:1, storming:1, compact:1};
 const fZoomEl = $("#f-zoom");
 function zoomBoard(){
   const v = document.body.dataset.view;
-  return v === "model" ? boardModel : v === "storming" ? boardES : null;
+  return v === "model" ? boardModel : v === "storming" ? boardES : v === "compact" ? boardCompact : null;
 }
 function updateZoomLabel(){
   const v = document.body.dataset.view;
@@ -767,15 +769,16 @@ document.addEventListener("keydown", e=>{
 });
 
 /* --------------------------- view switcher --------------------------- */
-const boardModel = $("#board"), boardES = $("#board-es"), boardCM = $("#board-cm");
+const boardModel = $("#board"), boardES = $("#board-es"), boardCM = $("#board-cm"), boardCompact = $("#board-compact");
 const fChapterEl = $("#f-chapter"), fStatusEl = $("#f-status"), fContextEl = $("#f-context"), fFieldsEl = $("#f-fields-switch");
-const fieldPrefs = {model:true, storming:false};
+const fieldPrefs = {model:true, storming:false, compact:true};
 
 $("#t-fields").addEventListener("change", e=>{
   const view = document.body.dataset.view;
-  if(view !== "model" && view !== "storming") return;
+  if(view !== "model" && view !== "storming" && view !== "compact") return;
   fieldPrefs[view] = e.target.checked;
-  (view === "model" ? boardModel : boardES).classList.toggle("show-fields", e.target.checked);
+  const board = view === "model" ? boardModel : (view === "storming" ? boardES : boardCompact);
+  board.classList.toggle("show-fields", e.target.checked);
   relayoutAll();
 });
 
@@ -788,23 +791,26 @@ function setView(name){
   boardModel.hidden = name !== "model";
   boardES.hidden = name !== "storming";
   boardCM.hidden = name !== "contextmap";
+  boardCompact.hidden = name !== "compact";
   setFiltersVisible(name !== "contextmap");
-  fZoomEl.style.display = (name === "model" || name === "storming") ? "" : "none";
+  fZoomEl.style.display = (name === "model" || name === "storming" || name === "compact") ? "" : "none";
   updateZoomLabel();
-  if(name === "model" || name === "storming"){
+  if(name === "model" || name === "storming" || name === "compact"){
     const showFields = fieldPrefs[name];
     $("#t-fields").checked = showFields;
-    (name === "model" ? boardModel : boardES).classList.toggle("show-fields", showFields);
+    const board = name === "model" ? boardModel : (name === "storming" ? boardES : boardCompact);
+    board.classList.toggle("show-fields", showFields);
   }
   if(name === "model") renderEventModel();
   else if(name === "storming") window.renderEventStorming && window.renderEventStorming();
   else if(name === "contextmap") window.renderContextMap && window.renderContextMap();
+  else if(name === "compact") window.renderCompact && window.renderCompact();
   LP.innerHTML = LEGENDS[name] || `<div class="empty">No legend available for this view.</div>`;
   relayoutAll();
 }
 
 const fView = $("#f-view");
-[["model","Model"],["storming","Storming"],["contextmap","Context Map"]].forEach(([v,lab])=>{
+[["model","Model"],["compact","Compact"],["storming","Storming"],["contextmap","Context Map"]].forEach(([v,lab])=>{
   const b = el("button","btn"+(v==="model"?" on":""), esc(lab)); b.dataset.v=v;
   b.onclick=()=>{ fView.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); setView(v); };
   fView.appendChild(b);

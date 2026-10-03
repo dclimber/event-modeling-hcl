@@ -1,0 +1,32 @@
+/* ---- Compact view: one events row, bounded-context boxes ---------------- */
+.board-compact[hidden]{display:none}
+
+.board-compact .cell.band.events{display:flex; flex-direction:row; align-items:flex-start; gap:12px; padding:16px 14px}
+.board-compact .cell.band.events.lane-empty{align-items:center; justify-content:center}
+
+.ctx-box{border:1.5px dashed var(--ctx-line); background:var(--ctx-fill); border-radius:12px;
+  padding:10px 12px 12px; display:flex; flex-direction:column; gap:10px; min-width:0;
+  transition:opacity .14s}
+.ctx-box.lane-dim{opacity:.26}
+.ctx-box-title{font-size:11px; font-weight:750; letter-spacing:.04em; text-transform:uppercase; color:var(--ctx-line)}
+
+.ctx-pair{display:flex; align-items:center; gap:28px; min-width:0}
+.ctx-pair>.card{flex:0 0 176px; width:176px}
+
+.card.aggregate{--fl:#f6eda0; --cl:#d4c663; --ik:#423a12; background:#f6eda0; color:#423a12; border:0}
+
+.ext-sticky{flex:0 0 148px; width:148px; min-height:92px; padding:10px; background:#ef9fbe; color:#4d1831;
+  border:0; border-radius:1px; cursor:pointer; position:relative; z-index:4;
+  box-shadow:0 1px 1px rgba(48,38,22,.12), 0 6px 10px rgba(48,38,22,.16);
+  transform:rotate(-1.5deg); transition:transform .14s, box-shadow .14s, opacity .14s}
+.ext-sticky:hover, .ext-sticky.is-hot{transform:translateY(-4px) rotate(0); box-shadow:var(--sticky-shadow-hot)}
+.ext-sticky .k{font-size:10px; text-transform:uppercase; letter-spacing:.08em; font-weight:800}
+.ext-sticky .t{font-size:14px; font-weight:700; margin-top:4px; line-height:1.2}
+
+.ext-sticky.filtered, .card.aggregate.filtered{opacity:.2; pointer-events:none}
+.board-compact.hovering .ext-sticky:not(.is-hot){opacity:.32}
+
+.wires marker#ah-compact path{fill:var(--wire)}
+.wires marker#ah-compact-hot path{fill:var(--wire-hot)}
+
+.legend .row.ctx-note{max-width:260px; line-height:1.35; align-items:flex-start}

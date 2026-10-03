@@ -4,6 +4,12 @@ This repository records implementation releases of the validator, formatter,
 and typed IR. The authoritative Event Modeling HCL language history is in the
 [specification changelog](https://github.com/event-modeling-hcl/spec/blob/main/CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+- `Compact` diagram view: one events row, each bounded context drawn as a dashed rounded box with an auto-assigned colour (pink reserved for external systems). Within a slice a box sits right of the command that emits its events and left of the read model they feed, so automation and translation slices show the upstream (given) event's box first, then the produced event's. Arrows run command → event (solid) → read model; the aggregate sits next to its event without arrows, and external events show a pink external-system sticky in its place.
+
 ## [v0.7.2] - 2026-10-02
 
 ### Added

@@ -108,7 +108,7 @@
 
 /* ---------------------------- base ---------------------------- */
 *{box-sizing:border-box}
-#board[hidden], .board-es[hidden], .board-cm[hidden]{display:none}
+#board[hidden], .board-es[hidden], .board-cm[hidden], .board-compact[hidden]{display:none}
 html,body{height:100%}
 body{
   margin:0;
@@ -238,7 +238,7 @@ button{font-family:inherit}
 .board.hovering .wires path.hot{opacity:1; stroke:var(--wire-hot); stroke-width:2.6}
 .board.hovering .wires path.backward.hot{stroke-dasharray:none}
 .wires marker path{fill:var(--wire)}
-.wires marker#ah-hot path, .wires marker#ah-es-hot path, .wires marker#ah-cm-hot path{fill:var(--wire-hot)}
+.wires marker#ah-hot path, .wires marker#ah-es-hot path, .wires marker#ah-cm-hot path, .wires marker#ah-compact-hot path{fill:var(--wire-hot)}
 
 /* corner + header + rail stacking */
 .cell{position:relative}
