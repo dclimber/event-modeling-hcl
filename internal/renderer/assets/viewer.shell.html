@@ -19,6 +19,7 @@ __STYLES_COMPACT__</style>
   </div>
   <div class="meta" id="m-stats"></div>
 
+    <button class="toolbtn" id="t-theme" title="Cycle theme"><span class="gl" id="theme-gl">◐</span><span id="theme-tx">Auto</span></button>
   <div class="tools">
     <div class="seg" id="f-view"><span class="fkey">View</span></div>
     <div class="seg" id="f-zoom"><span class="fkey">Zoom</span><button class="btn" id="z-out" title="Zoom out (-)" aria-label="Zoom out">−</button><button class="btn zoom-level" id="z-reset" title="Reset zoom to 100% (0)" aria-label="Reset zoom">100%</button><button class="btn" id="z-in" title="Zoom in (+)" aria-label="Zoom in">+</button><button class="btn" id="z-fit" title="Fit width (F)" aria-label="Fit to width">Fit</button></div>
@@ -29,7 +30,6 @@ __STYLES_COMPACT__</style>
       <input type="checkbox" id="t-fields">
       <div class="track"></div>
     </label>
-    <button class="toolbtn" id="t-theme" title="Cycle theme"><span class="gl" id="theme-gl">◐</span><span id="theme-tx">Auto</span></button>
   </div>
 </header>
 
@@ -59,14 +59,15 @@ __STYLES_COMPACT__</style>
           </marker>
         </defs>
       </svg>
-      <div class="es-disclaimer">
-        <p><strong>Reading note —</strong> this board is an <b>Event Model</b>, rendered in a visual style inspired by Event Storming. The methods share an event-first, timeline-based way of reasoning about systems, but serve different purposes:</p>
+      <details class="es-disclaimer">
+        <summary>Reading note — an Event Model drawn in a Storming style</summary>
+        <p>This board is an <b>Event Model</b>, rendered in a visual style inspired by Event Storming. The methods share an event-first, timeline-based way of reasoning about systems, but serve different purposes:</p>
         <ul>
           <li><b>Event Storming</b> is a collaborative discovery and design technique: participants explore the domain by arranging events and progressively introducing commands, policies, actors, external systems, and boundaries.</li>
           <li><b>Event Modeling</b> turns that discovered behaviour into a more constrained system blueprint: workflows are decomposed into slices connecting screens, commands, events, read models, and automations, with concrete data and scenarios that can be used to validate and implement the system.</li>
         </ul>
         <p>This view is generated from Event Modeling data. Its sticky-note and timeline presentation borrows from Event Storming; the underlying semantics are Event Modeling.</p>
-      </div>
+      </details>
       <!-- grid content injected by script -->
     </div>
     <div class="board-cm view" id="board-cm" aria-label="Context map canvas" hidden>
@@ -101,7 +102,7 @@ __STYLES_COMPACT__</style>
 
 <footer class="foot">
   <span class="label" style="color:var(--ink-soft)">How to read</span>
-  <span>Four views, one model: <b>Model</b> — time flows left → right, columns are slices, events are grouped by bounded context then aggregate; <b>Storming</b> — adjacent sticky notes show local flow, dashed arrows connect sequential workflows, and independent flows run in parallel; <b>Context Map</b> — bounded contexts and the upstream/downstream relationships derived from cross-context event consumption; <b>Compact</b> — the same slices, but every event sits in one row inside a dashed rounded box coloured per bounded context; arrows still run command → event → read model, the aggregate is a sticky on top of its event, and an external system is a pink sticky on top of the events it emits. Hover a note to trace its flow · click a note for its scenarios. · Ctrl/⌘ + scroll (or pinch) to zoom, +/−/0 keys.</span>
+  <span id="foot-hint"></span>
   <span style="margin-left:auto" class="mono">rendered by emhcl diagram</span>
 </footer>
 

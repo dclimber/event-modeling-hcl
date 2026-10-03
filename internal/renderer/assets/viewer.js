@@ -410,7 +410,6 @@ function renderEventModel(){
       rail.dataset.ctx = ctx; rail.dataset.agg = agg; rail.dataset.cix = cix; rail.dataset.aix = aggIx;
       rail.innerHTML =
         `<div class="agg-rail">`+
-          `<span class="ctx-kicker${ai===0?"":" sub"}">${esc(ctxTitle(ctx))}</span>`+
           `<span class="agg-name">◈ ${esc(aggTitle(agg))}</span>`+
         `</div>`;
       frag.appendChild(rail);
@@ -659,8 +658,8 @@ $("#m-version").textContent = MODEL.version;
 const counts = {slices:MODEL.slices.length, actors:Object.keys(MODEL.actors).length};
 ["command","event","readmodel","processor","screen"].forEach(k=>counts[k]=0);
 Object.values(ELEMENTS).forEach(e=>{ if(counts[e.kind]!=null) counts[e.kind]++; });
-const statBits = [["slices","Slices"],["actors","Actors"],["event","Events"],["command","Commands"],["readmodel","Read models"],["processor","Processors"]];
-$("#m-stats").innerHTML = statBits.map(([k,lab])=>`<div class="stat"><span class="n">${counts[k]}</span><span class="k">${lab}</span></div>`).join("");
+const statBits = [["slices","Slice","Slices"],["actors","Actor","Actors"],["event","Event","Events"],["command","Command","Commands"],["readmodel","Read model","Read models"],["processor","Processor","Processors"]];
+$("#m-stats").innerHTML = statBits.map(([k,one,many])=>`<div class="stat"><span class="n">${counts[k]}</span><span class="k">${counts[k]===1?one:many}</span></div>`).join("");
 
 /* --------------------------- theme --------------------------- */
 const THEMES = [["auto","◐","Auto"],["light","☀","Light"],["dark","☾","Dark"]];
@@ -786,6 +785,13 @@ function setFiltersVisible(visible){
   [fChapterEl, fStatusEl, fContextEl, fFieldsEl].forEach(node=>{ if(node) node.style.display = visible?"":"none"; });
 }
 
+const VIEW_HINTS = {
+  model: "Time flows left → right; columns are slices; events are grouped by bounded context, then aggregate.",
+  compact: "Same slices with one events row. Each bounded context is a dashed box; the aggregate or external system is the sticky on top of its event.",
+  storming: "Adjacent notes show local flow; dashed arrows connect sequential workflows; independent flows run in parallel.",
+  contextmap: "Bounded contexts and the upstream → downstream relationships derived from cross-context event consumption.",
+};
+
 function setView(name){
   document.body.dataset.view = name;
   boardModel.hidden = name !== "model";
@@ -806,6 +812,7 @@ function setView(name){
   else if(name === "contextmap") window.renderContextMap && window.renderContextMap();
   else if(name === "compact") window.renderCompact && window.renderCompact();
   LP.innerHTML = LEGENDS[name] || `<div class="empty">No legend available for this view.</div>`;
+  $("#foot-hint").textContent = (VIEW_HINTS[name] || "") + (name === "contextmap" ? "" : " Hover to trace a flow · click for scenarios · Ctrl/⌘ + scroll to zoom, +/−/0 keys.");
   relayoutAll();
 }
 

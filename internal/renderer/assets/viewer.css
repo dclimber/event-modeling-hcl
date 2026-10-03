@@ -162,7 +162,8 @@ button{font-family:inherit}
 .meta .stat .n{font-family:var(--font-mono); font-weight:600; font-size:16px; font-variant-numeric:tabular-nums}
 .meta .stat .k{font-size:10px; color:var(--ink-faint); letter-spacing:.06em; text-transform:uppercase}
 
-.tools{display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap}
+.tools{display:flex; align-items:center; gap:8px; flex:1 1 100%; flex-wrap:wrap}
+#t-theme{margin-left:auto}
 
 /* control primitives */
 .seg, .chips{display:flex; align-items:center; gap:4px;
@@ -213,7 +214,7 @@ button{font-family:inherit}
 .workspace{flex:1; min-height:0; display:flex; position:relative}
 
 .canvas-scroll{
-  flex:1; min-width:0; overflow:auto; padding:22px 26px 40px;
+  flex:1; min-width:0; overflow:auto; padding:22px 26px 64px;
   background: radial-gradient(var(--grid-line) .75px, transparent .75px) 0 0/22px 22px, var(--board);
   scroll-behavior:smooth;
 }
@@ -226,7 +227,6 @@ button{font-family:inherit}
   --h-chapter:38px; --h-header:70px;
   width:max-content;
 }
-.board::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.22; background-image:radial-gradient(#c9c0b1 .65px,transparent .65px); background-size:18px 18px}
 
 /* wire layer sits above band backgrounds, below cards */
 .wires{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; overflow:visible}
@@ -326,9 +326,6 @@ button{font-family:inherit}
 
 .rail-lane.agg-lane{justify-content:flex-start; padding:10px 10px}
 .agg-lane .agg-rail{display:flex; flex-direction:column; gap:4px; align-items:flex-start; width:100%}
-.agg-lane .ctx-kicker{font-family:var(--font-cond); font-weight:700; font-stretch:condensed;
-  text-transform:uppercase; letter-spacing:.11em; font-size:8.5px; color:var(--accent-ink)}
-.agg-lane .ctx-kicker.sub{opacity:.4}
 .agg-lane .agg-name{font-family:var(--font-cond); font-weight:700; font-stretch:condensed;
   letter-spacing:.02em; font-size:11px; color:var(--ink-soft); line-height:1.2}
 
@@ -387,9 +384,8 @@ button{font-family:inherit}
 
 /* processor gear + screen wireframe */
 .proc-head{display:flex; align-items:center; gap:8px}
-.gear{width:22px; height:22px; flex:none; animation:spin 14s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion: reduce){ .gear{animation:none} .card{transition:none} .canvas-scroll{scroll-behavior:auto} }
+.gear{width:22px; height:22px; flex:none}
+@media (prefers-reduced-motion: reduce){ .card{transition:none} .canvas-scroll{scroll-behavior:auto} }
 
 .wire-frame{height:28px; margin:6px -2px 2px; border:1px solid var(--screen-line);
   border-radius:2px; background:

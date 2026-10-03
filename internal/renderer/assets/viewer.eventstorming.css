@@ -28,6 +28,8 @@
   background:color-mix(in srgb, var(--es-board) 55%, #fff6df);
   color:var(--es-board-ink); font-size:12px; line-height:1.55;
 }
+.es-disclaimer summary{cursor:pointer; font-weight:750}
+.es-disclaimer[open] summary{margin-bottom:8px}
 .es-disclaimer p{margin:0 0 8px}
 .es-disclaimer p:last-child{margin-bottom:0}
 .es-disclaimer ul{margin:0 0 8px; padding-left:18px}

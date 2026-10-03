@@ -31,8 +31,6 @@
   min-height: 100%;
   overflow: hidden;
   background-color: var(--board);
-  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 24px 24px;
 }
 
 .board-cm .wires { z-index: 2; }
