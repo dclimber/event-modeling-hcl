@@ -91,8 +91,7 @@
       const ctx = EMC.eventCtx(e);
       if(!boxes.has(ctx)) boxes.set(ctx, {ctx, events:[], width:0, given:false, minStage:Infinity, cmds:[], rms:[]});
       const box = boxes.get(ctx);
-      const creator = (e.external || EMC.ctxExternal(ctx)) ? 148 : (e.agg ? CARD_WIDTH : 0);
-      box.width = Math.max(box.width, (creator ? creator + 28 : 0) + CARD_WIDTH + BOX_CHROME);
+      box.width = Math.max(box.width, CARD_WIDTH + BOX_CHROME);
       box.events.push(e);
       box.given = box.given || !!e.given;
       box.minStage = Math.min(box.minStage, e.stage||0);
@@ -127,6 +126,12 @@
     return plan;
   }
   function sliceWidth(slice){ return slicePlan(slice).total; }
+
+  const SVG_ATTRS = 'class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  // globe: an outside system
+  const EXT_ICON = `<svg ${SVG_ATTRS}><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 4 5.6 4 9s-1.4 6.4-4 9c-2.6-2.6-4-5.6-4-9s1.4-6.4 4-9z"/></svg>`;
+  // cube: a consistency boundary
+  const AGG_ICON = `<svg ${SVG_ATTRS}><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7"/><path d="M12 11.5v10"/></svg>`;
 
   function cardNode(e){
     const isEvent = e.kind === "event";
@@ -189,7 +194,7 @@
     const slice = EMC.SLICE_OF[e.id];
     if(e.external || EMC.ctxExternal(ctx)){
       const s = EMC.el("div","ext-sticky",
-        `<div class="k">External system</div><div class="t">${EMC.esc(EMC.ctxTitle(ctx))}</div>`);
+        `<div class="k">${EXT_ICON}<span>External system</span></div><div class="t">${EMC.esc(EMC.ctxTitle(ctx))}</div>`);
       s.dataset.id = "ext__"+e.id;
       s.dataset.slice = slice;
       s.dataset.ctx = ctx;
@@ -197,7 +202,7 @@
     }
     if(e.agg){
       const a = EMC.el("div","card aggregate",
-        `<div class="kind"><span class="kdot"></span><span class="kn">Aggregate</span></div>`+
+        `<div class="kind">${AGG_ICON}<span class="kn">Aggregate</span></div>`+
         `<div class="ct">${EMC.esc(EMC.aggTitle(e.agg))}</div>`);
       a.dataset.id = "agg__"+e.id;
       a.dataset.slice = slice;
@@ -408,10 +413,16 @@
       if(!nodeA || !nodeB) return;
       const A = EMC.rectIn(board, nodeA), B = EMC.rectIn(board, nodeB);
       let sx,sy,ex,ey,c1x,c1y,c2x,c2y;
-      // command → event drops straight down into the events row; the aggregate beside the event shifts it sideways
+      // command → event leaves the command's bottom and enters the event's left edge;
+      // the aggregate / external sticky stacked on top of the event never covers it
       const commandToEvent = nodeA.classList.contains("command") && nodeB.classList.contains("event");
       const horiz = !commandToEvent && Math.abs(B.cx-A.cx) > 16;
-      if(horiz){
+      if(commandToEvent){
+        sx = A.cx; sy = A.y+A.h;
+        ex = B.x;  ey = B.cy;
+        const dy = Math.max(28, Math.abs(ey-sy)*0.5), dx = Math.max(24, Math.abs(ex-sx)*0.35);
+        c1x = sx; c1y = sy + dy; c2x = ex - dx; c2y = ey;
+      } else if(horiz){
         const ltr = B.cx >= A.cx;
         sx = ltr ? A.x+A.w : A.x;  sy = A.cy;
         ex = ltr ? B.x : B.x+B.w;  ey = B.cy;

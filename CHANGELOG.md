@@ -8,7 +8,7 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ### Added
 
-- `Compact` diagram view: one events row, each bounded context drawn as a dashed rounded box with an auto-assigned colour (pink reserved for external systems). Within a slice a box sits right of the command that emits its events and left of the read model they feed, so automation and translation slices show the upstream (given) event's box first, then the produced event's. Arrows run command → event (solid) → read model; the aggregate sits next to its event without arrows, and external events show a pink external-system sticky in its place.
+- `Compact` diagram view: one events row, each bounded context drawn as a dashed rounded box with an auto-assigned colour (pink reserved for external systems). Within a slice a box sits right of the command that emits its events and left of the read model they feed, so automation and translation slices show the upstream (given) event's box first, then the produced event's. Arrows run command → event (solid) → read model. The aggregate (cube icon) is a sticky on top of its event, without arrows; external events carry a pink external-system sticky (globe icon) instead.
 
 ## [v0.7.2] - 2026-10-02
 

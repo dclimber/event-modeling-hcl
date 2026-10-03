@@ -10,18 +10,24 @@
 .ctx-box.lane-dim{opacity:.26}
 .ctx-box-title{font-size:11px; font-weight:750; letter-spacing:.04em; text-transform:uppercase; color:var(--ctx-line)}
 
-.ctx-pair{display:flex; align-items:center; gap:28px; min-width:0}
-.ctx-pair>.card{flex:0 0 176px; width:176px}
+.ctx-pair{display:flex; flex-direction:column; align-items:flex-start; min-width:0}
+.ctx-pair>.card.event{flex:0 0 auto; width:176px}
+/* the aggregate / external-system sticky is stuck on top of its event, overlapping its top edge */
+.ctx-pair>.card.aggregate, .ctx-pair>.ext-sticky{position:relative; z-index:5; margin:0 0 -5px 10px}
 
-.card.aggregate{--fl:#f6eda0; --cl:#d4c663; --ik:#423a12; background:#f6eda0; color:#423a12; border:0}
+.card.aggregate{--fl:#f6eda0; --cl:#d4c663; --ik:#423a12; background:#f6eda0; color:#423a12; border:0;
+  flex:0 0 auto; width:150px; min-height:0; padding:7px 10px 12px; transform:rotate(1deg)}
+.card.aggregate .kind{display:flex; align-items:center; gap:5px}
+.card.aggregate .ct{font-size:13px}
 
-.ext-sticky{flex:0 0 148px; width:148px; min-height:92px; padding:10px; background:#ef9fbe; color:#4d1831;
-  border:0; border-radius:1px; cursor:pointer; position:relative; z-index:4;
+.ext-sticky{flex:0 0 auto; width:150px; min-height:0; padding:7px 10px 12px; background:#ef9fbe; color:#4d1831;
+  border:0; border-radius:1px; cursor:pointer;
   box-shadow:0 1px 1px rgba(48,38,22,.12), 0 6px 10px rgba(48,38,22,.16);
   transform:rotate(-1.5deg); transition:transform .14s, box-shadow .14s, opacity .14s}
-.ext-sticky:hover, .ext-sticky.is-hot{transform:translateY(-4px) rotate(0); box-shadow:var(--sticky-shadow-hot)}
-.ext-sticky .k{font-size:10px; text-transform:uppercase; letter-spacing:.08em; font-weight:800}
-.ext-sticky .t{font-size:14px; font-weight:700; margin-top:4px; line-height:1.2}
+.ext-sticky:hover, .ext-sticky.is-hot{transform:translateY(-3px) rotate(0); box-shadow:var(--sticky-shadow-hot)}
+.ext-sticky .k{display:flex; align-items:center; gap:5px; font-size:10px; text-transform:uppercase; letter-spacing:.08em; font-weight:800}
+.ext-sticky .t{font-size:13px; font-weight:700; margin-top:3px; line-height:1.2}
+.card.aggregate .ic, .ext-sticky .ic{width:13px; height:13px; flex:0 0 13px}
 
 .ext-sticky.filtered, .card.aggregate.filtered{opacity:.2; pointer-events:none}
 .board-compact.hovering .ext-sticky:not(.is-hot){opacity:.32}
