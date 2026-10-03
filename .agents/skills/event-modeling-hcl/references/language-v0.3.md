@@ -119,16 +119,20 @@ nested `subfield` blocks. A plain `field` may use:
 field "customer_id" {
   type                = field_type.customers.customer_id # traversal or built-in string
   example             = "customer-42"
-  mapping             = "Optional mapping metadata"
-  schema              = "Optional schema metadata"
   cardinality         = "Single"
   optional            = false
   technical_attribute = false
   generated           = false
   id_attribute        = true
-  pii                  = false
+  pii                 = false
 }
 ```
+
+The current CLI also accepts unchecked `mapping` and `schema` strings. They are
+not v0.3.0 contracts and not methodology lineage. Do not add them. Do not write
+`session:`, `latest:`, `derived:`, or `aggregate:` expressions. Record a
+derivation in `description`, a scenario `comment`, or a `hotspot`.
+`generated = true` means the system fills the value; it is not a source link.
 
 When a plain field's name matches a uniquely resolvable `field_type`, omit
 `type`:
@@ -233,6 +237,20 @@ Translation must consume at least one.
 
 A Command should have an incoming edge, an `api_endpoint`, or
 `external_trigger = true`; otherwise validation reports a modeling diagnostic.
+The validator does not count issuers. Methodology still requires exactly one
+screen or processor issuer. `external_trigger` does not replace that issuer
+when the trigger can be modeled.
+
+`triggers` is an unchecked string list. It does not create an issuer and does
+not replace an event. Do not use it as an invisible signal.
+
+## Attributes and blocks that do not exist
+
+Do not invent `linked_copy`, `element_copy`, `storyline`, `query`, `note`,
+`roles`, `expect_no_dispatch`, or a field-source traversal. Canvas linked
+copies are one catalog event referenced from many workflows. Storylines are
+multiple scenarios or ordered `given` steps. There is no backward-edge form;
+a todo list includes its completion event in `readmodel.from`.
 
 ## Scenarios
 
@@ -243,6 +261,9 @@ Each step has exactly one target. `error` is a literal string.
 | State Change | zero or more Events | exactly one Command | one or more Events/Errors |
 | State View | one or more Events | none | one or more Read Models/Errors |
 | Automation/Translation | zero or more Events/Read Models | exactly one Processor/Command | one or more Events/Errors |
+
+Canvas automation specs that use an empty When, a Then command, or "nothing
+dispatched" are not this grammar. Do not encode them by inventing attributes.
 
 Scenario and step attributes:
 
@@ -302,8 +323,9 @@ workflow-qualified element such as `processor.capture_payment.gateway`.
 - All references are unquoted, resolvable, correctly qualified, and right-kind.
 - Every edge appears once in canonical direction.
 - Every Read Model has one concrete `question`.
-- Every Command has a reason.
-- Automation/Translation externality is correct.
+- Every Command has a validator reason (incoming flow, `api_endpoint`, or
+  `external_trigger`). Exactly one issuer is methodology, not a counted check.
+- No invented `linked_copy`, `storyline`, `query`, or lineage `mapping` DSL.
 - Scenario cardinality and targets match the workflow pattern.
 - Field examples match effective type/cardinality; no duplicate shorthand
   fields.

@@ -27,8 +27,8 @@ the strict native HCL language.
 ## Load only the references needed
 
 - Read [references/methodology.md](references/methodology.md) when discovering a
-  new model, interpreting prose, choosing slice boundaries, or reviewing model
-  quality.
+  new model, interpreting prose, choosing slice boundaries, reviewing model
+  quality, honoring status locks, or recording evidence provenance.
 - Read [references/language-v0.3.md](references/language-v0.3.md) before writing
   or repairing HCL. It is the local syntax and validation reference.
 - Read [references/patterns.md](references/patterns.md) when a pattern shape or
@@ -38,6 +38,20 @@ the strict native HCL language.
 For conflicts, the normative Event Modeling HCL v0.3.0 specification wins over
 examples, existing files, or general HCL knowledge.
 
+## Rules that are not syntax
+
+Apply three layers, in this order when they conflict:
+
+1. Validator and v0.3.0 grammar. Illegal HCL is never "more faithful".
+2. Methodology judgment in `references/methodology.md`. A valid file can still
+   be a poor model.
+3. Canvas layout (columns, lanes, stickies). It has no attributes. Encode the
+   intent with existing blocks, or record the gap.
+
+Do not invent `linked_copy`, `element_copy`, `storyline`, `query`, `note`, or
+a lineage DSL (`mapping = "session:…"`, `latest:`, `derived:`, `aggregate:`).
+The current CLI accepts an unchecked `mapping` string; do not add one.
+
 ## Deliverable
 
 Produce or update the requested `.em.hcl` file. A model is not complete merely
@@ -46,7 +60,7 @@ because a diagram or prose explanation looks plausible.
 Unless the user asks for a workshop-only draft, the delivered model must:
 
 1. encode all supplied business behavior and every named acceptance criterion;
-2. use one top-level workflow per independently useful business capability;
+2. use one workflow per pattern-sized capability. Never combine an independent state change and state view into one workflow. An automation or translation includes its own todo-list read model and command;
 3. include precise fields where the input supplies them;
 4. include scenarios for supplied business rules and important success/error
    paths;
@@ -54,6 +68,10 @@ Unless the user asks for a workshop-only draft, the delivered model must:
 6. pass strict validation before being called implementation-ready;
 7. retain genuine unknowns as attached `hotspot` blocks instead of inventing
    facts.
+
+Strict validation treats an open hotspot as an error. Keep the hotspot on a
+workshop draft. Do not invent the missing rule to make strict pass, and do not
+call the model implementation-ready while a material hotspot is open.
 
 Do not create implementation code, database schemas, brokers, APIs, retries, or
 framework architecture unless the user explicitly asks. `api_endpoint` may
@@ -74,11 +92,22 @@ Separate:
 
 Do not ask for information already present in files. If a missing decision
 would materially change the model, either ask a focused question or—when useful
-work can continue—record an open hotspot and proceed.
+work can continue—record an open hotspot and proceed. Do not guess silently.
+Label a non-obvious deduction in `description` as stated, implied, or assumed,
+and name the source (requirement, test, type, or UI). Code and screens are
+hypotheses; an explicit stakeholder rule outranks them. Keep document
+thresholds and dates verbatim.
 
 When extending an existing model, preserve its valid identity vocabulary and
 source-order story. Migrate every affected reference; do not leave obsolete
 aliases or duplicate contracts.
+
+Honor workflow `status` before editing. Absent or `created` may be edited.
+`planned`, `assigned`, `in_progress`, `review`, `blocked`, `done`, and
+`informational` are locked: do not change that workflow, and do not apply a
+chain edit that includes it, unless the user explicitly confirms that workflow
+and those changes. Confirmation does not unlock siblings. Say exactly what was
+left locked. Editing `done` reopens it; do not do that silently.
 
 ### 2. Discover the Event Model before authoring HCL
 
@@ -98,18 +127,22 @@ One well-specified slice is better than several speculative slices.
 
 ### 3. Choose exactly one pattern per capability
 
-- **State Change** — a human/API/external trigger expresses intent:
-  `Screen/API -> Command -> Event`.
-- **State View** — existing facts answer a question:
+- **State Change** — a human or API trigger expresses intent:
+  `Screen/API -> Command -> Event`. One screen state issues one command.
+- **State View** — existing facts answer one question:
   `Event(s) -> Read Model -> Screen`.
 - **Automation** — the system reacts to internal facts:
-  `internal Event(s) -> Read Model/Processor -> Command -> Event`.
-- **Translation** — an external context's fact is translated into the receiving
-  context's language:
-  `external Event(s) -> Read Model/Processor -> Command -> internal Event`.
+  `internal Event(s) -> pending-work Read Model -> Processor -> Command -> Event`.
+- **Translation** — an external context's fact becomes the receiving context's
+  language:
+  `external Event(s) -> pending-work Read Model -> Processor -> Command -> internal Event`.
 
 Do not invent a fifth pattern. A visual gear maps to a workflow-local
-`processor`; `automation` is the top-level workflow kind.
+`processor`; `automation` is the top-level workflow kind. The validator allows
+a processor to consume events directly; the method still wants the pending-work
+read model unless the user asked for a minimal legal workflow. Record that
+exception. Do not use `external_trigger` or `triggers` to hide a missing issuer
+or an invisible signal.
 
 ### 4. Establish ownership and contracts
 
@@ -132,7 +165,8 @@ override title-casing.
 
 Use reusable `field_type` declarations for recurring domain concepts. Use a
 plain built-in type only for one-off fields. Mark identifiers, PII, optionality,
-technical data, list cardinality, and examples only when known.
+technical data, list cardinality, and examples only when known. Use
+`generated = true` only for system-filled values, never for user input.
 
 Run the information-completeness check for every edge and scenario:
 
@@ -143,8 +177,10 @@ Run the information-completeness check for every edge and scenario:
   data required to decide;
 - every target field must have a traceable source or an explicit domain rule.
 
-Do not silently add data because an implementation might need it. Use a hotspot
-when provenance or authority is unresolved.
+Lineage is the same field name, or a documented rename, across a real edge,
+plus `description`, `comment`, or `hotspot` when the value is derived. Do not
+encode it with a `mapping` attribute. Do not silently add data because an
+implementation might need it. Use a hotspot when provenance is unresolved.
 
 ### 6. Encode canonical flows
 
@@ -164,7 +200,8 @@ for example `command.place_order`.
 
 ### 7. Specify observable business behavior
 
-Keep each `scenario` inside its workflow. Use pattern-specific grammar:
+Keep each `scenario` inside its workflow. Use HCL grammar, not canvas
+Given/When/Then variants:
 
 - State Change: zero or more Event `given`, exactly one Command `when`, one or
   more Event/Error `then`.
@@ -173,26 +210,39 @@ Keep each `scenario` inside its workflow. Use pattern-specific grammar:
 - Automation/Translation: zero or more Event/Read Model `given`, exactly one
   Processor/Command `when`, one or more Event/Error `then`.
 
+Methodology notes that leave an automation When empty, put the issued command
+in Then, or assert "nothing dispatched" are not legal scenarios. Prose givens
+and `storyline` blocks are not legal either. See `references/methodology.md`.
+
 Each step has exactly one typed target. There is no Query concept and no
 `query` attribute. Use `comment { description = ... }` for semantic notes;
-ordinary HCL comments are non-semantic.
+ordinary HCL comments are non-semantic. Rejection is `then { error = "..." }`,
+not `expect_empty_list`. A tracked business failure is an event.
 
 Model supplied success and failure rules. Do not fabricate error wording or
 business decisions. Record missing rules as hotspots.
 
 ### 8. Review modeling quality
 
-Before validation, inspect the model as a business story:
+Before validation, inspect the model as a business story. On a review request,
+report these findings; do not silently restructure. When authoring a requested
+model, fix them.
 
-- **Left chair:** one Command produces many unrelated Events.
-- **Right chair:** many Events feed one vague Read Model.
-- **Bed:** one Screen triggers many unrelated Commands.
-- **Shelf:** scenarios are concentrated in one workflow while other important
-  workflows remain implicit.
+- **Bed:** one Screen's `to` lists more than one Command. Any extra command is
+  the problem, not only an "unrelated" one. Split into separate screen states.
+  `EM401` warns at that threshold; it is not a hard error.
+- **Left chair:** one Command produces more than one Event (`EM402`). The method
+  treats more than two as a candidate to discuss, not an automatic split.
+- **Right chair:** one Read Model consumes more than one Event (`EM403`). The
+  method investigates fan-in above three, field by field.
+- **Shelf:** scenarios concentrated in one workflow while other workflows have
+  none (`EM405`). Also ask when one workflow has noticeably more cases than
+  its neighbors.
 
-Also check that every Command has a reason—an incoming canonical flow,
-`api_endpoint`, or `external_trigger = true`—and every Read Model answers one
-concrete question. A valid file can still be a poor model.
+Also check that every Command has one issuer and a validator reason—an incoming
+canonical flow, `api_endpoint`, or a justified `external_trigger`—and every
+Read Model answers one concrete question. A valid file can still be a poor
+model.
 
 ### 9. Format, validate, and repair the source
 

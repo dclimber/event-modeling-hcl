@@ -10,9 +10,9 @@
         "The output is a `.em.hcl` file with lower-snake-case block labels and context-owned Events.",
         "Borrowing is a state_change with Screen to Command and Command to Event expressed in canonical direction.",
         "Current loans is a state_view whose Read Model has a concrete question and whose scenario has Given Event and Then Read Model with no When step.",
-        "The overdue notice reaction is an automation consuming only internal Events and includes a machine-action scenario.",
-        "member_id and copy_id are reusable UUID field types and connected contract fields pass an information-provenance review.",
-        "The already-on-loan rule appears as an observable error scenario rather than invented implementation logic."
+        "The overdue notice reaction is an automation consuming only internal Events, with a pending-work read model feeding the processor, and includes a machine-action scenario using HCL When/Then grammar.",
+        "member_id and copy_id are reusable UUID field types and connected contract fields pass an information-provenance review without a mapping DSL.",
+        "The already-on-loan rule appears as an observable error scenario rather than invented implementation logic or expect_empty_list."
       ]
     },
     {
@@ -22,10 +22,10 @@
       "files": [],
       "expectations": [
         "Stripe is represented by an external system and an external bounded context that owns Payment Captured.",
-        "The workflow is translation, not automation, and consumes the external Event through canonical `from` flow.",
-        "The internal Command and Event use Subscriptions domain language and are connected in canonical direction.",
-        "payment_id, subscription_id, amount, and currency are represented with reusable typed contracts and traceable flow.",
-        "A pattern-correct success scenario is present.",
+        "The workflow is translation, not automation, and consumes the external Event through canonical from flow, preferably via a pending-work read model.",
+        "The internal Command and Event use Subscriptions domain language and are connected in canonical direction. The internal event is not a linked copy of the Stripe event.",
+        "payment_id, subscription_id, amount, and currency are represented with reusable typed contracts and traceable flow. No mapping, linked_copy, or storyline attribute is introduced.",
+        "A pattern-correct success scenario is present: Given the external event, When the processor or command, Then the internal event.",
         "The partial-payment uncertainty is an open hotspot attached to a relevant workflow or element; no activation rule is fabricated."
       ]
     },
@@ -35,12 +35,25 @@
       "expected_output": "A State View model with catalog Events, a question-driven Read Model, canonical Event-to-Read-Model-to-Screen flow, and Given/Then scenarios without a fake query Command.",
       "files": [],
       "expectations": [
-        "The model contains no Query concept, fake GetOrderStatus Command, or `query` attribute.",
-        "OrderPlaced, OrderShipped, and OrderDelivered are past-tense Events owned by a bounded context.",
-        "The State View Read Model asks one concrete order-status question and consumes Events using `from`.",
-        "The Read Model points to the Screen with `to`; the Screen does not point backward with `from`.",
+        "The model contains no Query concept, fake GetOrderStatus Command, query attribute, or storyline block.",
+        "OrderPlaced, OrderShipped, and OrderDelivered are past-tense Events owned by a bounded context, each declared once.",
+        "The State View Read Model asks one concrete order-status question and consumes Events using from.",
+        "The Read Model points to the Screen with to; the Screen does not point backward with from and does not issue multiple commands.",
         "Both scenarios use Given Event then Read Model and contain no When step.",
-        "order_id and status have valid field typing and their Read Model provenance is visible."
+        "order_id and status have valid field typing and their Read Model provenance is visible without a mapping attribute."
+      ]
+    }
+    ,
+    {
+      "id": 4,
+      "prompt": "This model already has state_change \"place_order\" with status = \"done\" and a created state_view \"view_order\". Add the supplied loyalty_id field to the view only. Do not reopen completed work. The place-order screen currently issues both place_order and apply_coupon; leave that screen locked, but say what is wrong with it.",
+      "expected_output": "The created state view gains loyalty_id with visible provenance. The done state_change is unchanged. The reply names the bed on the locked screen without editing it.",
+      "files": [],
+      "expectations": [
+        "The done workflow is not modified and its status is not changed.",
+        "The created state view is updated with loyalty_id and a traceable source or an explicit gap. No mapping DSL, linked_copy, or storyline attribute is added.",
+        "The reply identifies the locked screen's two commands as a bed, meaning any second command, and does not silently split that locked workflow.",
+        "No implementation code is generated."
       ]
     }
   ]
