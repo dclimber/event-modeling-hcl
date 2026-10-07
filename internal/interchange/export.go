@@ -222,6 +222,8 @@ func elementTypeOf(kind model.ElementKind) string {
 		return "SCREEN"
 	case model.Processor:
 		return "AUTOMATION"
+	case model.ScreenImage, model.Table:
+		return ""
 	}
 	return ""
 }
@@ -268,6 +270,7 @@ func (e *exporter) slice(index int, workflow model.Workflow) (Slice, error) {
 		case model.Table:
 			slice.Tables = append(slice.Tables, Table{ID: qualifyAny(element, workflow.ID), Title: element.Title, Fields: e.fields(element.Fields, "")})
 			continue
+		case model.Command, model.ReadModel, model.Screen, model.Processor:
 		}
 		id := qualify(string(element.Kind)+"."+element.ID, workflow.ID)
 		exported := e.element(id, elementTypeOf(element.Kind), element.Title, element.Semantic, element.Presentation, element.Fields, "")
@@ -289,6 +292,7 @@ func (e *exporter) slice(index int, workflow model.Workflow) (Slice, error) {
 			}
 		case model.Processor:
 			slice.Processors = append(slice.Processors, exported)
+		case model.ScreenImage, model.Table:
 		}
 	}
 	if len(slice.Actors) == 1 && assignedScreens != len(slice.Screens) {

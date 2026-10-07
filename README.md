@@ -4,12 +4,13 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/event-modeling-hcl/eventmodeling-hcl.svg)](https://pkg.go.dev/github.com/event-modeling-hcl/eventmodeling-hcl)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-`emhcl` v0.7.3 implements Event Modeling HCL Specification v0.3.0.
+`emhcl` v0.8.0 implements Event Modeling HCL Specification v0.3.0.
 This repository provides a strict validator, canonical formatter, typed semantic model,
 normative language documentation, and executable examples. The domain reference is the upstream [Event Modeling
 Specification](https://github.com/dilgerma/event-modeling-spec); the HCL
 specification and validator in this repository define its native port. The
-format is not a JSON embedding or conversion format.
+native language is not a JSON embedding. The `import` and `export` commands
+convert between native models and slice-based Event Modeling JSON.
 
 The language is designed for hand authoring: bounded contexts own canonical
 events, reusable field types, and aggregates; workflow kind is the top-level
@@ -22,7 +23,7 @@ preserve the rules and durable artifacts of an Event Modeling session.
 Install the tagged command with Go 1.25 or newer:
 
 ```bash
-go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.7.3
+go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.8.0
 ```
 
 Go writes the executable to `GOBIN`, or to `$(go env GOPATH)/bin` when
@@ -44,7 +45,7 @@ the [GitHub Releases page](https://github.com/event-modeling-hcl/eventmodeling-h
 Verify a downloaded archive with that release's `checksums.txt`:
 
 ```bash
-archive=emhcl_0.7.3_linux_amd64.tar.gz
+archive=emhcl_0.8.0_linux_amd64.tar.gz
 grep " ${archive}$" checksums.txt | sha256sum -c -
 # macOS: grep " ${archive}$" checksums.txt | shasum -a 256 -c -
 ```
@@ -54,7 +55,7 @@ With GitHub CLI 2.49.0 or newer, verify the downloaded archive was produced by
 this repository's release workflow:
 
 ```bash
-gh attestation verify emhcl_0.7.3_linux_amd64.tar.gz \
+gh attestation verify emhcl_0.8.0_linux_amd64.tar.gz \
   --repo event-modeling-hcl/eventmodeling-hcl
 ```
 

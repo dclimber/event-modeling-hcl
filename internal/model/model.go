@@ -506,17 +506,17 @@ func literalTemplateText(template *hclsyntax.TemplateExpr, source []byte) (strin
 	}
 	var text strings.Builder
 	for _, token := range tokens {
-		switch token.Type {
-		case hclsyntax.TokenOQuote, hclsyntax.TokenCQuote, hclsyntax.TokenEOF:
-		case hclsyntax.TokenQuotedLit:
-			literal, diagnostics := hclsyntax.ParseStringLiteralToken(token)
-			if diagnostics.HasErrors() {
-				return "", false
-			}
-			text.WriteString(literal)
-		default:
+		if token.Type == hclsyntax.TokenOQuote || token.Type == hclsyntax.TokenCQuote || token.Type == hclsyntax.TokenEOF {
+			continue
+		}
+		if token.Type != hclsyntax.TokenQuotedLit {
 			return "", false
 		}
+		literal, diagnostics := hclsyntax.ParseStringLiteralToken(token)
+		if diagnostics.HasErrors() {
+			return "", false
+		}
+		text.WriteString(literal)
 	}
 	return text.String(), true
 }
