@@ -122,6 +122,113 @@ emhcl serve examples/minimal.em.hcl
 `serve` binds to `127.0.0.1:8080` by default. Use `--port 0` to request an
 available port; the actual browser URL is printed after binding.
 
+## Import and export JSON
+
+Convert slice-based Event Modeling JSON to and from native HCL:
+
+```bash
+emhcl import testdata/valid/axoniq-vsa-sample-news.json -o news.em.hcl
+emhcl export news.em.hcl -o news.json
+```
+
+Import validates input against the
+[published JSON schema](https://github.com/dilgerma/event-modeling-spec/blob/main/eventmodeling.schema.json),
+and export checks its output against the same rules before writing it.
+Schema conformance is separate from semantic convertibility: a schema-valid
+slice with more than one actor is a hard import error, even if it has no
+screens. The document root contains only `slices`; actor declarations and
+aggregate titles belong to individual slices. Unknown properties, missing
+required properties (such as `sliceType`, element `fields`/`dependencies` or
+specification `linkedId`), values outside an enum, mistyped values and trailing
+content are import errors that name the offending JSON path.
+
+The native language remains Specification **v0.3.0**. Actors are declared at
+the top level and referenced by screens; workflows have no actor attribute
+or actor inheritance.
+
+`import` writes formatted `.em.hcl` and validates it. Without `-o`, it writes
+to stdout and labels diagnostics `<stdout>`. A schema-valid document with no
+slices imports as an empty model and exits 0. Qualified IDs retain native labels; foreign IDs and field names
+map to valid, collision-safe HCL labels. **Original canvas IDs and field-name
+spellings are not retained.** Distinct event IDs remain distinct, even when
+their titles match. Event copies resolve through `linkedId`; workflow-local
+copies become local snapshots because HCL has no copy-lineage construct.
+An external context whose name an internal context also uses imports with an
+`_external` label suffix, so internal and external events stay in separate
+native contexts. Events without a context never fall into an external context,
+and a canonical event ID such as `event.billing.paid` shares its context with
+foreign-ID events that name the same context. Events without an `id` keep
+their own flows; an empty `linkedId` never binds to another event.
+
+The declared `sliceType` is authoritative. Unrepresentable children and
+dependencies are omitted with warnings. A cross-slice
+`state_view` read model → processor flow, for example, has no legal canonical
+HCL spelling without changing the workflow structure. Missing targets are
+not invented. Specifications retain typed targets, repeated step instances,
+tags, fields, object examples and comments; step `index` determines order.
+Unknown/incorrect targets are warned about, and a specification that cannot
+form a legal native scenario is omitted with a warning.
+
+Prototype objects and object examples keep their complete JSON values,
+including nested data, code strings, empty objects and nested `null`;
+conversion does not execute prototype code. Object keys keep their source
+order and exact text. Keys that are HCL keywords (`for`, `in`, `if`, `true`,
+`false`, `null`) or not identifiers (`a-b`) are written quoted. Keys that
+differ only by Unicode normalization (`é` and `e\u0301`) stay distinct.
+Numeric/boolean/list field examples encoded as JSON strings become native
+values. A singleton object sample for a `Custom`/`List` field becomes a
+one-item list, with a warning. Incompatible typed samples are omitted with
+warnings, not converted into invented values. JSON-text `null` examples
+decode to native `null` for non-textual or `List` fields.
+
+`export` validates HCL and writes one slice per workflow, without document-level
+catalogs. It refuses an `-o` target with the `.em.hcl` extension or one that
+is the source file (exit 2), so it cannot overwrite the model.
+Actors are exported only in slices where screens reference them;
+aggregate references are exported as titles. IDs are qualified native
+references, such as `command.register_pet.register_pet_command`. A bounded
+context is exported by its title when importing that title restores its
+label, otherwise by its label. A workflow owned by an external context is
+exported with that context's label, because a slice `context` cannot say
+"external"; the flag returns on import only through the context's `EXTERNAL`
+events, and export warns when there are none. Dependencies come from canonical
+flows and keep the author order of each `to`/`from` list. Export-import-export
+stability is covered for tested, representable inputs; it is not a guarantee
+of equality with arbitrary original tool JSON. Conversion normalizes IDs,
+field names, reusable types and example encodings, and discloses losses
+through warnings. Reusable field types are flattened; explicit field
+overrides, including `false`, empty strings and `null`, win. A field type that
+contains itself is expanded one level, with a warning.
+The schema permits only string or object field examples. Other values,
+including numbers, booleans, lists and `null`, are carried as JSON text strings
+and decoded on import for non-textual or `List` fields.
+
+Conversion is **not a lossless canvas archive**. Warnings disclose omitted
+storylines, assignments/tickets, actor roles/tags and specification
+attachment/layout bookkeeping. Properties outside the schema are rejected
+rather than omitted.
+The JSON actor list cannot associate different actors with individual screens.
+Import maps a single slice actor to its screens. Export supports per-screen
+references to a single actor only; more than one distinct actor in a workflow
+is a hard export error, not a choice of the first actor or a warning-only loss.
+If only some screens reference the sole actor, export omits slice associations
+with a warning instead of assigning that actor to previously unassigned screens.
+Chapters, hotspots, teams/systems, aggregate catalog identities, unused actor
+declarations, context/aggregate/actor descriptions, non-context workflow
+owners, read-model questions, `external_trigger`, error-step titles that differ
+from the error text, explicit context titles equal to their label, bounded
+contexts no slice exposes and events no workflow references also have no
+equivalent and produce warnings. An event is exported as a copy only when
+another workflow produces it; an event nothing produces stays an original.
+A read model's question is derived from its description or title on import.
+
+Warnings do not change the exit code. If native validation still reports
+errors, `import` writes the generated source for repair and exits with code 1;
+decode or semantic conversion failures leave an existing output file unchanged.
+The schema-conformant Martin Dilger fixtures in `testdata/valid/*.json`
+exercise interchange shapes; they are not examples of every native HCL
+language rule.
+
 ## Authoring
 
 Top-level `bounded_context` blocks define domain contracts. Top-level
@@ -271,8 +378,9 @@ document and enforces scoped identity, canonical typed flows, scenario shape,
 field examples, and workflow patterns. `internal/app` exposes the shared
 application operations, and `internal/model.Build` constructs a typed IR only
 from a validator-issued `ValidatedDocument`. The tool does not support event
-groups, context maps, multi-file loading, cross-file reference resolution,
-JSON conversion, or editor integration.
+groups, multi-file loading, cross-file reference resolution, or editor
+integration. JSON conversion is a warned projection, not canvas persistence;
+the Context Map view is an experimental rendering heuristic.
 
 ## License
 

@@ -1,0 +1,1581 @@
+{
+  "slices": [
+    {
+      "id": "3458764648988747680",
+      "status": "Created",
+      "index": 3,
+      "title": "slice: command",
+      "context": "News",
+      "sliceType": "TRANSLATION",
+      "commands": [
+        {
+          "id": "3458764648988747550",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: command",
+          "title": "Map to news",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "title",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "asset_type",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "genres",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "mappingDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "validFrom",
+              "type": "DateTime",
+              "optional": true,
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "validTo",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "dto",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "publishedDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988747504",
+              "type": "OUTBOUND",
+              "title": "news mapped",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "3458764648988747352",
+              "type": "INBOUND",
+              "title": "automation",
+              "elementType": "AUTOMATION"
+            }
+          ],
+          "createsAggregate": true,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "projection": "events.forEach((eventData)=>{\n    let event = eventData.data\n   switch(eventData.type) {\n   \n      case 'AutomationEvent':\n        // result.enabled=true\n    \treturn;\n        \n    }}\n  )\n    ",
+            "placement": "MAIN",
+            "initialValue": true,
+            "order": 99,
+            "activeByDefault": true
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "3458764648988747212",
+          "domain": "News",
+          "modelContext": "News",
+          "context": "EXTERNAL",
+          "slice": "slice: command",
+          "title": "Source content received",
+          "fields": [
+            {
+              "name": "asset_type",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "dto",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "genres",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "mappingDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "publishedDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "title",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": "Tagesschau 19.11.2025",
+              "idAttribute": false
+            },
+            {
+              "name": "urn",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "validFrom",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "validTo",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "EVENT",
+          "description": "Assumed: fact from the external news source; fields taken from the 'Content to be mapped' read model it feeds.",
+          "aggregate": "source content",
+          "dependencies": [
+            {
+              "id": "3458764648988747060",
+              "type": "OUTBOUND",
+              "title": "Content to be mapped",
+              "elementType": "READMODEL"
+            }
+          ]
+        },
+        {
+          "id": "3458764648988747504",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: command",
+          "title": "news mapped",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "title",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "asset_type",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "genres",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "mappingDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "validFrom",
+              "type": "DateTime",
+              "optional": true,
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "validTo",
+              "type": "DateTime",
+              "optional": true,
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "dto",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "publishedDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989092083",
+              "type": "OUTBOUND",
+              "title": "Publications to validate",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "3458764648988858002",
+              "type": "OUTBOUND",
+              "title": "Dashboard View",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "3458764648988918440",
+              "type": "OUTBOUND",
+              "title": "News to validate",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "3458764648988747550",
+              "type": "INBOUND",
+              "title": "Map to news",
+              "elementType": "COMMAND"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [
+        {
+          "id": "3458764648988747060",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: command",
+          "title": "Content to be mapped",
+          "fields": [
+            {
+              "name": "asset_type",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "dto",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "genres",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "mappingDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "publishedDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "title",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "example": "Tagesschau 19.11.2025",
+              "idAttribute": false
+            },
+            {
+              "name": "urn",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "validFrom",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "validTo",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "READMODEL",
+          "description": "",
+          "aggregate": "source content",
+          "aggregateDependencies": [
+            "source content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988747352",
+              "type": "OUTBOUND",
+              "title": "automation",
+              "elementType": "AUTOMATION"
+            },
+            {
+              "id": "3458764648988747212",
+              "type": "INBOUND",
+              "title": "Source content received",
+              "elementType": "EVENT"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "projection": "events.forEach((eventData)=>{\n    let event = eventData.data\n    switch(eventData.type) {\n   \n       \tcase 'SourceContentReceivedEvent':\n\t\t\tthis.result.asset_type=event.asset_type\n\t\t\tthis.result.dto=event.dto\n\t\t\tthis.result.genres=event.genres\n\t\t\tthis.result.mappingDate=event.mappingDate\n\t\t\tthis.result.publishedDate=event.publishedDate\n\t\t\tthis.result.title=event.title\n\t\t\tthis.result.urn=event.urn\n\t\t\tthis.result.validFrom=event.validFrom\n\t\t\tthis.result.validTo=event.validTo\n    \treturn;\n        \n    }\n})",
+            "placement": "MAIN",
+            "renderFunction": "(data)=>data",
+            "order": 99,
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screens": [],
+      "screenImages": [],
+      "processors": [
+        {
+          "id": "3458764648988747352",
+          "tags": [],
+          "groupId": "3458764648988747355",
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: command",
+          "title": "automation",
+          "fields": [
+            {
+              "name": "asset_type",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "dto",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "genres",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "mappingDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "publishedDate",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "title",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "urn",
+              "type": "String",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "validFrom",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "validTo",
+              "type": "DateTime",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "AUTOMATION",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988747550",
+              "type": "OUTBOUND",
+              "title": "Map to news",
+              "elementType": "COMMAND"
+            },
+            {
+              "id": "3458764648988747060",
+              "type": "INBOUND",
+              "title": "Content to be mapped",
+              "elementType": "READMODEL"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "tables": [],
+      "specifications": [],
+      "actors": [],
+      "aggregates": [
+        "content"
+      ]
+    },
+    {
+      "id": "3458764648988858369",
+      "status": "Created",
+      "index": 5,
+      "title": "slice: Dashboard View",
+      "context": "News",
+      "sliceType": "STATE_VIEW",
+      "commands": [],
+      "events": [],
+      "readmodels": [
+        {
+          "id": "3458764648988858002",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Dashboard View",
+          "title": "Dashboard View",
+          "fields": [
+            {
+              "name": "mappingDate",
+              "type": "DateTime",
+              "example": "2025-10-05 10:00:00",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "title",
+              "type": "String",
+              "example": "\"Tageschau vom 05.10.2025\"",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "urn",
+              "type": "String",
+              "example": "urn:srf:episode:efcfc726",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "validationstate",
+              "type": "String",
+              "example": "in progress",
+              "generated": true,
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "READMODEL",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988858282",
+              "type": "OUTBOUND",
+              "title": "title",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "3458764648988747504",
+              "type": "INBOUND",
+              "title": "news mapped",
+              "elementType": "EVENT"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "projection": "events.forEach((eventData)=>{\n    let event = eventData.data\n    switch(eventData.type) {\n   \n       \tcase 'NewsMappedEvent':\n\t\t\tthis.result.mappingDate=event.mappingDate\n\t\t\tthis.result.title=event.title\n\t\t\tthis.result.urn=event.urn\n    \treturn;\n        \n       \tcase 'NewsValidatedEvent':\n\t\t\tthis.result.urn=event.urn\n    \treturn;\n        \n    }\n})",
+            "placement": "MAIN",
+            "renderFunction": "(data)=>data",
+            "order": 99,
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screens": [
+        {
+          "id": "3458764648988858282",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Dashboard View",
+          "title": "title",
+          "fields": [
+            {
+              "name": "mappingDate",
+              "type": "DateTime",
+              "example": "2025-10-05 10:00:00",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "title",
+              "type": "String",
+              "example": "\"Tageschau vom 05.10.2025\"",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            },
+            {
+              "name": "urn",
+              "type": "String",
+              "example": "urn:srf:episode:efcfc726",
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "validationstate",
+              "type": "String",
+              "example": "in progress",
+              "generated": true,
+              "subfields": [],
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "SCREEN",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988858002",
+              "type": "INBOUND",
+              "title": "Dashboard View",
+              "elementType": "READMODEL"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "placement": "MAIN",
+            "css": "body {\n  font-family: 'Helvetica Neue', Arial, sans-serif;\n  background-color: #f7f7f7;\n  margin: 0;\n}\nh1 {\n  font-size: 2rem;\n  margin: 0;\n}\np {\n  color: #333;\n}\nbutton {\n  background-color: #003e7e;\n  color: white;\n  border: none;\n  padding: 10px 15px;\n  border-radius: 5px;\n  cursor: pointer;\n}\nbutton:hover {\n  background-color: #0056a1;\n}\n.columns {\n  display: flex;\n}\n.column {\n  padding: 20px;\n}\n.is-9 {\n  flex: 9;\n}\n.is-3 {\n  flex: 3;\n}",
+            "pageTemplate": "<header style={{ backgroundColor: '#003e7e', color: '#ffffff', padding: '10px', textAlign: 'center' }}>\n  <h1>My Prototype</h1>\n</header>\n<div>\n  <div className=\"columns\" style={{ display: 'flex', flexDirection: 'row', margin: '20px' }}>\n    <main className=\"column is-9\" style={{ flex: '9', padding: '20px', borderRight: '1px solid #e0e0e0' }}>\n      <%- main %>\n    </main>\n    <aside className=\"column is-3\" style={{ flex: '3', padding: '20px' }}>\n      <%- aside %>\n    </aside>\n  </div>\n</div>\n<footer style={{ backgroundColor: '#f1f1f1', padding: '10px', textAlign: 'center' }}>\n  <p>© 2023 My Prototype</p>\n</footer>",
+            "order": 99,
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "actors": [],
+      "aggregates": [
+        "content"
+      ]
+    },
+    {
+      "id": "3458764648988918627",
+      "status": "Created",
+      "index": 9,
+      "title": "slice: Validate News",
+      "context": "News",
+      "sliceType": "AUTOMATION",
+      "commands": [
+        {
+          "id": "3458764648988918439",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Validate News",
+          "title": "Validate News",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988918720",
+              "type": "OUTBOUND",
+              "title": "News validation failed",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "3458764648988918285",
+              "type": "OUTBOUND",
+              "title": "News validated",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "3458764648988918435",
+              "type": "INBOUND",
+              "title": "validation processor",
+              "elementType": "AUTOMATION"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "3458764648988918285",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Validate News",
+          "title": "News validated",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989092083",
+              "type": "OUTBOUND",
+              "title": "Publications to validate",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "3458764648988858002",
+              "type": "OUTBOUND",
+              "title": "Dashboard View",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "3458764648988918439",
+              "type": "INBOUND",
+              "title": "Validate News",
+              "elementType": "COMMAND"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        },
+        {
+          "id": "3458764648988918720",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Validate News",
+          "title": "News validation failed",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988918439",
+              "type": "INBOUND",
+              "title": "Validate News",
+              "elementType": "COMMAND"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        },
+        {
+          "id": "3458764648989001898",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Validate News",
+          "title": "Publication scheduled",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "publicationDate",
+              "type": "DateTime",
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989175763",
+              "type": "OUTBOUND",
+              "title": "Content to be published",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "3458764648989092081",
+              "type": "INBOUND",
+              "title": "Validate Publication",
+              "elementType": "COMMAND"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [
+        {
+          "id": "3458764648988918440",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Validate News",
+          "title": "News to validate",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "READMODEL",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988918435",
+              "type": "OUTBOUND",
+              "title": "validation processor",
+              "elementType": "AUTOMATION"
+            },
+            {
+              "id": "3458764648988747504",
+              "type": "INBOUND",
+              "title": "news mapped",
+              "elementType": "EVENT"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "projection": "events.forEach((eventData)=>{\n    let event = eventData.data\n    switch(eventData.type) {\n   \n       \tcase 'NewsMappedEvent':\n\t\t\tthis.result.urn=event.urn\n    \treturn;\n        \n    }\n})",
+            "placement": "MAIN",
+            "renderFunction": "(data)=>data",
+            "order": 99,
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screens": [],
+      "screenImages": [],
+      "processors": [
+        {
+          "id": "3458764648988918435",
+          "tags": [],
+          "groupId": "3458764648988918438",
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Validate News",
+          "title": "validation processor",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "AUTOMATION",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648988918439",
+              "type": "OUTBOUND",
+              "title": "Validate News",
+              "elementType": "COMMAND"
+            },
+            {
+              "id": "3458764648988918440",
+              "type": "INBOUND",
+              "title": "News to validate",
+              "elementType": "READMODEL"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "tables": [],
+      "specifications": [
+        {
+          "vertical": false,
+          "id": "3458764648989550748",
+          "sliceName": "slice: Validate News",
+          "title": "spec: Validate News",
+          "given": [
+            {
+              "title": "News validated",
+              "tags": [],
+              "id": "3458764648989550764",
+              "index": 1,
+              "specRow": -1,
+              "type": "SPEC_EVENT",
+              "fields": [
+                {
+                  "name": "urn",
+                  "type": "String",
+                  "cardinality": "Single",
+                  "subfields": [],
+                  "example": ""
+                }
+              ],
+              "linkedId": "3458764648988918285"
+            },
+            {
+              "title": "news mapped",
+              "tags": [],
+              "examples": [],
+              "id": "3458764648989550761",
+              "index": 0,
+              "specRow": -1,
+              "type": "SPEC_EVENT",
+              "fields": [
+                {
+                  "name": "urn",
+                  "type": "String",
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": "urn:srf:episode:efcfc726"
+                },
+                {
+                  "name": "title",
+                  "type": "String",
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": "Tageschau vom 05.10.2025"
+                },
+                {
+                  "name": "asset_type",
+                  "type": "String",
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": "news"
+                },
+                {
+                  "name": "genres",
+                  "type": "String",
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": "[news]"
+                },
+                {
+                  "name": "mappingDate",
+                  "type": "DateTime",
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": "2025-10-05 10:00:00"
+                },
+                {
+                  "name": "validFrom",
+                  "type": "DateTime",
+                  "optional": true,
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": "2026-10-05 10:00:00"
+                },
+                {
+                  "name": "validTo",
+                  "type": "DateTime",
+                  "optional": true,
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": ""
+                },
+                {
+                  "name": "dto",
+                  "type": "String",
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": ""
+                },
+                {
+                  "name": "publishedDate",
+                  "type": "DateTime",
+                  "subfields": [],
+                  "cardinality": "Single",
+                  "example": ""
+                }
+              ],
+              "linkedId": "3458764648988747504"
+            }
+          ],
+          "when": [
+            {
+              "title": "Validate Publication",
+              "tags": [],
+              "examples": [],
+              "id": "3458764648989550750",
+              "index": 0,
+              "specRow": -1,
+              "type": "SPEC_COMMAND",
+              "fields": [
+                {
+                  "name": "urn",
+                  "type": "String",
+                  "cardinality": "Single",
+                  "subfields": [],
+                  "example": "urn:srf:episode:efcfc726"
+                },
+                {
+                  "name": "publicationDate",
+                  "type": "DateTime",
+                  "cardinality": "Single",
+                  "subfields": [],
+                  "example": ""
+                }
+              ],
+              "linkedId": "3458764648989092081"
+            }
+          ],
+          "then": [
+            {
+              "title": "Publication scheduled",
+              "tags": [],
+              "examples": [],
+              "id": "3458764648989550752",
+              "index": 0,
+              "specRow": -1,
+              "type": "SPEC_EVENT",
+              "fields": [
+                {
+                  "name": "urn",
+                  "type": "String",
+                  "cardinality": "Single",
+                  "subfields": [],
+                  "example": "urn:srf:episode:efcfc726"
+                },
+                {
+                  "name": "publicationDate",
+                  "type": "DateTime",
+                  "cardinality": "Single",
+                  "subfields": [],
+                  "example": "2026-10-05T10:00:00"
+                }
+              ],
+              "linkedId": "3458764648989001898"
+            }
+          ],
+          "comments": [
+            {
+              "description": "Publication without validFrom / validToDate"
+            }
+          ],
+          "linkedId": "3458764648988918627"
+        }
+      ],
+      "actors": [],
+      "aggregates": [
+        "content"
+      ]
+    },
+    {
+      "id": "3458764648989175493",
+      "status": "Created",
+      "index": 13,
+      "title": "slice: Schedule Publication",
+      "context": "News",
+      "sliceType": "AUTOMATION",
+      "commands": [
+        {
+          "id": "3458764648989092081",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Schedule Publication",
+          "title": "Validate Publication",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "publicationDate",
+              "type": "DateTime",
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989001898",
+              "type": "OUTBOUND",
+              "title": "Publication scheduled",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "3458764648989092077",
+              "type": "INBOUND",
+              "title": "scheduling processor",
+              "elementType": "AUTOMATION"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "3458764648989001898",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Schedule Publication",
+          "title": "Publication scheduled",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "publicationDate",
+              "type": "DateTime",
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989175763",
+              "type": "OUTBOUND",
+              "title": "Content to be published",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "3458764648989092081",
+              "type": "INBOUND",
+              "title": "Validate Publication",
+              "elementType": "COMMAND"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [
+        {
+          "id": "3458764648989092083",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Schedule Publication",
+          "title": "Publications to validate",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "validFrom",
+              "type": "DateTime",
+              "optional": true,
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "READMODEL",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989092077",
+              "type": "OUTBOUND",
+              "title": "scheduling processor",
+              "elementType": "AUTOMATION"
+            },
+            {
+              "id": "3458764648988918285",
+              "type": "INBOUND",
+              "title": "News validated",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "3458764648988747504",
+              "type": "INBOUND",
+              "title": "news mapped",
+              "elementType": "EVENT"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "projection": "events.forEach((eventData)=>{\n    let event = eventData.data\n    switch(eventData.type) {\n   \n       \tcase 'NewsMappedEvent':\n\t\t\tthis.result.urn=event.urn\n\t\t\tthis.result.validFrom=event.validFrom\n    \treturn;\n        \n       \tcase 'NewsValidatedEvent':\n\t\t\tthis.result.urn=event.urn\n    \treturn;\n        \n    }\n})",
+            "placement": "MAIN",
+            "renderFunction": "(data)=>data",
+            "order": 99,
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screens": [],
+      "screenImages": [],
+      "processors": [
+        {
+          "id": "3458764648989092077",
+          "tags": [],
+          "groupId": "3458764648989092080",
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Schedule Publication",
+          "title": "scheduling processor",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "publicationDate",
+              "type": "DateTime",
+              "mapping": "validFrom",
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "AUTOMATION",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989092081",
+              "type": "OUTBOUND",
+              "title": "Validate Publication",
+              "elementType": "COMMAND"
+            },
+            {
+              "id": "3458764648989092083",
+              "type": "INBOUND",
+              "title": "Publications to validate",
+              "elementType": "READMODEL"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "tables": [],
+      "specifications": [],
+      "actors": [],
+      "aggregates": [
+        "content"
+      ]
+    },
+    {
+      "id": "3458764648989259113",
+      "status": "Created",
+      "index": 17,
+      "title": "slice: Publish Content",
+      "context": "News",
+      "sliceType": "AUTOMATION",
+      "commands": [
+        {
+          "id": "3458764648989175762",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Publish Content",
+          "title": "Publish Content",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989175632",
+              "type": "OUTBOUND",
+              "title": "Content published",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "3458764648989175754",
+              "type": "INBOUND",
+              "title": "publishing processor",
+              "elementType": "AUTOMATION"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "3458764648989175632",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Publish Content",
+          "title": "Content published",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989175762",
+              "type": "INBOUND",
+              "title": "Publish Content",
+              "elementType": "COMMAND"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [
+        {
+          "id": "3458764648989175763",
+          "tags": [],
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Publish Content",
+          "title": "Content to be published",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            },
+            {
+              "name": "publicationDate",
+              "type": "DateTime",
+              "cardinality": "Single",
+              "idAttribute": false
+            }
+          ],
+          "type": "READMODEL",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989175754",
+              "type": "OUTBOUND",
+              "title": "publishing processor",
+              "elementType": "AUTOMATION"
+            },
+            {
+              "id": "3458764648989001898",
+              "type": "INBOUND",
+              "title": "Publication scheduled",
+              "elementType": "EVENT"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "projection": "events.forEach((eventData)=>{\n    let event = eventData.data\n    switch(eventData.type) {\n   \n       \tcase 'PublicationScheduledEvent':\n\t\t\tthis.result.urn=event.urn\n\t\t\tthis.result.publicationDate=event.publicationDate\n    \treturn;\n        \n    }\n})",
+            "placement": "MAIN",
+            "renderFunction": "(data)=>data",
+            "order": 99,
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screens": [],
+      "screenImages": [],
+      "processors": [
+        {
+          "id": "3458764648989175754",
+          "tags": [],
+          "groupId": "3458764648989175761",
+          "modelContext": "News",
+          "context": "INTERNAL",
+          "slice": "slice: Publish Content",
+          "title": "publishing processor",
+          "fields": [
+            {
+              "name": "urn",
+              "type": "String",
+              "cardinality": "Single",
+              "idAttribute": true
+            }
+          ],
+          "type": "AUTOMATION",
+          "description": "",
+          "aggregate": "content",
+          "aggregateDependencies": [
+            "content"
+          ],
+          "dependencies": [
+            {
+              "id": "3458764648989175762",
+              "type": "OUTBOUND",
+              "title": "Publish Content",
+              "elementType": "COMMAND"
+            },
+            {
+              "id": "3458764648989175763",
+              "type": "INBOUND",
+              "title": "Content to be published",
+              "elementType": "READMODEL"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "tables": [],
+      "specifications": [],
+      "actors": [],
+      "aggregates": [
+        "content"
+      ]
+    }
+  ]
+}

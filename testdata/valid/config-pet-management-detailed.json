@@ -1,0 +1,2047 @@
+{
+  "slices": [
+    {
+      "id": "slice-pet-000",
+      "status": "Created",
+      "title": "Register Owner",
+      "context": "Register a new owner of pets",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "cmd-pet-000",
+          "title": "Register Owner",
+          "fields": [
+            {
+              "name": "firstName",
+              "type": "String",
+              "example": "George"
+            },
+            {
+              "name": "lastName",
+              "type": "String",
+              "example": "Franklin"
+            }
+            ,
+            {"name": "address", "type": "String", "example": "110 W. Liberty St.", "optional": false},
+            {"name": "city", "type": "String", "example": "Madison", "optional": false},
+            {"name": "telephone", "type": "String", "example": "6085551023", "optional": false}
+          ],
+          "type": "COMMAND",
+          "description": "org.springframework.samples.petclinic.owner.OwnerController.processCreationForm. Address, city and telephone supplied from the registration form to satisfy the existing Owner with Pets projection contract; names, types, requiredness and examples are taken from that projection, not new validation rules.",
+          "aggregate": "Owner",
+          "createsAggregate": true,
+          "apiEndpoint": "POST /owners/new",
+          "dependencies": [
+            {
+              "id": "scr-pet-000",
+              "type": "INBOUND",
+              "title": "Owner Registration Form",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "evt-001",
+              "type": "OUTBOUND",
+              "title": "Owner Registered",
+              "elementType": "EVENT"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "id": "evt-001",
+          "title": "Owner Registered",
+          "fields": [
+            {
+              "name": "ownerId",
+              "type": "Int",
+              "example": "1",
+              "generated": true,
+              "idAttribute": true
+            },
+            {
+              "name": "firstName",
+              "type": "String",
+              "example": "George"
+            },
+            {
+              "name": "lastName",
+              "type": "String",
+              "example": "Franklin"
+            }
+            ,
+            {"name": "address", "type": "String", "example": "110 W. Liberty St.", "optional": false},
+            {"name": "city", "type": "String", "example": "Madison", "optional": false},
+            {"name": "telephone", "type": "String", "example": "6085551023", "optional": false}
+          ],
+          "type": "EVENT",
+          "aggregate": "Owner",
+          "description": "Address, city and telephone retained from Register Owner for the existing Owner with Pets projection. Contract repair based on that projection and its examples; no additional business validation inferred.",
+          "dependencies": [
+            {
+              "id": "cmd-pet-000",
+              "type": "INBOUND",
+              "title": "Register Owner",
+              "elementType": "COMMAND"
+            },
+            {
+              "id": "rm-pet-001",
+              "type": "OUTBOUND",
+              "title": "Owner with Pets",
+              "elementType": "READMODEL"
+            }
+          ]
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "scr-pet-000",
+          "title": "Owner Registration Form",
+          "fields": [
+            {
+              "name": "firstName",
+              "type": "String",
+              "example": "George"
+            },
+            {
+              "name": "lastName",
+              "type": "String",
+              "example": "Franklin"
+            }
+            ,
+            {"name": "address", "type": "String", "example": "110 W. Liberty St.", "optional": false},
+            {"name": "city", "type": "String", "example": "Madison", "optional": false},
+            {"name": "telephone", "type": "String", "example": "6085551023", "optional": false}
+          ],
+          "type": "SCREEN",
+          "aggregate": "Owner",
+          "description": "Registration inputs extended with the address, city and telephone required by the existing Owner with Pets projection; examples copied from that projection.",
+          "dependencies": [
+            {
+              "id": "cmd-pet-000",
+              "type": "OUTBOUND",
+              "title": "Register Owner",
+              "elementType": "COMMAND"
+            }
+          ]
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "actors": [
+        {
+          "name": "Clinic Staff",
+          "authRequired": false
+        }
+      ],
+      "aggregates": [
+        "Owner"
+      ],
+      "index": 1
+    },
+    {
+      "id": "slice-pet-001",
+      "status": "Created",
+      "index": 2,
+      "title": "View Owner Details with Pets",
+      "context": "Display owner information including their pets list before adding or editing pets",
+      "sliceType": "STATE_VIEW",
+      "commands": [],
+      "events": [],
+      "readmodels": [
+        {
+          "id": "rm-pet-001",
+          "title": "Owner with Pets",
+          "fields": [
+            {
+              "name": "id",
+              "type": "Int",
+              "example": "1",
+              "idAttribute": true,
+              "optional": false
+            },
+            {
+              "name": "firstName",
+              "type": "String",
+              "example": "George",
+              "optional": false
+            },
+            {
+              "name": "lastName",
+              "type": "String",
+              "example": "Franklin",
+              "optional": false
+            },
+            {
+              "name": "address",
+              "type": "String",
+              "example": "110 W. Liberty St.",
+              "optional": false
+            },
+            {
+              "name": "city",
+              "type": "String",
+              "example": "Madison",
+              "optional": false
+            },
+            {
+              "name": "telephone",
+              "type": "String",
+              "example": "6085551023",
+              "optional": false
+            },
+            {
+              "name": "pets",
+              "type": "Custom",
+              "cardinality": "List",
+              "example": {
+                "id": 1,
+                "name": "Leo",
+                "birthDate": "2010-09-07",
+                "type": "cat"
+              },
+              "subfields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "1",
+                  "idAttribute": true
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2010-09-07"
+                },
+                {
+                  "name": "type",
+                  "type": "String",
+                  "example": "cat"
+                }
+              ],
+              "optional": false
+            }
+          ],
+          "type": "READMODEL",
+          "description": "org.springframework.samples.petclinic.owner.OwnerRepository.findById, Owner.getPets()",
+          "aggregate": "Owner",
+          "dependencies": [
+            {
+              "id": "evt-001",
+              "type": "INBOUND",
+              "title": "Owner Registered",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "evt-pet-001",
+              "type": "INBOUND",
+              "title": "Pet Added",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "scr-pet-001",
+              "type": "OUTBOUND",
+              "title": "Owner Details Screen",
+              "elementType": "SCREEN"
+            }
+          ]
+        }
+      ],
+      "screens": [
+        {
+          "id": "scr-pet-001",
+          "title": "Owner Details Screen",
+          "fields": [
+            {
+              "name": "ownerName",
+              "type": "String",
+              "example": "George Franklin"
+            },
+            {
+              "name": "address",
+              "type": "String",
+              "example": "110 W. Liberty St."
+            },
+            {
+              "name": "city",
+              "type": "String",
+              "example": "Madison"
+            },
+            {
+              "name": "telephone",
+              "type": "String",
+              "example": "6085551023"
+            },
+            {
+              "name": "petsList",
+              "type": "Custom",
+              "cardinality": "List",
+              "example": {
+                "name": "Leo",
+                "birthDate": "2010-09-07",
+                "type": "cat"
+              }
+            }
+          ],
+          "type": "SCREEN",
+          "description": "owners/ownerDetails.html - displays owner info with pets table",
+          "aggregate": "Owner",
+          "dependencies": [
+            {
+              "id": "rm-pet-001",
+              "type": "INBOUND",
+              "title": "Owner with Pets",
+              "elementType": "READMODEL"
+            }
+          ]
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [
+        {
+          "id": "spec-pet-001",
+          "title": "Owner with existing pets displayed",
+          "given": [
+            {
+              "id": "spec-pet-001-g1",
+              "title": "Owner Registered",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "firstName",
+                  "type": "String",
+                  "example": "George"
+                },
+                {
+                  "name": "lastName",
+                  "type": "String",
+                  "example": "Franklin"
+                }
+              ],
+              "linkedId": "evt-001"
+            },
+            {
+              "id": "spec-pet-001-g2",
+              "title": "Pet Added",
+              "type": "SPEC_EVENT",
+              "index": 1,
+              "specRow": 1,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2010-09-07"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-pet-001"
+            }
+          ],
+          "when": [],
+          "then": [
+            {
+              "id": "spec-pet-001-t1",
+              "title": "Owner with Pets",
+              "type": "SPEC_READMODEL",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "firstName",
+                  "type": "String",
+                  "example": "George"
+                },
+                {
+                  "name": "pets",
+                  "type": "Custom",
+                  "cardinality": "List",
+                  "example": {
+                    "id": 1,
+                    "name": "Leo",
+                    "birthDate": "2010-09-07"
+                  }
+                }
+              ],
+              "linkedId": "rm-pet-001"
+            }
+          ],
+          "linkedId": "slice-pet-001",
+          "sliceName": "View Owner Details with Pets"
+        }
+      ],
+      "actors": [
+        {
+          "name": "Clinic Staff",
+          "authRequired": false
+        }
+      ],
+      "aggregates": [
+        "Owner"
+      ]
+    },
+    {
+      "id": "slice-pet-002",
+      "status": "Created",
+      "index": 3,
+      "title": "Add New Pet to Owner",
+      "context": "Register a new pet for an existing owner with validation",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "cmd-pet-001",
+          "title": "Add Pet",
+          "fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "example": "Betty",
+              "optional": false
+            },
+            {
+              "name": "birthDate",
+              "type": "Date",
+              "example": "2015-02-12",
+              "optional": false
+            },
+            {
+              "name": "typeId",
+              "type": "Int",
+              "example": "3",
+              "optional": false
+            },
+            {
+              "name": "ownerId",
+              "type": "Int",
+              "example": "1",
+              "optional": false,
+              "technicalAttribute": true
+            }
+          ],
+          "type": "COMMAND",
+          "description": "org.springframework.samples.petclinic.owner.PetController.processCreationForm",
+          "aggregate": "Pet",
+          "aggregateDependencies": [
+            "Owner"
+          ],
+          "apiEndpoint": "POST /owners/{ownerId}/pets/new",
+          "dependencies": [
+            {
+              "id": "scr-pet-002",
+              "type": "INBOUND",
+              "title": "Pet Registration Form",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "evt-pet-001",
+              "type": "OUTBOUND",
+              "title": "Pet Added",
+              "elementType": "EVENT"
+            }
+          ],
+          "createsAggregate": true
+        }
+      ],
+      "events": [
+        {
+          "id": "evt-pet-001",
+          "title": "Pet Added",
+          "fields": [
+            {
+              "name": "petId",
+              "type": "Int",
+              "example": "5",
+              "idAttribute": true,
+              "generated": true
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "example": "Betty"
+            },
+            {
+              "name": "birthDate",
+              "type": "Date",
+              "example": "2015-02-12"
+            },
+            {
+              "name": "typeId",
+              "type": "Int",
+              "example": "3"
+            },
+            {
+              "name": "typeName",
+              "type": "String",
+              "example": "hamster"
+            },
+            {
+              "name": "ownerId",
+              "type": "Int",
+              "example": "1"
+            }
+          ],
+          "type": "EVENT",
+          "description": "org.springframework.samples.petclinic.owner.PetRepository.save, Owner.addPet",
+          "aggregate": "Pet",
+          "aggregateDependencies": [
+            "Owner"
+          ],
+          "dependencies": [
+            {
+              "id": "cmd-pet-001",
+              "type": "INBOUND",
+              "title": "Add Pet",
+              "elementType": "COMMAND"
+            },
+            {
+              "id": "rm-pet-001",
+              "type": "OUTBOUND",
+              "title": "Owner with Pets",
+              "elementType": "READMODEL"
+            }
+          ]
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "scr-pet-002",
+          "title": "Pet Registration Form",
+          "fields": [
+            {
+              "name": "ownerName",
+              "type": "String",
+              "example": "George Franklin"
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "example": "Betty"
+            },
+            {
+              "name": "birthDate",
+              "type": "Date",
+              "example": "2015-02-12"
+            },
+            {
+              "name": "type",
+              "type": "String",
+              "example": "hamster"
+            },
+            {
+              "name": "availableTypes",
+              "type": "Custom",
+              "cardinality": "List",
+              "example": {
+                "id": 1,
+                "name": "cat"
+              },
+              "subfields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "cat"
+                }
+              ]
+            }
+          ],
+          "type": "SCREEN",
+          "description": "pets/createOrUpdatePetForm.html - form with title 'New Pet'",
+          "aggregate": "Pet",
+          "dependencies": [
+            {
+              "id": "rm-pet-001",
+              "type": "INBOUND",
+              "title": "Owner with Pets",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "rm-pet-002",
+              "type": "INBOUND",
+              "title": "Available Pet Types",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "cmd-pet-001",
+              "type": "OUTBOUND",
+              "title": "Add Pet",
+              "elementType": "COMMAND"
+            }
+          ]
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [
+        {
+          "id": "spec-pet-002",
+          "title": "Successfully add new pet with valid data",
+          "given": [
+            {
+              "id": "spec-pet-002-g1",
+              "title": "Owner Registered",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "firstName",
+                  "type": "String",
+                  "example": "George"
+                },
+                {
+                  "name": "lastName",
+                  "type": "String",
+                  "example": "Franklin"
+                }
+              ],
+              "linkedId": "evt-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-002-w1",
+              "title": "Add Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Betty"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2015-02-12"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                },
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-002-t1",
+              "title": "Pet Added",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "5"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Betty"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2015-02-12"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                },
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-pet-001"
+            }
+          ],
+          "linkedId": "slice-pet-002",
+          "sliceName": "Add New Pet to Owner"
+        },
+        {
+          "id": "spec-pet-003",
+          "title": "Reject pet with missing name",
+          "given": [
+            {
+              "id": "spec-pet-003-g1",
+              "title": "Owner Registered",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-003-w1",
+              "title": "Add Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": ""
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2015-02-12"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-003-t1",
+              "title": "Validation Error",
+              "type": "SPEC_ERROR",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "field",
+                  "type": "String",
+                  "example": "name"
+                },
+                {
+                  "name": "errorCode",
+                  "type": "String",
+                  "example": "required"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "comments": [
+            {
+              "description": "PetValidator validates that name field has length - org.springframework.samples.petclinic.owner.PetValidator:39"
+            }
+          ],
+          "linkedId": "slice-pet-002",
+          "sliceName": "Add New Pet to Owner"
+        },
+        {
+          "id": "spec-pet-004",
+          "title": "Reject pet with missing type for new pets",
+          "given": [
+            {
+              "id": "spec-pet-004-g1",
+              "title": "Owner Registered",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-004-w1",
+              "title": "Add Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Betty"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2015-02-12"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "null"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-004-t1",
+              "title": "Validation Error",
+              "type": "SPEC_ERROR",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "field",
+                  "type": "String",
+                  "example": "type"
+                },
+                {
+                  "name": "errorCode",
+                  "type": "String",
+                  "example": "required"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "comments": [
+            {
+              "description": "PetValidator checks if pet.isNew and pet.type == null - org.springframework.samples.petclinic.owner.PetValidator:44"
+            }
+          ],
+          "linkedId": "slice-pet-002",
+          "sliceName": "Add New Pet to Owner"
+        },
+        {
+          "id": "spec-pet-005",
+          "title": "Reject pet with missing birth date",
+          "given": [
+            {
+              "id": "spec-pet-005-g1",
+              "title": "Owner Registered",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-005-w1",
+              "title": "Add Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Betty"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "null"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-005-t1",
+              "title": "Validation Error",
+              "type": "SPEC_ERROR",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "field",
+                  "type": "String",
+                  "example": "birthDate"
+                },
+                {
+                  "name": "errorCode",
+                  "type": "String",
+                  "example": "required"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "comments": [
+            {
+              "description": "PetValidator validates that birthDate is not null - org.springframework.samples.petclinic.owner.PetValidator:49"
+            }
+          ],
+          "linkedId": "slice-pet-002",
+          "sliceName": "Add New Pet to Owner"
+        },
+        {
+          "id": "spec-pet-006",
+          "title": "Reject duplicate pet name for same owner",
+          "given": [
+            {
+              "id": "spec-pet-006-g1",
+              "title": "Owner Registered",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-001"
+            },
+            {
+              "id": "spec-pet-006-g2",
+              "title": "Pet Added",
+              "type": "SPEC_EVENT",
+              "index": 1,
+              "specRow": 1,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                },
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-pet-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-006-w1",
+              "title": "Add Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2020-01-15"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "2"
+                },
+                {
+                  "name": "ownerId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-006-t1",
+              "title": "Validation Error",
+              "type": "SPEC_ERROR",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "field",
+                  "type": "String",
+                  "example": "name"
+                },
+                {
+                  "name": "errorCode",
+                  "type": "String",
+                  "example": "duplicate"
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "example": "already exists"
+                }
+              ],
+              "linkedId": "cmd-pet-001"
+            }
+          ],
+          "comments": [
+            {
+              "description": "PetController checks if owner.getPet(pet.name, true) != null for new pets - org.springframework.samples.petclinic.owner.PetController:67. Note: comparison is case-insensitive - Owner.getPet:81"
+            }
+          ],
+          "linkedId": "slice-pet-002",
+          "sliceName": "Add New Pet to Owner"
+        }
+      ],
+      "actors": [
+        {
+          "name": "Clinic Staff",
+          "authRequired": false
+        }
+      ],
+      "aggregates": [
+        "Pet",
+        "Owner"
+      ]
+    },
+    {
+      "id": "slice-pet-006",
+      "status": "Created",
+      "title": "Add Pet Type",
+      "context": "Maintain the list of pet types offered in forms",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "cmd-pet-006",
+          "title": "Add Pet Type",
+          "fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "example": "cat"
+            }
+          ],
+          "type": "COMMAND",
+          "aggregate": "PetType",
+          "createsAggregate": true,
+          "description": "Assumed: gives the pet-type list a recorded source.",
+          "dependencies": [
+            {
+              "id": "scr-pet-006",
+              "type": "INBOUND",
+              "title": "Pet Type Form",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "evt-pet-006",
+              "type": "OUTBOUND",
+              "title": "Pet Type Added",
+              "elementType": "EVENT"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "id": "evt-pet-006",
+          "title": "Pet Type Added",
+          "fields": [
+            {
+              "name": "id",
+              "type": "Int",
+              "example": "1",
+              "idAttribute": true,
+              "generated": true
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "example": "cat"
+            }
+          ],
+          "type": "EVENT",
+          "aggregate": "PetType",
+          "dependencies": [
+            {
+              "id": "cmd-pet-006",
+              "type": "INBOUND",
+              "title": "Add Pet Type",
+              "elementType": "COMMAND"
+            },
+            {
+              "id": "rm-pet-002",
+              "type": "OUTBOUND",
+              "title": "Available Pet Types",
+              "elementType": "READMODEL"
+            }
+          ]
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "scr-pet-006",
+          "title": "Pet Type Form",
+          "fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "example": "cat"
+            }
+          ],
+          "type": "SCREEN",
+          "aggregate": "PetType",
+          "description": "Assumed: Spring PetClinic seeds pet types (data.sql) and has no form for them.",
+          "dependencies": [
+            {
+              "id": "cmd-pet-006",
+              "type": "OUTBOUND",
+              "title": "Add Pet Type",
+              "elementType": "COMMAND"
+            }
+          ]
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "actors": [
+        {
+          "name": "Clinic Staff",
+          "authRequired": false
+        }
+      ],
+      "aggregates": [
+        "PetType"
+      ],
+      "index": 4
+    },
+    {
+      "id": "slice-pet-003",
+      "status": "Created",
+      "index": 5,
+      "title": "View Available Pet Types",
+      "context": "Display list of all available pet types for selection in forms",
+      "sliceType": "STATE_VIEW",
+      "commands": [],
+      "events": [],
+      "readmodels": [
+        {
+          "id": "rm-pet-002",
+          "title": "Available Pet Types",
+          "fields": [
+            {
+              "name": "types",
+              "type": "Custom",
+              "cardinality": "List",
+              "example": {
+                "id": 1,
+                "name": "cat"
+              },
+              "subfields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "1",
+                  "idAttribute": true
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "cat"
+                }
+              ]
+            }
+          ],
+          "type": "READMODEL",
+          "description": "org.springframework.samples.petclinic.owner.PetRepository.findPetTypes",
+          "aggregate": "PetType",
+          "dependencies": [
+            {
+              "id": "evt-pet-006",
+              "type": "INBOUND",
+              "title": "Pet Type Added",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "scr-pet-002",
+              "type": "OUTBOUND",
+              "title": "Pet Registration Form",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "scr-pet-003",
+              "type": "OUTBOUND",
+              "title": "Pet Edit Form",
+              "elementType": "SCREEN"
+            }
+          ]
+        }
+      ],
+      "screens": [],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [
+        {
+          "id": "spec-pet-007",
+          "title": "Display all pet types sorted by name",
+          "given": [
+            {
+              "id": "spec-pet-007-g1",
+              "title": "Pet Type Added",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "cat"
+                }
+              ],
+              "linkedId": "evt-pet-006"
+            },
+            {
+              "id": "spec-pet-007-g2",
+              "title": "Pet Type Added",
+              "type": "SPEC_EVENT",
+              "index": 1,
+              "specRow": 1,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "2"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "bird"
+                }
+              ],
+              "linkedId": "evt-pet-006"
+            },
+            {
+              "id": "spec-pet-007-g3",
+              "title": "Pet Type Added",
+              "type": "SPEC_EVENT",
+              "index": 2,
+              "specRow": 2,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "3"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "dog"
+                }
+              ],
+              "linkedId": "evt-pet-006"
+            },
+            {
+              "id": "spec-pet-007-g4",
+              "title": "Pet Type Added",
+              "type": "SPEC_EVENT",
+              "index": 3,
+              "specRow": 3,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "4"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "hamster"
+                }
+              ],
+              "linkedId": "evt-pet-006"
+            },
+            {
+              "id": "spec-pet-007-g5",
+              "title": "Pet Type Added",
+              "type": "SPEC_EVENT",
+              "index": 4,
+              "specRow": 4,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "5"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "lizard"
+                }
+              ],
+              "linkedId": "evt-pet-006"
+            },
+            {
+              "id": "spec-pet-007-g6",
+              "title": "Pet Type Added",
+              "type": "SPEC_EVENT",
+              "index": 5,
+              "specRow": 5,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "6"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "snake"
+                }
+              ],
+              "linkedId": "evt-pet-006"
+            }
+          ],
+          "when": [],
+          "then": [
+            {
+              "id": "spec-pet-007-t1",
+              "title": "Available Pet Types",
+              "type": "SPEC_READMODEL",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "types",
+                  "type": "Custom",
+                  "cardinality": "List",
+                  "example": "[{\"id\": 2, \"name\": \"bird\"}, {\"id\": 1, \"name\": \"cat\"}, {\"id\": 3, \"name\": \"dog\"}, {\"id\": 4, \"name\": \"hamster\"}, {\"id\": 5, \"name\": \"lizard\"}, {\"id\": 6, \"name\": \"snake\"}]"
+                }
+              ],
+              "linkedId": "rm-pet-002"
+            }
+          ],
+          "comments": [
+            {
+              "description": "PetRepository query orders types by name ascending - @Query('SELECT ptype FROM PetType ptype ORDER BY ptype.name')"
+            }
+          ],
+          "linkedId": "slice-pet-003",
+          "sliceName": "View Available Pet Types"
+        }
+      ],
+      "aggregates": [
+        "PetType"
+      ]
+    },
+    {
+      "id": "slice-pet-004",
+      "status": "Created",
+      "index": 6,
+      "title": "Update Pet Information",
+      "context": "Modify existing pet details with validation",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "cmd-pet-002",
+          "title": "Update Pet",
+          "fields": [
+            {
+              "name": "petId",
+              "type": "Int",
+              "example": "1",
+              "idAttribute": true,
+              "optional": false
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "example": "Betty",
+              "optional": false
+            },
+            {
+              "name": "birthDate",
+              "type": "Date",
+              "example": "2015-02-12",
+              "optional": false
+            },
+            {
+              "name": "typeId",
+              "type": "Int",
+              "example": "3",
+              "optional": false
+            },
+            {
+              "name": "ownerId",
+              "type": "Int",
+              "example": "1",
+              "optional": false,
+              "technicalAttribute": true
+            }
+          ],
+          "type": "COMMAND",
+          "description": "org.springframework.samples.petclinic.owner.PetController.processUpdateForm",
+          "aggregate": "Pet",
+          "apiEndpoint": "POST /owners/{ownerId}/pets/{petId}/edit",
+          "dependencies": [
+            {
+              "id": "scr-pet-003",
+              "type": "INBOUND",
+              "title": "Pet Edit Form",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "evt-pet-002",
+              "type": "OUTBOUND",
+              "title": "Pet Updated",
+              "elementType": "EVENT"
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "id": "evt-pet-002",
+          "title": "Pet Updated",
+          "fields": [
+            {
+              "name": "petId",
+              "type": "Int",
+              "example": "1",
+              "idAttribute": true
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "example": "Betty"
+            },
+            {
+              "name": "birthDate",
+              "type": "Date",
+              "example": "2015-02-12"
+            },
+            {
+              "name": "typeId",
+              "type": "Int",
+              "example": "3"
+            },
+            {
+              "name": "typeName",
+              "type": "String",
+              "example": "hamster"
+            },
+            {
+              "name": "ownerId",
+              "type": "Int",
+              "example": "1"
+            }
+          ],
+          "type": "EVENT",
+          "description": "org.springframework.samples.petclinic.owner.PetRepository.save",
+          "aggregate": "Pet",
+          "dependencies": [
+            {
+              "id": "cmd-pet-002",
+              "type": "INBOUND",
+              "title": "Update Pet",
+              "elementType": "COMMAND"
+            }
+          ]
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "scr-pet-003",
+          "title": "Pet Edit Form",
+          "fields": [
+            {
+              "name": "petId",
+              "type": "Int",
+              "example": "1"
+            },
+            {
+              "name": "ownerName",
+              "type": "String",
+              "example": "George Franklin"
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "example": "Betty"
+            },
+            {
+              "name": "birthDate",
+              "type": "Date",
+              "example": "2015-02-12"
+            },
+            {
+              "name": "type",
+              "type": "String",
+              "example": "hamster"
+            },
+            {
+              "name": "availableTypes",
+              "type": "Custom",
+              "cardinality": "List",
+              "example": {
+                "id": 1,
+                "name": "cat"
+              },
+              "subfields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "cat"
+                }
+              ]
+            }
+          ],
+          "type": "SCREEN",
+          "description": "pets/createOrUpdatePetForm.html - form with title 'Pet'",
+          "aggregate": "Pet",
+          "dependencies": [
+            {
+              "id": "rm-pet-003",
+              "type": "INBOUND",
+              "title": "Pet Details",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "rm-pet-002",
+              "type": "INBOUND",
+              "title": "Available Pet Types",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "cmd-pet-002",
+              "type": "OUTBOUND",
+              "title": "Update Pet",
+              "elementType": "COMMAND"
+            }
+          ]
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [
+        {
+          "id": "spec-pet-008",
+          "title": "Successfully update existing pet",
+          "given": [
+            {
+              "id": "spec-pet-008-g1",
+              "title": "Pet Added",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2010-09-07"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-pet-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-008-w1",
+              "title": "Update Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Betty"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2015-02-12"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                }
+              ],
+              "linkedId": "cmd-pet-002"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-008-t1",
+              "title": "Pet Updated",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Betty"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2015-02-12"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                }
+              ],
+              "linkedId": "evt-pet-002"
+            }
+          ],
+          "linkedId": "slice-pet-004",
+          "sliceName": "Update Pet Information"
+        },
+        {
+          "id": "spec-pet-009",
+          "title": "Reject update with missing name",
+          "given": [
+            {
+              "id": "spec-pet-009-g1",
+              "title": "Pet Added",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                }
+              ],
+              "linkedId": "evt-pet-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-009-w1",
+              "title": "Update Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": ""
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2015-02-12"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                }
+              ],
+              "linkedId": "cmd-pet-002"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-009-t1",
+              "title": "Validation Error",
+              "type": "SPEC_ERROR",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "field",
+                  "type": "String",
+                  "example": "name"
+                },
+                {
+                  "name": "errorCode",
+                  "type": "String",
+                  "example": "required"
+                }
+              ],
+              "linkedId": "cmd-pet-002"
+            }
+          ],
+          "comments": [
+            {
+              "description": "PetValidator validates that name field has length - org.springframework.samples.petclinic.owner.PetValidator:39"
+            }
+          ],
+          "linkedId": "slice-pet-004",
+          "sliceName": "Update Pet Information"
+        },
+        {
+          "id": "spec-pet-010",
+          "title": "Reject update with missing birth date",
+          "given": [
+            {
+              "id": "spec-pet-010-g1",
+              "title": "Pet Added",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-pet-001"
+            }
+          ],
+          "when": [
+            {
+              "id": "spec-pet-010-w1",
+              "title": "Update Pet",
+              "type": "SPEC_COMMAND",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Betty"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "null"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "3"
+                }
+              ],
+              "linkedId": "cmd-pet-002"
+            }
+          ],
+          "then": [
+            {
+              "id": "spec-pet-010-t1",
+              "title": "Validation Error",
+              "type": "SPEC_ERROR",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "field",
+                  "type": "String",
+                  "example": "birthDate"
+                },
+                {
+                  "name": "errorCode",
+                  "type": "String",
+                  "example": "required"
+                }
+              ],
+              "linkedId": "cmd-pet-002"
+            }
+          ],
+          "comments": [
+            {
+              "description": "PetValidator validates that birthDate is not null - org.springframework.samples.petclinic.owner.PetValidator:49"
+            }
+          ],
+          "linkedId": "slice-pet-004",
+          "sliceName": "Update Pet Information"
+        }
+      ],
+      "actors": [
+        {
+          "name": "Clinic Staff",
+          "authRequired": false
+        }
+      ],
+      "aggregates": [
+        "Pet"
+      ]
+    },
+    {
+      "id": "slice-pet-005",
+      "status": "Created",
+      "index": 7,
+      "title": "View Pet Details for Editing",
+      "context": "Load existing pet information to populate edit form",
+      "sliceType": "STATE_VIEW",
+      "commands": [],
+      "events": [],
+      "readmodels": [
+        {
+          "id": "rm-pet-003",
+          "title": "Pet Details",
+          "fields": [
+            {
+              "name": "id",
+              "type": "Int",
+              "example": "1",
+              "idAttribute": true
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "example": "Leo"
+            },
+            {
+              "name": "birthDate",
+              "type": "Date",
+              "example": "2010-09-07"
+            },
+            {
+              "name": "typeId",
+              "type": "Int",
+              "example": "1"
+            },
+            {
+              "name": "typeName",
+              "type": "String",
+              "example": "cat"
+            },
+            {
+              "name": "ownerId",
+              "type": "Int",
+              "example": "1"
+            }
+          ],
+          "type": "READMODEL",
+          "description": "org.springframework.samples.petclinic.owner.PetRepository.findById",
+          "aggregate": "Pet",
+          "dependencies": [
+            {
+              "id": "evt-pet-001",
+              "type": "INBOUND",
+              "title": "Pet Added",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "evt-pet-002",
+              "type": "INBOUND",
+              "title": "Pet Updated",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "scr-pet-003",
+              "type": "OUTBOUND",
+              "title": "Pet Edit Form",
+              "elementType": "SCREEN"
+            }
+          ]
+        }
+      ],
+      "screens": [],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [
+        {
+          "id": "spec-pet-011",
+          "title": "Load existing pet for editing",
+          "given": [
+            {
+              "id": "spec-pet-011-g1",
+              "title": "Pet Added",
+              "type": "SPEC_EVENT",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "petId",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2010-09-07"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "evt-pet-001"
+            }
+          ],
+          "when": [],
+          "then": [
+            {
+              "id": "spec-pet-011-t1",
+              "title": "Pet Details",
+              "type": "SPEC_READMODEL",
+              "index": 0,
+              "specRow": 0,
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "Int",
+                  "example": "1"
+                },
+                {
+                  "name": "name",
+                  "type": "String",
+                  "example": "Leo"
+                },
+                {
+                  "name": "birthDate",
+                  "type": "Date",
+                  "example": "2010-09-07"
+                },
+                {
+                  "name": "typeId",
+                  "type": "Int",
+                  "example": "1"
+                }
+              ],
+              "linkedId": "rm-pet-003"
+            }
+          ],
+          "linkedId": "slice-pet-005",
+          "sliceName": "View Pet Details for Editing"
+        }
+      ],
+      "aggregates": [
+        "Pet"
+      ]
+    }
+  ]
+}

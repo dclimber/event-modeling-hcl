@@ -2,6 +2,7 @@
 package model
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 
@@ -9,7 +10,9 @@ import (
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/syntax"
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/validator"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/convert"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
@@ -88,12 +91,18 @@ type Aggregate struct {
 }
 
 type FieldType struct {
-	ID          string  `json:"id"`
-	Type        string  `json:"type"`
-	Cardinality string  `json:"cardinality,omitempty"`
-	IDAttribute bool    `json:"id_attribute,omitempty"`
-	PII         bool    `json:"pii,omitempty"`
-	Fields      []Field `json:"fields,omitempty"`
+	ID                 string          `json:"id"`
+	Type               string          `json:"type"`
+	Cardinality        string          `json:"cardinality,omitempty"`
+	Mapping            string          `json:"mapping,omitempty"`
+	Optional           bool            `json:"optional,omitempty"`
+	TechnicalAttribute bool            `json:"technical_attribute,omitempty"`
+	Generated          bool            `json:"generated,omitempty"`
+	IDAttribute        bool            `json:"id_attribute,omitempty"`
+	PII                bool            `json:"pii,omitempty"`
+	Schema             string          `json:"schema,omitempty"`
+	Example            json.RawMessage `json:"example,omitempty"`
+	Fields             []Field         `json:"fields,omitempty"`
 }
 
 type Event struct {
@@ -143,26 +152,32 @@ type Semantic struct {
 }
 
 type Presentation struct {
-	GroupID     string   `json:"group_id,omitempty"`
-	Tags        []string `json:"tags,omitempty"`
-	Sketched    bool     `json:"sketched,omitempty"`
-	Prototype   bool     `json:"prototype,omitempty"`
-	ListElement bool     `json:"list_element,omitempty"`
-	URL         string   `json:"url,omitempty"`
+	GroupID   string   `json:"group_id,omitempty"`
+	Tags      []string `json:"tags,omitempty"`
+	Sketched  bool     `json:"sketched,omitempty"`
+	Prototype bool     `json:"prototype,omitempty"`
+	// PrototypeData retains the object; Prototype remains the presence flag.
+	PrototypeData json.RawMessage `json:"prototype_data,omitempty"`
+	ListElement   bool            `json:"list_element,omitempty"`
+	URL           string          `json:"url,omitempty"`
 }
 
 type Field struct {
-	Name               string  `json:"name"`
-	Type               string  `json:"type"`
-	Cardinality        string  `json:"cardinality,omitempty"`
-	Mapping            string  `json:"mapping,omitempty"`
-	Optional           bool    `json:"optional,omitempty"`
-	TechnicalAttribute bool    `json:"technical_attribute,omitempty"`
-	Generated          bool    `json:"generated,omitempty"`
-	IDAttribute        bool    `json:"id_attribute,omitempty"`
-	PII                bool    `json:"pii,omitempty"`
-	Schema             string  `json:"schema,omitempty"`
-	Fields             []Field `json:"fields,omitempty"`
+	Name               string          `json:"name"`
+	Type               string          `json:"type"`
+	Cardinality        string          `json:"cardinality,omitempty"`
+	Mapping            string          `json:"mapping,omitempty"`
+	Optional           bool            `json:"optional,omitempty"`
+	TechnicalAttribute bool            `json:"technical_attribute,omitempty"`
+	Generated          bool            `json:"generated,omitempty"`
+	IDAttribute        bool            `json:"id_attribute,omitempty"`
+	PII                bool            `json:"pii,omitempty"`
+	Schema             string          `json:"schema,omitempty"`
+	Example            json.RawMessage `json:"example,omitempty"`
+	Fields             []Field         `json:"fields,omitempty"`
+	// Overrides records explicitly supplied metadata on a reusable-type field,
+	// including false and empty values that otherwise look like omission.
+	Overrides []string `json:"-"`
 }
 
 type Scenario struct {
@@ -177,6 +192,7 @@ type Scenario struct {
 type Step struct {
 	Kind            StepKind        `json:"kind"`
 	Title           string          `json:"title,omitempty"`
+	Tags            []string        `json:"tags,omitempty"`
 	Target          string          `json:"target"`
 	Ref             string          `json:"ref,omitempty"`
 	Error           string          `json:"error,omitempty"`
@@ -280,13 +296,16 @@ func decodeFieldType(block *hcl.Block, fc fieldContext) FieldType {
 	content, _ := syntax.Content(block.Body, syntax.FieldSchema())
 	idAttribute, _ := boolValue(content.Attributes["id_attribute"])
 	pii, _ := boolValue(content.Attributes["pii"])
-	return FieldType{ID: block.Labels[0], Type: stringValue(content.Attributes["type"]), Cardinality: stringValue(content.Attributes["cardinality"]), IDAttribute: idAttribute, PII: pii, Fields: decodeFields(content.Blocks, fc)}
+	optional, _ := boolValue(content.Attributes["optional"])
+	technical, _ := boolValue(content.Attributes["technical_attribute"])
+	generated, _ := boolValue(content.Attributes["generated"])
+	return FieldType{ID: block.Labels[0], Type: stringValue(content.Attributes["type"]), Cardinality: stringValue(content.Attributes["cardinality"]), Mapping: stringValue(content.Attributes["mapping"]), Optional: optional, TechnicalAttribute: technical, Generated: generated, IDAttribute: idAttribute, PII: pii, Schema: stringValue(content.Attributes["schema"]), Example: jsonValue(content.Attributes["example"], fc.document.Parsed().Source()), Fields: decodeFields(content.Blocks, fc)}
 }
 
 func decodeEvent(block *hcl.Block, fc fieldContext) Event {
 	content, _ := syntax.Content(block.Body, syntax.EventSchema())
 	title, explicit := effectiveTitle(block.Labels[0], content.Attributes["title"])
-	return Event{ID: block.Labels[0], Title: title, TitleExplicit: explicit, Semantic: semanticFrom(content.Attributes), Presentation: presentationFrom(content.Attributes), Fields: decodeElementFields(content, fc)}
+	return Event{ID: block.Labels[0], Title: title, TitleExplicit: explicit, Semantic: semanticFrom(content.Attributes), Presentation: presentationFrom(content.Attributes, fc.document.Parsed().Source()), Fields: decodeElementFields(content, fc)}
 }
 
 func decodeWorkflow(block *hcl.Block, document *sourcepkg.Document) (Workflow, []Edge) {
@@ -312,7 +331,7 @@ func decodeElement(workflowID string, block *hcl.Block, document *sourcepkg.Docu
 	title, explicit := effectiveTitle(block.Labels[0], content.Attributes["title"])
 	from := traversalList(content.Attributes["from"])
 	to := traversalList(content.Attributes["to"])
-	element := Element{Kind: mustElementKind(block.Type), ID: block.Labels[0], Title: title, TitleExplicit: explicit, Semantic: semanticFrom(content.Attributes), Presentation: presentationFrom(content.Attributes), Fields: decodeElementFields(content, fieldContext{document: document}), From: from, To: to}
+	element := Element{Kind: mustElementKind(block.Type), ID: block.Labels[0], Title: title, TitleExplicit: explicit, Semantic: semanticFrom(content.Attributes), Presentation: presentationFrom(content.Attributes, document.Parsed().Source()), Fields: decodeElementFields(content, fieldContext{document: document}), From: from, To: to}
 	owner := block.Type + "." + block.Labels[0]
 	edges := make([]Edge, 0, len(from)+len(to))
 	for _, target := range to {
@@ -342,7 +361,7 @@ func decodeScenario(block *hcl.Block, document *sourcepkg.Document) Scenario {
 
 func decodeStep(block *hcl.Block, document *sourcepkg.Document) Step {
 	content, _ := syntax.Content(block.Body, syntax.ScenarioStepSchema())
-	step := Step{Kind: mustStepKind(block.Type), Title: stringValue(content.Attributes["title"]), Examples: jsonValue(content.Attributes["examples"]), ExpectEmptyList: boolValueOrFalse(content.Attributes["expect_empty_list"]), Fields: decodeElementFields(content, fieldContext{document: document})}
+	step := Step{Kind: mustStepKind(block.Type), Title: stringValue(content.Attributes["title"]), Tags: stringList(content.Attributes["tags"]), Examples: jsonValue(content.Attributes["examples"], document.Parsed().Source()), ExpectEmptyList: boolValueOrFalse(content.Attributes["expect_empty_list"]), Fields: decodeElementFields(content, fieldContext{document: document})}
 	for _, target := range []string{"event", "command", "readmodel", "processor", "error"} {
 		attribute := content.Attributes[target]
 		if attribute == nil {
@@ -359,19 +378,147 @@ func decodeStep(block *hcl.Block, document *sourcepkg.Document) Step {
 	return step
 }
 
-func jsonValue(attribute *hcl.Attribute) json.RawMessage {
+// jsonValue rebuilds the JSON that a literal HCL expression denotes from its
+// syntax tree. Object keys keep their exact source spelling and order, which
+// evaluating to a cty value would normalize and could merge. Expressions that
+// are not literals yield nil.
+func jsonValue(attribute *hcl.Attribute, source []byte) json.RawMessage {
 	if attribute == nil {
 		return nil
 	}
-	value, diagnostics := attribute.Expr.Value(nil)
-	if diagnostics.HasErrors() || value.IsNull() {
+	var buffer bytes.Buffer
+	if !writeLiteralJSON(&buffer, attribute.Expr, source) {
 		return nil
+	}
+	return buffer.Bytes()
+}
+
+func writeLiteralJSON(buffer *bytes.Buffer, expression hcl.Expression, source []byte) bool {
+	switch expression := expression.(type) {
+	case *hclsyntax.ParenthesesExpr:
+		return writeLiteralJSON(buffer, expression.Expression, source)
+	case *hclsyntax.TupleConsExpr:
+		buffer.WriteByte('[')
+		for index, item := range expression.Exprs {
+			if index > 0 {
+				buffer.WriteByte(',')
+			}
+			if !writeLiteralJSON(buffer, item, source) {
+				return false
+			}
+		}
+		buffer.WriteByte(']')
+		return true
+	case *hclsyntax.ObjectConsExpr:
+		var keys []string
+		var values []json.RawMessage
+		positions := map[string]int{}
+		for _, item := range expression.Items {
+			key, ok := literalObjectKey(item.KeyExpr, source)
+			if !ok {
+				return false
+			}
+			var value bytes.Buffer
+			if !writeLiteralJSON(&value, item.ValueExpr, source) {
+				return false
+			}
+			if position, seen := positions[key]; seen {
+				values[position] = value.Bytes()
+				continue
+			}
+			positions[key] = len(keys)
+			keys = append(keys, key)
+			values = append(values, value.Bytes())
+		}
+		buffer.WriteByte('{')
+		for index, key := range keys {
+			if index > 0 {
+				buffer.WriteByte(',')
+			}
+			encodedKey, err := json.Marshal(key)
+			if err != nil {
+				return false
+			}
+			buffer.Write(encodedKey)
+			buffer.WriteByte(':')
+			buffer.Write(values[index])
+		}
+		buffer.WriteByte('}')
+		return true
+	}
+	value, diagnostics := expression.Value(nil)
+	if diagnostics.HasErrors() || !value.IsWhollyKnown() {
+		return false
+	}
+	if value.IsNull() {
+		buffer.WriteString("null")
+		return true
 	}
 	encoded, err := ctyjson.Marshal(value, value.Type())
 	if err != nil {
-		return nil
+		return false
 	}
-	return encoded
+	buffer.Write(encoded)
+	return true
+}
+
+// literalObjectKey returns an object constructor key's literal text. A bare
+// identifier or quoted string without interpolation is read from the source
+// bytes so its Unicode form is not normalized; any other key must evaluate
+// without variables or functions.
+func literalObjectKey(key hclsyntax.Expression, source []byte) (string, bool) {
+	if keyword := hcl.ExprAsKeyword(key); keyword != "" {
+		return keyword, true
+	}
+	if wrapper, ok := key.(*hclsyntax.ObjectConsKeyExpr); ok {
+		if template, ok := wrapper.Wrapped.(*hclsyntax.TemplateExpr); ok {
+			if text, ok := literalTemplateText(template, source); ok {
+				return text, true
+			}
+		}
+	}
+	value, diagnostics := key.Value(nil)
+	if diagnostics.HasErrors() || value.IsNull() || !value.IsWhollyKnown() {
+		return "", false
+	}
+	converted, err := convert.Convert(value, cty.String)
+	if err != nil {
+		return "", false
+	}
+	return converted.AsString(), true
+}
+
+// literalTemplateText decodes a quoted template made only of literal text from
+// its source bytes, resolving escape sequences without Unicode normalization.
+func literalTemplateText(template *hclsyntax.TemplateExpr, source []byte) (string, bool) {
+	for _, part := range template.Parts {
+		if _, ok := part.(*hclsyntax.LiteralValueExpr); !ok {
+			return "", false
+		}
+	}
+	rng := template.Range()
+	if rng.Start.Byte < 0 || rng.End.Byte > len(source) || rng.Start.Byte >= rng.End.Byte {
+		return "", false
+	}
+	tokens, diagnostics := hclsyntax.LexExpression(source[rng.Start.Byte:rng.End.Byte], rng.Filename, rng.Start)
+	if diagnostics.HasErrors() || len(tokens) == 0 || tokens[0].Type != hclsyntax.TokenOQuote {
+		return "", false
+	}
+	var text strings.Builder
+	for _, token := range tokens {
+		switch token.Type {
+		case hclsyntax.TokenOQuote, hclsyntax.TokenCQuote, hclsyntax.TokenEOF:
+		case hclsyntax.TokenQuotedLit:
+			literal, diagnostics := hclsyntax.ParseStringLiteralToken(token)
+			if diagnostics.HasErrors() {
+				return "", false
+			}
+			text.WriteString(literal)
+		default:
+			return "", false
+		}
+	}
+	return text.String(), true
 }
 
 func decodeChapter(block *hcl.Block) Chapter {
@@ -391,10 +538,10 @@ func semanticFrom(attributes hcl.Attributes) Semantic {
 	return Semantic{Description: stringValue(attributes["description"]), Aggregate: traversalValue(attributes["aggregate"]), AggregateDependencies: traversalList(attributes["aggregate_dependencies"]), APIEndpoint: stringValue(attributes["api_endpoint"]), Service: stringValue(attributes["service"]), CreatesAggregate: createsAggregate, ExternalTrigger: externalTrigger, Triggers: stringList(attributes["triggers"]), Question: stringValue(attributes["question"]), Actor: traversalValue(attributes["actor"])}
 }
 
-func presentationFrom(attributes hcl.Attributes) Presentation {
+func presentationFrom(attributes hcl.Attributes, source []byte) Presentation {
 	sketch, _ := boolValue(attributes["sketched"])
 	listElement, _ := boolValue(attributes["list_element"])
-	return Presentation{GroupID: stringValue(attributes["group_id"]), Tags: stringList(attributes["tags"]), Sketched: sketch, Prototype: attributes["prototype"] != nil, ListElement: listElement, URL: stringValue(attributes["url"])}
+	return Presentation{GroupID: stringValue(attributes["group_id"]), Tags: stringList(attributes["tags"]), Sketched: sketch, Prototype: attributes["prototype"] != nil, PrototypeData: jsonValue(attributes["prototype"], source), ListElement: listElement, URL: stringValue(attributes["url"])}
 }
 
 // fieldContext carries the information a typeless field block needs to infer its
@@ -451,7 +598,15 @@ func decodeFields(blocks hcl.Blocks, fc fieldContext) []Field {
 		if content.Attributes["type"] == nil {
 			fieldType = fc.inferredType(block.Labels[0])
 		}
-		fields = append(fields, Field{Name: block.Labels[0], Type: fieldType, Cardinality: stringValue(content.Attributes["cardinality"]), Mapping: stringValue(content.Attributes["mapping"]), Optional: optional, TechnicalAttribute: technical, Generated: generated, IDAttribute: idAttribute, PII: pii, Schema: stringValue(content.Attributes["schema"]), Fields: decodeFields(content.Blocks, fc)})
+		var overrides []string
+		if strings.HasPrefix(fieldType, "field_type.") {
+			for _, name := range []string{"mapping", "schema", "optional", "technical_attribute", "generated", "id_attribute", "pii"} {
+				if content.Attributes[name] != nil {
+					overrides = append(overrides, name)
+				}
+			}
+		}
+		fields = append(fields, Field{Name: block.Labels[0], Type: fieldType, Cardinality: stringValue(content.Attributes["cardinality"]), Mapping: stringValue(content.Attributes["mapping"]), Optional: optional, TechnicalAttribute: technical, Generated: generated, IDAttribute: idAttribute, PII: pii, Schema: stringValue(content.Attributes["schema"]), Example: jsonValue(content.Attributes["example"], fc.document.Parsed().Source()), Fields: decodeFields(content.Blocks, fc), Overrides: overrides})
 	}
 	return fields
 }
@@ -460,10 +615,12 @@ func effectiveTitle(label string, attribute *hcl.Attribute) (string, bool) {
 	if title, ok := stringValueOK(attribute); ok {
 		return title, true
 	}
-	return humanize(label), false
+	return Humanize(label), false
 }
 
-func humanize(label string) string {
+// Humanize derives the default title of a label: words split on underscores,
+// each capitalised ("todo_list" becomes "Todo List").
+func Humanize(label string) string {
 	words := strings.Split(label, "_")
 	for index, word := range words {
 		if word == "" {

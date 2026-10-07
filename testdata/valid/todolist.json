@@ -1,0 +1,985 @@
+{
+  "slices": [
+    {
+      "id": "0f1c7823-8a26-41ee-9e74-e58fa159535a",
+      "status": "Planned",
+      "index": 0,
+      "title": "Define list",
+      "context": "Todo List",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "a975f474-7efc-49fa-92df-cfca522b5393",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Define list",
+          "title": "Define list",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "fd43f452-2c95-41a2-a23b-2eb42dc24e47",
+              "type": "OUTBOUND",
+              "title": "Todo List Defined",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "9336f436-245c-49c7-8756-9f0c5e358426",
+              "type": "INBOUND",
+              "title": "HTML Screen",
+              "elementType": "SCREEN"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "a975f474-7efc-49fa-92df-cfca522b5393",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "fd43f452-2c95-41a2-a23b-2eb42dc24e47",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Define list",
+          "title": "Todo List Defined",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "0868d82d-f822-4fda-9ae2-75a8dfff82c9",
+              "type": "OUTBOUND",
+              "title": "Todo Lists",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "a975f474-7efc-49fa-92df-cfca522b5393",
+              "type": "INBOUND",
+              "title": "Define list",
+              "elementType": "COMMAND"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "fd43f452-2c95-41a2-a23b-2eb42dc24e47",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "9336f436-245c-49c7-8756-9f0c5e358426",
+          "tags": [],
+          "modelContext": "Todo List",
+          "slice": "Define list",
+          "title": "HTML Screen",
+          "fields": [],
+          "type": "SCREEN",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "a975f474-7efc-49fa-92df-cfca522b5393",
+              "type": "OUTBOUND",
+              "title": "Define list",
+              "elementType": "COMMAND"
+            }
+          ],
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "9336f436-245c-49c7-8756-9f0c5e358426",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false,
+            "pages": [
+              "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Daily Tasks</title>\n<style>\n  :root {\n    --bg: #f5f7fb;\n    --surface: #ffffff;\n    --text: #172033;\n    --muted: #8992a5;\n    --line: #e8ebf2;\n    --accent: #6c5ce7;\n    --accent-soft: #eeeaff;\n    --green: #21b573;\n    --shadow: 0 12px 35px rgba(30, 38, 60, .08);\n  }\n  * { box-sizing: border-box; }\n  body {\n    margin: 0;\n    background: var(--bg);\n    color: var(--text);\n    font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  }\n  button, input { font: inherit; }\n  button { cursor: pointer; border: 0; }\n  .app { display: flex; min-height: 100vh; }\n  aside {\n    width: 250px; background: #151827; color: white; padding: 28px 18px;\n    display: flex; flex-direction: column;\n  }\n  .brand { font-size: 21px; font-weight: 800; padding: 0 12px 30px; letter-spacing: -.5px; }\n  .brand span { color: #8d7cff; }\n  .nav-label { color: #777e95; text-transform: uppercase; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 0 12px 10px; }\n  .day {\n    display: flex; align-items: center; gap: 10px; padding: 11px 12px;\n    border-radius: 10px; color: #c8ccda; margin-bottom: 4px;\n  }\n  .day.active { background: #292c40; color: white; }\n  .day .count { margin-left: auto; color: #858ba0; font-size: 12px; }\n  .new-list {\n    margin: 18px 8px; padding: 12px; border: 1px dashed #4a4e62;\n    background: transparent; color: #b9bdd0; border-radius: 10px;\n  }\n  .new-list:hover { border-color: #8174ef; color: white; }\n  .side-bottom { margin-top: auto; color: #777e95; font-size: 12px; padding: 12px; }\n  main { flex: 1; padding: 34px 42px; max-width: 1100px; margin: auto; width: 100%; }\n  .top { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom: 28px; }\n  .eyebrow { color: var(--accent); font-weight: 750; font-size: 13px; margin-bottom: 5px; }\n  h1 { margin:0; font-size: 31px; letter-spacing:-1px; }\n  .date { color:var(--muted); margin-top:4px; }\n  .close-day {\n    background: var(--text); color:white; padding:11px 17px; border-radius:10px; font-weight:700;\n  }\n  .close-day:hover { transform: translateY(-1px); }\n  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }\n  .list {\n    background: var(--surface); border:1px solid var(--line); border-radius:16px;\n    box-shadow: var(--shadow); overflow:hidden;\n  }\n  .list-head { padding:18px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); }\n  .list-title { display:flex; align-items:center; gap:10px; font-size:17px; font-weight:800; }\n  .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); }\n  .list-meta { color:var(--muted); font-size:12px; }\n  .tasks { padding:8px 20px; }\n  .task {\n    display:flex; align-items:center; gap:12px; min-height:52px; border-bottom:1px solid #f0f1f5;\n  }\n  .task:last-child { border-bottom:0; }\n  .check {\n    width:21px; height:21px; border:2px solid #ccd1dd; border-radius:7px; background:white;\n    flex:0 0 auto; display:grid; place-items:center; color:white;\n  }\n  .task.done .check { background:var(--green); border-color:var(--green); }\n  .task.done .check:after { content:\"✓\"; font-size:13px; font-weight:900; }\n  .task.done .task-text { color:#a3a9b8; text-decoration:line-through; }\n  .task-text { flex:1; }\n  .delete { color:#c2c7d2; background:none; font-size:18px; padding:6px; }\n  .delete:hover { color:#e25568; }\n  .add {\n    display:flex; gap:8px; padding:12px 20px 18px;\n  }\n  .add input {\n    min-width:0; flex:1; border:1px solid var(--line); border-radius:9px; padding:10px 12px; outline:none;\n  }\n  .add input:focus { border-color:#b4aaf6; box-shadow:0 0 0 3px var(--accent-soft); }\n  .add button {\n    background:var(--accent); color:white; border-radius:9px; padding:0 14px; font-weight:750;\n  }\n  .empty { color:#a0a7b6; padding:15px 0; font-size:13px; }\n  .closed { opacity:.68; }\n  .closed .list-head { background:#fafafd; }\n  .closed-label { color:var(--green); font-size:12px; font-weight:800; }\n  .fab {\n    position:fixed; right:32px; bottom:28px; width:52px; height:52px; border-radius:50%;\n    background:var(--accent); color:white; font-size:27px; box-shadow:0 10px 25px rgba(108,92,231,.35);\n  }\n  @media(max-width:800px) {\n    aside { width:72px; padding:20px 8px; }\n    .brand { font-size:0; text-align:center; padding:5px 0 25px; }\n    .brand span { font-size:22px; }\n    .nav-label,.day span:not(.count),.new-list,.side-bottom { display:none; }\n    .day { justify-content:center; }\n    .day .count { display:none; }\n    main { padding:24px 18px; }\n    .grid { grid-template-columns:1fr; }\n  }\n</style>\n</head>\n<body>\n<div class=\"app\">\n  <aside>\n    <div class=\"brand\">daily<span>.</span></div>\n    <div class=\"nav-label\">Your days</div>\n    <div id=\"days\"></div>\n    <button class=\"new-list\" onclick=\"addList()\">＋ New list</button>\n    <div class=\"side-bottom\">Keep it simple.<br>One day at a time.</div>\n  </aside>\n\n  <main>\n    <div class=\"top\">\n      <div>\n        <div class=\"eyebrow\">TODAY</div>\n        <h1 id=\"dateTitle\"></h1>\n        <div class=\"date\">A focused day starts with a clear list.</div>\n      </div>\n      <button class=\"close-day\" onclick=\"closeDay()\">Close day</button>\n    </div>\n    <div class=\"grid\" id=\"lists\"></div>\n  </main>\n  <button class=\"fab\" onclick=\"addList()\" title=\"New list\">＋</button>\n</div>\n\n<script>\nconst key = 'daily-task-app';\nlet state = JSON.parse(localStorage.getItem(key) || 'null') || {\n  days: {\n    [new Date().toISOString().slice(0,10)]: {\n      closed:false,\n      lists:[\n        {id:1,name:'Work',tasks:[\n          {id:1,text:'Review open pull requests',done:false},\n          {id:2,text:'Prepare client workshop',done:false},\n          {id:3,text:'Reply to important emails',done:true}\n        ]},\n        {id:2,name:'Personal',tasks:[\n          {id:4,text:'Go for a walk',done:false},\n          {id:5,text:'Buy groceries',done:false}\n        ]}\n      ]\n    }\n  }\n};\nlet current = new Date().toISOString().slice(0,10);\n\nfunction save(){ localStorage.setItem(key, JSON.stringify(state)); }\nfunction dayData(){ return state.days[current]; }\nfunction ensureDay(){ if(!state.days[current]) state.days[current]={closed:false,lists:[]}; }\n\nfunction fmtDate(iso){\n  return new Date(iso+'T12:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});\n}\nfunction render(){\n  ensureDay();\n  document.getElementById('dateTitle').textContent=fmtDate(current);\n  const data=dayData();\n  document.getElementById('lists').innerHTML=data.lists.map(list=>{\n    const done=list.tasks.filter(t=>t.done).length;\n    return `<section class=\"list ${data.closed?'closed':''}\">\n      <div class=\"list-head\">\n        <div>\n          <div class=\"list-title\"><i class=\"dot\"></i>${escapeHtml(list.name)}</div>\n          <div class=\"list-meta\">${done}/${list.tasks.length} completed</div>\n        </div>\n        ${data.closed?'<div class=\"closed-label\">CLOSED</div>':''}\n      </div>\n      <div class=\"tasks\">\n        ${list.tasks.length ? list.tasks.map(t=>`\n          <div class=\"task ${t.done?'done':''}\">\n            <button class=\"check\" onclick=\"toggleTask(${list.id},${t.id})\"></button>\n            <div class=\"task-text\">${escapeHtml(t.text)}</div>\n            <button class=\"delete\" onclick=\"deleteTask(${list.id},${t.id})\">×</button>\n          </div>`).join('') : '<div class=\"empty\">No tasks yet.</div>'}\n      </div>\n      ${!data.closed?`<div class=\"add\">\n        <input id=\"input-${list.id}\" placeholder=\"Add a task...\" onkeydown=\"if(event.key==='Enter')addTask(${list.id})\">\n        <button onclick=\"addTask(${list.id})\">Add</button>\n      </div>`:''}\n    </section>`;\n  }).join('');\n  renderDays();\n}\nfunction renderDays(){\n  const dates=Object.keys(state.days).sort().reverse();\n  document.getElementById('days').innerHTML=dates.map(d=>{\n    const count=state.days[d].lists.reduce((n,l)=>n+l.tasks.filter(t=>!t.done).length,0);\n    return `<div class=\"day ${d===current?'active':''}\" onclick=\"switchDay('${d}')\">\n      <span>${d===current?'●':'○'}</span><span>${fmtDate(d).split(',')[0]}</span><span class=\"count\">${count}</span>\n    </div>`;\n  }).join('');\n}\nfunction switchDay(d){ current=d; render(); }\nfunction toggleTask(lid,tid){\n  const t=dayData().lists.find(l=>l.id===lid).tasks.find(t=>t.id===tid);\n  t.done=!t.done; save(); render();\n}\nfunction deleteTask(lid,tid){\n  const l=dayData().lists.find(l=>l.id===lid);\n  l.tasks=l.tasks.filter(t=>t.id!==tid); save(); render();\n}\nfunction addTask(lid){\n  const input=document.getElementById('input-'+lid);\n  const text=input.value.trim(); if(!text) return;\n  const l=dayData().lists.find(l=>l.id===lid);\n  l.tasks.push({id:Date.now(),text,done:false}); save(); render();\n  setTimeout(()=>document.getElementById('input-'+lid)?.focus(),0);\n}\nfunction addList(){\n  ensureDay();\n  const name=prompt('Name your new list:', 'New list');\n  if(!name?.trim()) return;\n  dayData().lists.push({id:Date.now(),name:name.trim(),tasks:[]});\n  save(); render();\n}\nfunction closeDay(){\n  if(dayData().closed) return;\n  if(confirm('Close this day? You will no longer be able to add or change tasks.')){\n    dayData().closed=true; save(); render();\n  }\n}\nfunction escapeHtml(s){\n  return s.replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#039;'}[c]));\n}\nrender();\n</script>\n</body>\n</html>"
+            ]
+          }
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "storylines": [],
+      "aggregates": []
+    },
+    {
+      "id": "20a0942f-52db-485a-a2a7-088782072ca0",
+      "status": "Planned",
+      "index": 0,
+      "title": "Todo Lists",
+      "context": "Todo List",
+      "sliceType": "STATE_VIEW",
+      "commands": [],
+      "events": [],
+      "readmodels": [
+        {
+          "id": "0868d82d-f822-4fda-9ae2-75a8dfff82c9",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Todo Lists",
+          "title": "Todo Lists",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "READMODEL",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "74011625-6421-46cc-814b-7543c065bcd4",
+              "type": "OUTBOUND",
+              "title": "Todo Lists",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "fd43f452-2c95-41a2-a23b-2eb42dc24e47",
+              "type": "INBOUND",
+              "title": "Todo List Defined",
+              "elementType": "EVENT"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "0868d82d-f822-4fda-9ae2-75a8dfff82c9",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screens": [
+        {
+          "id": "74011625-6421-46cc-814b-7543c065bcd4",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Todo Lists",
+          "title": "Todo Lists",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "SCREEN",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "0868d82d-f822-4fda-9ae2-75a8dfff82c9",
+              "type": "INBOUND",
+              "title": "Todo Lists",
+              "elementType": "READMODEL"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "74011625-6421-46cc-814b-7543c065bcd4",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false,
+            "pages": [
+              "```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\n<title>Daily Tasks</title>\n\n<style>\n  :root {\n    --bg: #f5f7fb;\n    --surface: #ffffff;\n    --text: #172033;\n    --muted: #8992a5;\n    --line: #e8ebf2;\n    --accent: #6c5ce7;\n    --green: #21b573;\n    --shadow: 0 12px 35px rgba(30, 38, 60, .08);\n  }\n\n  * {\n    box-sizing: border-box;\n  }\n\n  html,\n  body {\n    margin: 0;\n    min-height: 100%;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: Inter, ui-sans-serif, system-ui, -apple-system,\n      BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  }\n\n  /* APP */\n\n  .app {\n    min-height: 100vh;\n    display: flex;\n  }\n\n  /* SIDEBAR */\n\n  .sidebar {\n    width: 250px;\n    min-height: 100vh;\n    flex-shrink: 0;\n    background: #151827;\n    color: white;\n    padding: 28px 18px;\n    display: flex;\n    flex-direction: column;\n  }\n\n  .brand {\n    font-size: 21px;\n    font-weight: 800;\n    padding: 0 12px 30px;\n    letter-spacing: -.5px;\n  }\n\n  .brand span {\n    color: #8d7cff;\n  }\n\n  .nav-label {\n    color: #777e95;\n    text-transform: uppercase;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 1px;\n    padding: 0 12px 10px;\n  }\n\n  .day {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    padding: 11px 12px;\n    margin-bottom: 4px;\n    border-radius: 10px;\n    color: #c8ccda;\n  }\n\n  .day.active {\n    background: #292c40;\n    color: white;\n  }\n\n  .day-count {\n    margin-left: auto;\n    color: #858ba0;\n    font-size: 12px;\n  }\n\n  .new-list {\n    margin: 18px 8px;\n    padding: 12px;\n    border: 1px dashed #4a4e62;\n    border-radius: 10px;\n    color: #b9bdd0;\n    text-align: center;\n  }\n\n  .sidebar-footer {\n    margin-top: auto;\n    padding: 12px;\n    color: #777e95;\n    font-size: 12px;\n  }\n\n  /* CONTENT */\n\n  .content {\n    flex: 1;\n    min-width: 0;\n    padding: 34px 42px 60px;\n  }\n\n  .content-inner {\n    width: 100%;\n    max-width: 1000px;\n    margin: 0 auto;\n  }\n\n  /* HEADER */\n\n  .top {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    margin-bottom: 28px;\n  }\n\n  .eyebrow {\n    color: var(--accent);\n    font-size: 13px;\n    font-weight: 800;\n    letter-spacing: .3px;\n    margin-bottom: 5px;\n  }\n\n  h1 {\n    margin: 0;\n    font-size: 31px;\n    line-height: 1.15;\n    letter-spacing: -1px;\n  }\n\n  .subtitle {\n    color: var(--muted);\n    margin-top: 6px;\n  }\n\n  .close-day {\n    padding: 11px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 700;\n    white-space: nowrap;\n  }\n\n  /* LIST GRID */\n\n  .lists {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    gap: 20px;\n  }\n\n  .list {\n    background: var(--surface);\n    border: 1px solid var(--line);\n    border-radius: 16px;\n    box-shadow: var(--shadow);\n    overflow: hidden;\n  }\n\n  .list-header {\n    padding: 18px 20px;\n    border-bottom: 1px solid var(--line);\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n  }\n\n  .list-name {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    font-size: 17px;\n    font-weight: 800;\n  }\n\n  .dot {\n    width: 10px;\n    height: 10px;\n    border-radius: 50%;\n    background: var(--accent);\n  }\n\n  .list-meta {\n    color: var(--muted);\n    font-size: 12px;\n    margin-top: 2px;\n  }\n\n  .tasks {\n    padding: 8px 20px;\n  }\n\n  .task {\n    min-height: 52px;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    border-bottom: 1px solid #f0f1f5;\n  }\n\n  .task:last-child {\n    border-bottom: 0;\n  }\n\n  .checkbox {\n    width: 21px;\n    height: 21px;\n    flex-shrink: 0;\n    border: 2px solid #ccd1dd;\n    border-radius: 7px;\n    background: white;\n  }\n\n  .task.completed .checkbox {\n    background: var(--green);\n    border-color: var(--green);\n    position: relative;\n  }\n\n  .task.completed .checkbox::after {\n    content: \"✓\";\n    position: absolute;\n    color: white;\n    font-size: 13px;\n    font-weight: 900;\n    left: 3px;\n    top: -3px;\n  }\n\n  .task.completed .task-text {\n    color: #a3a9b8;\n    text-decoration: line-through;\n  }\n\n  .task-text {\n    flex: 1;\n  }\n\n  .delete {\n    color: #c2c7d2;\n    font-size: 19px;\n  }\n\n  .add-task {\n    display: flex;\n    gap: 8px;\n    padding: 12px 20px 18px;\n  }\n\n  .input {\n    flex: 1;\n    min-width: 0;\n    height: 40px;\n    border: 1px solid var(--line);\n    border-radius: 9px;\n    background: white;\n    color: var(--muted);\n    padding: 0 12px;\n    display: flex;\n    align-items: center;\n  }\n\n  .add-button {\n    height: 40px;\n    padding: 0 14px;\n    border-radius: 9px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* DETAIL SCREEN */\n\n  .detail {\n    margin-top: 40px;\n  }\n\n  .detail-header {\n    display: flex;\n    align-items: center;\n    gap: 18px;\n    padding: 24px 0;\n    border-top: 1px solid var(--line);\n    border-bottom: 1px solid var(--line);\n  }\n\n  .back {\n    width: 42px;\n    height: 42px;\n    border-radius: 12px;\n    border: 1px solid var(--line);\n    background: white;\n    display: grid;\n    place-items: center;\n    font-size: 21px;\n  }\n\n  .detail-title h2 {\n    margin: 0;\n    font-size: 27px;\n    letter-spacing: -.7px;\n  }\n\n  .detail-meta {\n    color: var(--muted);\n    font-size: 13px;\n    margin-top: 2px;\n  }\n\n  .detail-done {\n    margin-left: auto;\n    padding: 10px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 750;\n  }\n\n  .detail-body {\n    margin-top: 22px;\n  }\n\n  .detail-task-list {\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 14px;\n    overflow: hidden;\n    box-shadow: var(--shadow);\n  }\n\n  .detail-task {\n    display: flex;\n    align-items: center;\n    gap: 15px;\n    padding: 18px;\n    min-height: 64px;\n    border-bottom: 1px solid var(--line);\n  }\n\n  .detail-task:last-child {\n    border-bottom: 0;\n  }\n\n  .detail-task .checkbox {\n    width: 24px;\n    height: 24px;\n  }\n\n  .detail-task-text {\n    font-size: 16px;\n    flex: 1;\n  }\n\n  .detail-add {\n    display: flex;\n    gap: 10px;\n    margin-top: 16px;\n  }\n\n  .detail-input {\n    flex: 1;\n    height: 48px;\n    padding: 0 14px;\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 11px;\n    color: var(--muted);\n    display: flex;\n    align-items: center;\n  }\n\n  .detail-add-button {\n    height: 48px;\n    padding: 0 18px;\n    border-radius: 11px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* FAB */\n\n  .fab {\n    position: fixed;\n    right: 32px;\n    bottom: 28px;\n    width: 52px;\n    height: 52px;\n    border-radius: 50%;\n    background: var(--accent);\n    color: white;\n    display: grid;\n    place-items: center;\n    font-size: 27px;\n    box-shadow: 0 10px 25px rgba(108,92,231,.35);\n  }\n\n  /* RESPONSIVE */\n\n  @media (max-width: 850px) {\n    .sidebar {\n      width: 72px;\n      padding: 20px 8px;\n    }\n\n    .brand {\n      font-size: 0;\n      text-align: center;\n      padding: 5px 0 25px;\n    }\n\n    .brand span {\n      font-size: 22px;\n    }\n\n    .nav-label,\n    .day-label,\n    .new-list,\n    .sidebar-footer {\n      display: none;\n    }\n\n    .day {\n      justify-content: center;\n    }\n\n    .day-count {\n      display: none;\n    }\n\n    .content {\n      padding: 24px 18px 50px;\n    }\n\n    .lists {\n      grid-template-columns: 1fr;\n    }\n  }\n\n  @media (max-width: 600px) {\n    .top {\n      align-items: flex-start;\n      flex-direction: column;\n      gap: 16px;\n    }\n\n    h1 {\n      font-size: 27px;\n    }\n\n    .detail-header {\n      gap: 12px;\n    }\n\n    .detail-title h2 {\n      font-size: 22px;\n    }\n\n    .detail-done {\n      font-size: 13px;\n    }\n  }\n</style>\n</head>\n\n<body>\n\n<div class=\"app\">\n\n  <!-- SIDEBAR -->\n\n  <aside class=\"sidebar\">\n\n    <div class=\"brand\">\n      daily<span>.</span>\n    </div>\n\n    <div class=\"nav-label\">\n      Your days\n    </div>\n\n    <div class=\"day active\">\n      <span>●</span>\n      <span class=\"day-label\">Today</span>\n      <span class=\"day-count\">4</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Tomorrow</span>\n      <span class=\"day-count\">3</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Yesterday</span>\n      <span class=\"day-count\">0</span>\n    </div>\n\n    <div class=\"new-list\">\n      ＋ New list\n    </div>\n\n    <div class=\"sidebar-footer\">\n      Keep it simple.<br>\n      One day at a time.\n    </div>\n\n  </aside>\n\n\n  <!-- CONTENT -->\n\n  <main class=\"content\">\n\n    <div class=\"content-inner\">\n\n      <!-- DAY HEADER -->\n\n      <div class=\"top\">\n\n        <div>\n          <div class=\"eyebrow\">TODAY</div>\n\n          <h1>\n            Saturday, August 22\n          </h1>\n\n          <div class=\"subtitle\">\n            A focused day starts with a clear list.\n          </div>\n        </div>\n\n        <div class=\"close-day\">\n          Close day\n        </div>\n\n      </div>\n\n\n      <!-- LISTS -->\n\n      <div class=\"lists\">\n\n        <!-- WORK -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Work\n              </div>\n\n              <div class=\"list-meta\">\n                1/3 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task completed\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n\n        <!-- PERSONAL -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Personal\n              </div>\n\n              <div class=\"list-meta\">\n                0/2 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Go for a walk\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Buy groceries\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n      </div>\n\n\n      <!-- LIST DETAIL -->\n\n      <section class=\"detail\">\n\n        <div class=\"detail-header\">\n\n          <div class=\"back\">\n            ←\n          </div>\n\n          <div class=\"detail-title\">\n\n            <div class=\"screen-eyebrow\">\n              TASK LIST\n            </div>\n\n            <h2>\n              Work\n            </h2>\n\n            <div class=\"detail-meta\">\n              1 of 3 tasks completed · Saturday, August 22\n            </div>\n\n          </div>\n\n          <div class=\"detail-done\">\n            Done\n          </div>\n\n        </div>\n\n\n        <div class=\"detail-body\">\n\n          <div class=\"detail-task-list\">\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n          </div>\n\n\n          <div class=\"detail-add\">\n\n            <div class=\"detail-input\">\n              Add a task...\n            </div>\n\n            <div class=\"detail-add-button\">\n              Add task\n            </div>\n\n          </div>\n\n        </div>\n\n      </section>\n\n    </div>\n\n  </main>\n\n\n  <div class=\"fab\">\n    ＋\n  </div>\n\n</div>\n\n</body>\n</html>\n```\n"
+            ]
+          }
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "storylines": [],
+      "aggregates": []
+    },
+    {
+      "id": "6ea6021a-6902-4e26-a469-27685248a061",
+      "status": "Planned",
+      "index": 0,
+      "title": "Add task",
+      "context": "Todo List",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "04fbee9b-220b-4b1a-a175-fb18302bf235",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Add task",
+          "title": "Add task",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "c6cf278b-e56f-4d8c-85b1-554d19b35f87",
+              "type": "OUTBOUND",
+              "title": "Task Added",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "407a156d-a052-5922-b978-9f590bee8617",
+              "type": "INBOUND",
+              "title": "Todo Lists",
+              "elementType": "SCREEN"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "04fbee9b-220b-4b1a-a175-fb18302bf235",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "c6cf278b-e56f-4d8c-85b1-554d19b35f87",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Add task",
+          "title": "Task Added",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "620963d9-91c6-430b-88e5-e83eb5f9628c",
+              "type": "OUTBOUND",
+              "title": "Tasks",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "04fbee9b-220b-4b1a-a175-fb18302bf235",
+              "type": "INBOUND",
+              "title": "Add task",
+              "elementType": "COMMAND"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "c6cf278b-e56f-4d8c-85b1-554d19b35f87",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "407a156d-a052-5922-b978-9f590bee8617",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Todo Lists",
+          "title": "Todo Lists",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "SCREEN",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "04fbee9b-220b-4b1a-a175-fb18302bf235",
+              "type": "OUTBOUND",
+              "title": "Add task",
+              "elementType": "COMMAND"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": true,
+          "linkedId": "74011625-6421-46cc-814b-7543c065bcd4",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false,
+            "pages": [
+              "```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\n<title>Daily Tasks</title>\n\n<style>\n  :root {\n    --bg: #f5f7fb;\n    --surface: #ffffff;\n    --text: #172033;\n    --muted: #8992a5;\n    --line: #e8ebf2;\n    --accent: #6c5ce7;\n    --green: #21b573;\n    --shadow: 0 12px 35px rgba(30, 38, 60, .08);\n  }\n\n  * {\n    box-sizing: border-box;\n  }\n\n  html,\n  body {\n    margin: 0;\n    min-height: 100%;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: Inter, ui-sans-serif, system-ui, -apple-system,\n      BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  }\n\n  /* APP */\n\n  .app {\n    min-height: 100vh;\n    display: flex;\n  }\n\n  /* SIDEBAR */\n\n  .sidebar {\n    width: 250px;\n    min-height: 100vh;\n    flex-shrink: 0;\n    background: #151827;\n    color: white;\n    padding: 28px 18px;\n    display: flex;\n    flex-direction: column;\n  }\n\n  .brand {\n    font-size: 21px;\n    font-weight: 800;\n    padding: 0 12px 30px;\n    letter-spacing: -.5px;\n  }\n\n  .brand span {\n    color: #8d7cff;\n  }\n\n  .nav-label {\n    color: #777e95;\n    text-transform: uppercase;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 1px;\n    padding: 0 12px 10px;\n  }\n\n  .day {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    padding: 11px 12px;\n    margin-bottom: 4px;\n    border-radius: 10px;\n    color: #c8ccda;\n  }\n\n  .day.active {\n    background: #292c40;\n    color: white;\n  }\n\n  .day-count {\n    margin-left: auto;\n    color: #858ba0;\n    font-size: 12px;\n  }\n\n  .new-list {\n    margin: 18px 8px;\n    padding: 12px;\n    border: 1px dashed #4a4e62;\n    border-radius: 10px;\n    color: #b9bdd0;\n    text-align: center;\n  }\n\n  .sidebar-footer {\n    margin-top: auto;\n    padding: 12px;\n    color: #777e95;\n    font-size: 12px;\n  }\n\n  /* CONTENT */\n\n  .content {\n    flex: 1;\n    min-width: 0;\n    padding: 34px 42px 60px;\n  }\n\n  .content-inner {\n    width: 100%;\n    max-width: 1000px;\n    margin: 0 auto;\n  }\n\n  /* HEADER */\n\n  .top {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    margin-bottom: 28px;\n  }\n\n  .eyebrow {\n    color: var(--accent);\n    font-size: 13px;\n    font-weight: 800;\n    letter-spacing: .3px;\n    margin-bottom: 5px;\n  }\n\n  h1 {\n    margin: 0;\n    font-size: 31px;\n    line-height: 1.15;\n    letter-spacing: -1px;\n  }\n\n  .subtitle {\n    color: var(--muted);\n    margin-top: 6px;\n  }\n\n  .close-day {\n    padding: 11px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 700;\n    white-space: nowrap;\n  }\n\n  /* LIST GRID */\n\n  .lists {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    gap: 20px;\n  }\n\n  .list {\n    background: var(--surface);\n    border: 1px solid var(--line);\n    border-radius: 16px;\n    box-shadow: var(--shadow);\n    overflow: hidden;\n  }\n\n  .list-header {\n    padding: 18px 20px;\n    border-bottom: 1px solid var(--line);\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n  }\n\n  .list-name {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    font-size: 17px;\n    font-weight: 800;\n  }\n\n  .dot {\n    width: 10px;\n    height: 10px;\n    border-radius: 50%;\n    background: var(--accent);\n  }\n\n  .list-meta {\n    color: var(--muted);\n    font-size: 12px;\n    margin-top: 2px;\n  }\n\n  .tasks {\n    padding: 8px 20px;\n  }\n\n  .task {\n    min-height: 52px;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    border-bottom: 1px solid #f0f1f5;\n  }\n\n  .task:last-child {\n    border-bottom: 0;\n  }\n\n  .checkbox {\n    width: 21px;\n    height: 21px;\n    flex-shrink: 0;\n    border: 2px solid #ccd1dd;\n    border-radius: 7px;\n    background: white;\n  }\n\n  .task.completed .checkbox {\n    background: var(--green);\n    border-color: var(--green);\n    position: relative;\n  }\n\n  .task.completed .checkbox::after {\n    content: \"✓\";\n    position: absolute;\n    color: white;\n    font-size: 13px;\n    font-weight: 900;\n    left: 3px;\n    top: -3px;\n  }\n\n  .task.completed .task-text {\n    color: #a3a9b8;\n    text-decoration: line-through;\n  }\n\n  .task-text {\n    flex: 1;\n  }\n\n  .delete {\n    color: #c2c7d2;\n    font-size: 19px;\n  }\n\n  .add-task {\n    display: flex;\n    gap: 8px;\n    padding: 12px 20px 18px;\n  }\n\n  .input {\n    flex: 1;\n    min-width: 0;\n    height: 40px;\n    border: 1px solid var(--line);\n    border-radius: 9px;\n    background: white;\n    color: var(--muted);\n    padding: 0 12px;\n    display: flex;\n    align-items: center;\n  }\n\n  .add-button {\n    height: 40px;\n    padding: 0 14px;\n    border-radius: 9px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* DETAIL SCREEN */\n\n  .detail {\n    margin-top: 40px;\n  }\n\n  .detail-header {\n    display: flex;\n    align-items: center;\n    gap: 18px;\n    padding: 24px 0;\n    border-top: 1px solid var(--line);\n    border-bottom: 1px solid var(--line);\n  }\n\n  .back {\n    width: 42px;\n    height: 42px;\n    border-radius: 12px;\n    border: 1px solid var(--line);\n    background: white;\n    display: grid;\n    place-items: center;\n    font-size: 21px;\n  }\n\n  .detail-title h2 {\n    margin: 0;\n    font-size: 27px;\n    letter-spacing: -.7px;\n  }\n\n  .detail-meta {\n    color: var(--muted);\n    font-size: 13px;\n    margin-top: 2px;\n  }\n\n  .detail-done {\n    margin-left: auto;\n    padding: 10px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 750;\n  }\n\n  .detail-body {\n    margin-top: 22px;\n  }\n\n  .detail-task-list {\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 14px;\n    overflow: hidden;\n    box-shadow: var(--shadow);\n  }\n\n  .detail-task {\n    display: flex;\n    align-items: center;\n    gap: 15px;\n    padding: 18px;\n    min-height: 64px;\n    border-bottom: 1px solid var(--line);\n  }\n\n  .detail-task:last-child {\n    border-bottom: 0;\n  }\n\n  .detail-task .checkbox {\n    width: 24px;\n    height: 24px;\n  }\n\n  .detail-task-text {\n    font-size: 16px;\n    flex: 1;\n  }\n\n  .detail-add {\n    display: flex;\n    gap: 10px;\n    margin-top: 16px;\n  }\n\n  .detail-input {\n    flex: 1;\n    height: 48px;\n    padding: 0 14px;\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 11px;\n    color: var(--muted);\n    display: flex;\n    align-items: center;\n  }\n\n  .detail-add-button {\n    height: 48px;\n    padding: 0 18px;\n    border-radius: 11px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* FAB */\n\n  .fab {\n    position: fixed;\n    right: 32px;\n    bottom: 28px;\n    width: 52px;\n    height: 52px;\n    border-radius: 50%;\n    background: var(--accent);\n    color: white;\n    display: grid;\n    place-items: center;\n    font-size: 27px;\n    box-shadow: 0 10px 25px rgba(108,92,231,.35);\n  }\n\n  /* RESPONSIVE */\n\n  @media (max-width: 850px) {\n    .sidebar {\n      width: 72px;\n      padding: 20px 8px;\n    }\n\n    .brand {\n      font-size: 0;\n      text-align: center;\n      padding: 5px 0 25px;\n    }\n\n    .brand span {\n      font-size: 22px;\n    }\n\n    .nav-label,\n    .day-label,\n    .new-list,\n    .sidebar-footer {\n      display: none;\n    }\n\n    .day {\n      justify-content: center;\n    }\n\n    .day-count {\n      display: none;\n    }\n\n    .content {\n      padding: 24px 18px 50px;\n    }\n\n    .lists {\n      grid-template-columns: 1fr;\n    }\n  }\n\n  @media (max-width: 600px) {\n    .top {\n      align-items: flex-start;\n      flex-direction: column;\n      gap: 16px;\n    }\n\n    h1 {\n      font-size: 27px;\n    }\n\n    .detail-header {\n      gap: 12px;\n    }\n\n    .detail-title h2 {\n      font-size: 22px;\n    }\n\n    .detail-done {\n      font-size: 13px;\n    }\n  }\n</style>\n</head>\n\n<body>\n\n<div class=\"app\">\n\n  <!-- SIDEBAR -->\n\n  <aside class=\"sidebar\">\n\n    <div class=\"brand\">\n      daily<span>.</span>\n    </div>\n\n    <div class=\"nav-label\">\n      Your days\n    </div>\n\n    <div class=\"day active\">\n      <span>●</span>\n      <span class=\"day-label\">Today</span>\n      <span class=\"day-count\">4</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Tomorrow</span>\n      <span class=\"day-count\">3</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Yesterday</span>\n      <span class=\"day-count\">0</span>\n    </div>\n\n    <div class=\"new-list\">\n      ＋ New list\n    </div>\n\n    <div class=\"sidebar-footer\">\n      Keep it simple.<br>\n      One day at a time.\n    </div>\n\n  </aside>\n\n\n  <!-- CONTENT -->\n\n  <main class=\"content\">\n\n    <div class=\"content-inner\">\n\n      <!-- DAY HEADER -->\n\n      <div class=\"top\">\n\n        <div>\n          <div class=\"eyebrow\">TODAY</div>\n\n          <h1>\n            Saturday, August 22\n          </h1>\n\n          <div class=\"subtitle\">\n            A focused day starts with a clear list.\n          </div>\n        </div>\n\n        <div class=\"close-day\">\n          Close day\n        </div>\n\n      </div>\n\n\n      <!-- LISTS -->\n\n      <div class=\"lists\">\n\n        <!-- WORK -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Work\n              </div>\n\n              <div class=\"list-meta\">\n                1/3 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task completed\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n\n        <!-- PERSONAL -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Personal\n              </div>\n\n              <div class=\"list-meta\">\n                0/2 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Go for a walk\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Buy groceries\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n      </div>\n\n\n      <!-- LIST DETAIL -->\n\n      <section class=\"detail\">\n\n        <div class=\"detail-header\">\n\n          <div class=\"back\">\n            ←\n          </div>\n\n          <div class=\"detail-title\">\n\n            <div class=\"screen-eyebrow\">\n              TASK LIST\n            </div>\n\n            <h2>\n              Work\n            </h2>\n\n            <div class=\"detail-meta\">\n              1 of 3 tasks completed · Saturday, August 22\n            </div>\n\n          </div>\n\n          <div class=\"detail-done\">\n            Done\n          </div>\n\n        </div>\n\n\n        <div class=\"detail-body\">\n\n          <div class=\"detail-task-list\">\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n          </div>\n\n\n          <div class=\"detail-add\">\n\n            <div class=\"detail-input\">\n              Add a task...\n            </div>\n\n            <div class=\"detail-add-button\">\n              Add task\n            </div>\n\n          </div>\n\n        </div>\n\n      </section>\n\n    </div>\n\n  </main>\n\n\n  <div class=\"fab\">\n    ＋\n  </div>\n\n</div>\n\n</body>\n</html>\n```\n"
+            ]
+          }
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "storylines": [],
+      "aggregates": []
+    },
+    {
+      "id": "e93d20c9-eee8-477c-b1f5-3c4fad20d368",
+      "status": "Planned",
+      "index": 0,
+      "title": "Tasks",
+      "context": "Todo List",
+      "sliceType": "STATE_VIEW",
+      "commands": [],
+      "events": [],
+      "readmodels": [
+        {
+          "id": "620963d9-91c6-430b-88e5-e83eb5f9628c",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Tasks",
+          "title": "Tasks",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "READMODEL",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "ddef5622-2dee-4621-a530-dcb70a173ebb",
+              "type": "OUTBOUND",
+              "title": "Todo Lists",
+              "elementType": "SCREEN"
+            },
+            {
+              "id": "c6cf278b-e56f-4d8c-85b1-554d19b35f87",
+              "type": "INBOUND",
+              "title": "Task Added",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "9f5098e6-c7f9-4cd1-a676-48d90cea89da",
+              "type": "INBOUND",
+              "title": "Task Resolved",
+              "elementType": "EVENT"
+            }
+          ],
+          "listElement": true,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "620963d9-91c6-430b-88e5-e83eb5f9628c",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "screens": [
+        {
+          "id": "ddef5622-2dee-4621-a530-dcb70a173ebb",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Tasks",
+          "title": "Todo Lists",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "SCREEN",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "620963d9-91c6-430b-88e5-e83eb5f9628c",
+              "type": "INBOUND",
+              "title": "Tasks",
+              "elementType": "READMODEL"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "ddef5622-2dee-4621-a530-dcb70a173ebb",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false,
+            "pages": [
+              "```html\n\n\n\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\n<title>Daily Tasks</title>\n\n<style>\n  :root {\n    --bg: #f5f7fb;\n    --surface: #ffffff;\n    --text: #172033;\n    --muted: #8992a5;\n    --line: #e8ebf2;\n    --accent: #6c5ce7;\n    --green: #21b573;\n    --shadow: 0 12px 35px rgba(30, 38, 60, .08);\n  }\n\n  * {\n    box-sizing: border-box;\n  }\n\n  html,\n  body {\n    margin: 0;\n    min-height: 100%;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: Inter, ui-sans-serif, system-ui, -apple-system,\n      BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  }\n\n  /* APP */\n\n  .app {\n    min-height: 100vh;\n    display: flex;\n  }\n\n  /* SIDEBAR */\n\n  .sidebar {\n    width: 250px;\n    min-height: 100vh;\n    flex-shrink: 0;\n    background: #151827;\n    color: white;\n    padding: 28px 18px;\n    display: flex;\n    flex-direction: column;\n  }\n\n  .brand {\n    font-size: 21px;\n    font-weight: 800;\n    padding: 0 12px 30px;\n    letter-spacing: -.5px;\n  }\n\n  .brand span {\n    color: #8d7cff;\n  }\n\n  .nav-label {\n    color: #777e95;\n    text-transform: uppercase;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 1px;\n    padding: 0 12px 10px;\n  }\n\n  .day {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    padding: 11px 12px;\n    margin-bottom: 4px;\n    border-radius: 10px;\n    color: #c8ccda;\n  }\n\n  .day.active {\n    background: #292c40;\n    color: white;\n  }\n\n  .day-count {\n    margin-left: auto;\n    color: #858ba0;\n    font-size: 12px;\n  }\n\n  .new-list {\n    margin: 18px 8px;\n    padding: 12px;\n    border: 1px dashed #4a4e62;\n    border-radius: 10px;\n    color: #b9bdd0;\n    text-align: center;\n  }\n\n  .sidebar-footer {\n    margin-top: auto;\n    padding: 12px;\n    color: #777e95;\n    font-size: 12px;\n  }\n\n  /* CONTENT */\n\n  .content {\n    flex: 1;\n    min-width: 0;\n    padding: 34px 42px 60px;\n  }\n\n  .content-inner {\n    width: 100%;\n    max-width: 1000px;\n    margin: 0 auto;\n  }\n\n  /* HEADER */\n\n  .top {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    margin-bottom: 28px;\n  }\n\n  .eyebrow {\n    color: var(--accent);\n    font-size: 13px;\n    font-weight: 800;\n    letter-spacing: .3px;\n    margin-bottom: 5px;\n  }\n\n  h1 {\n    margin: 0;\n    font-size: 31px;\n    line-height: 1.15;\n    letter-spacing: -1px;\n  }\n\n  .subtitle {\n    color: var(--muted);\n    margin-top: 6px;\n  }\n\n  .close-day {\n    padding: 11px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 700;\n    white-space: nowrap;\n  }\n\n  /* LIST GRID */\n\n  .lists {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    gap: 20px;\n  }\n\n  .list {\n    background: var(--surface);\n    border: 1px solid var(--line);\n    border-radius: 16px;\n    box-shadow: var(--shadow);\n    overflow: hidden;\n  }\n\n  .list-header {\n    padding: 18px 20px;\n    border-bottom: 1px solid var(--line);\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n  }\n\n  .list-name {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    font-size: 17px;\n    font-weight: 800;\n  }\n\n  .dot {\n    width: 10px;\n    height: 10px;\n    border-radius: 50%;\n    background: var(--accent);\n  }\n\n  .list-meta {\n    color: var(--muted);\n    font-size: 12px;\n    margin-top: 2px;\n  }\n\n  .tasks {\n    padding: 8px 20px;\n  }\n\n  .task {\n    min-height: 52px;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    border-bottom: 1px solid #f0f1f5;\n  }\n\n  .task:last-child {\n    border-bottom: 0;\n  }\n\n  .checkbox {\n    width: 21px;\n    height: 21px;\n    flex-shrink: 0;\n    border: 2px solid #ccd1dd;\n    border-radius: 7px;\n    background: white;\n  }\n\n  .task.completed .checkbox {\n    background: var(--green);\n    border-color: var(--green);\n    position: relative;\n  }\n\n  .task.completed .checkbox::after {\n    content: \"✓\";\n    position: absolute;\n    color: white;\n    font-size: 13px;\n    font-weight: 900;\n    left: 3px;\n    top: -3px;\n  }\n\n  .task.completed .task-text {\n    color: #a3a9b8;\n    text-decoration: line-through;\n  }\n\n  .task-text {\n    flex: 1;\n  }\n\n  .delete {\n    color: #c2c7d2;\n    font-size: 19px;\n  }\n\n  .add-task {\n    display: flex;\n    gap: 8px;\n    padding: 12px 20px 18px;\n  }\n\n  .input {\n    flex: 1;\n    min-width: 0;\n    height: 40px;\n    border: 1px solid var(--line);\n    border-radius: 9px;\n    background: white;\n    color: var(--muted);\n    padding: 0 12px;\n    display: flex;\n    align-items: center;\n  }\n\n  .add-button {\n    height: 40px;\n    padding: 0 14px;\n    border-radius: 9px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* DETAIL SCREEN */\n\n  .detail {\n    margin-top: 40px;\n  }\n\n  .detail-header {\n    display: flex;\n    align-items: center;\n    gap: 18px;\n    padding: 24px 0;\n    border-top: 1px solid var(--line);\n    border-bottom: 1px solid var(--line);\n  }\n\n  .back {\n    width: 42px;\n    height: 42px;\n    border-radius: 12px;\n    border: 1px solid var(--line);\n    background: white;\n    display: grid;\n    place-items: center;\n    font-size: 21px;\n  }\n\n  .detail-title h2 {\n    margin: 0;\n    font-size: 27px;\n    letter-spacing: -.7px;\n  }\n\n  .detail-meta {\n    color: var(--muted);\n    font-size: 13px;\n    margin-top: 2px;\n  }\n\n  .detail-done {\n    margin-left: auto;\n    padding: 10px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 750;\n  }\n\n  .detail-body {\n    margin-top: 22px;\n  }\n\n  .detail-task-list {\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 14px;\n    overflow: hidden;\n    box-shadow: var(--shadow);\n  }\n\n  .detail-task {\n    display: flex;\n    align-items: center;\n    gap: 15px;\n    padding: 18px;\n    min-height: 64px;\n    border-bottom: 1px solid var(--line);\n  }\n\n  .detail-task:last-child {\n    border-bottom: 0;\n  }\n\n  .detail-task .checkbox {\n    width: 24px;\n    height: 24px;\n  }\n\n  .detail-task-text {\n    font-size: 16px;\n    flex: 1;\n  }\n\n  .detail-add {\n    display: flex;\n    gap: 10px;\n    margin-top: 16px;\n  }\n\n  .detail-input {\n    flex: 1;\n    height: 48px;\n    padding: 0 14px;\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 11px;\n    color: var(--muted);\n    display: flex;\n    align-items: center;\n  }\n\n  .detail-add-button {\n    height: 48px;\n    padding: 0 18px;\n    border-radius: 11px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* FAB */\n\n  .fab {\n    position: fixed;\n    right: 32px;\n    bottom: 28px;\n    width: 52px;\n    height: 52px;\n    border-radius: 50%;\n    background: var(--accent);\n    color: white;\n    display: grid;\n    place-items: center;\n    font-size: 27px;\n    box-shadow: 0 10px 25px rgba(108,92,231,.35);\n  }\n\n  /* RESPONSIVE */\n\n  @media (max-width: 850px) {\n    .sidebar {\n      width: 72px;\n      padding: 20px 8px;\n    }\n\n    .brand {\n      font-size: 0;\n      text-align: center;\n      padding: 5px 0 25px;\n    }\n\n    .brand span {\n      font-size: 22px;\n    }\n\n    .nav-label,\n    .day-label,\n    .new-list,\n    .sidebar-footer {\n      display: none;\n    }\n\n    .day {\n      justify-content: center;\n    }\n\n    .day-count {\n      display: none;\n    }\n\n    .content {\n      padding: 24px 18px 50px;\n    }\n\n    .lists {\n      grid-template-columns: 1fr;\n    }\n  }\n\n  @media (max-width: 600px) {\n    .top {\n      align-items: flex-start;\n      flex-direction: column;\n      gap: 16px;\n    }\n\n    h1 {\n      font-size: 27px;\n    }\n\n    .detail-header {\n      gap: 12px;\n    }\n\n    .detail-title h2 {\n      font-size: 22px;\n    }\n\n    .detail-done {\n      font-size: 13px;\n    }\n  }\n</style>\n\n\n\n\n<div class=\"app\">\n\n  <!-- SIDEBAR -->\n\n  <aside class=\"sidebar\">\n\n    <div class=\"brand\">\n      daily<span>.</span>\n    </div>\n\n    <div class=\"nav-label\">\n      Your days\n    </div>\n\n    <div class=\"day active\">\n      <span>●</span>\n      <span class=\"day-label\">Today</span>\n      <span class=\"day-count\">4</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Tomorrow</span>\n      <span class=\"day-count\">3</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Yesterday</span>\n      <span class=\"day-count\">0</span>\n    </div>\n\n    <div class=\"new-list\">\n      ＋ New list\n    </div>\n\n    <div class=\"sidebar-footer\">\n      Keep it simple.<br>\n      One day at a time.\n    </div>\n\n  </aside>\n\n\n  <!-- CONTENT -->\n\n  <main class=\"content\">\n\n    <div class=\"content-inner\">\n\n      <!-- DAY HEADER -->\n\n      <div class=\"top\">\n\n        <div>\n          <div class=\"eyebrow\">TODAY</div>\n\n          <h1>\n            Saturday, August 22\n          </h1>\n\n          <div class=\"subtitle\">\n            A focused day starts with a clear list.\n          </div>\n        </div>\n\n        <div class=\"close-day\">\n          Close day\n        </div>\n\n      </div>\n\n\n      <!-- LISTS -->\n\n      <div class=\"lists\">\n\n        <!-- WORK -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Work\n              </div>\n\n              <div class=\"list-meta\">\n                1/3 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks em-mark em-mark-e74c3c\" data-em-mark-id=\"em-i975rlt\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task completed\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n\n        <!-- PERSONAL -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Personal\n              </div>\n\n              <div class=\"list-meta\">\n                0/2 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Go for a walk\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Buy groceries\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n      </div>\n\n\n      <!-- LIST DETAIL -->\n\n      <section class=\"detail\">\n\n        <div class=\"detail-header\">\n\n          <div class=\"back\">\n            ←\n          </div>\n\n          <div class=\"detail-title\">\n\n            <div class=\"screen-eyebrow\">\n              TASK LIST\n            </div>\n\n            <h2>\n              Work\n            </h2>\n\n            <div class=\"detail-meta\">\n              1 of 3 tasks completed · Saturday, August 22\n            </div>\n\n          </div>\n\n          <div class=\"detail-done\">\n            Done\n          </div>\n\n        </div>\n\n\n        <div class=\"detail-body\">\n\n          <div class=\"detail-task-list\">\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n          </div>\n\n\n          <div class=\"detail-add\">\n\n            <div class=\"detail-input\">\n              Add a task...\n            </div>\n\n            <div class=\"detail-add-button\">\n              Add task\n            </div>\n\n          </div>\n\n        </div>\n\n      </section>\n\n    </div>\n\n  </main>\n\n\n  <div class=\"fab\">\n    ＋\n  </div>\n\n</div>\n\n\n\n```\n"
+            ]
+          }
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "storylines": [],
+      "aggregates": []
+    },
+    {
+      "id": "237240cb-64d9-46a0-9fa5-4a18cbafa10c",
+      "status": "Planned",
+      "index": 0,
+      "title": "Resolve Task",
+      "context": "Todo List",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "fab18804-3383-4c3e-b640-e5901ac53ce7",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Resolve Task",
+          "title": "Resolve Task",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "9f5098e6-c7f9-4cd1-a676-48d90cea89da",
+              "type": "OUTBOUND",
+              "title": "Task Resolved",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "69713bf4-7c5a-5c5c-9bdb-bb1ed272c842",
+              "type": "INBOUND",
+              "title": "Todo Lists",
+              "elementType": "SCREEN"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "fab18804-3383-4c3e-b640-e5901ac53ce7",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "9f5098e6-c7f9-4cd1-a676-48d90cea89da",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Resolve Task",
+          "title": "Task Resolved",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "620963d9-91c6-430b-88e5-e83eb5f9628c",
+              "type": "OUTBOUND",
+              "title": "Tasks",
+              "elementType": "READMODEL"
+            },
+            {
+              "id": "fab18804-3383-4c3e-b640-e5901ac53ce7",
+              "type": "INBOUND",
+              "title": "Resolve Task",
+              "elementType": "COMMAND"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "9f5098e6-c7f9-4cd1-a676-48d90cea89da",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "69713bf4-7c5a-5c5c-9bdb-bb1ed272c842",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Tasks",
+          "title": "Todo Lists",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "SCREEN",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "fab18804-3383-4c3e-b640-e5901ac53ce7",
+              "type": "OUTBOUND",
+              "title": "Resolve Task",
+              "elementType": "COMMAND"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": true,
+          "linkedId": "ddef5622-2dee-4621-a530-dcb70a173ebb",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false,
+            "pages": [
+              "```html\n\n\n\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\n<title>Daily Tasks</title>\n\n<style>\n  :root {\n    --bg: #f5f7fb;\n    --surface: #ffffff;\n    --text: #172033;\n    --muted: #8992a5;\n    --line: #e8ebf2;\n    --accent: #6c5ce7;\n    --green: #21b573;\n    --shadow: 0 12px 35px rgba(30, 38, 60, .08);\n  }\n\n  * {\n    box-sizing: border-box;\n  }\n\n  html,\n  body {\n    margin: 0;\n    min-height: 100%;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: Inter, ui-sans-serif, system-ui, -apple-system,\n      BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  }\n\n  /* APP */\n\n  .app {\n    min-height: 100vh;\n    display: flex;\n  }\n\n  /* SIDEBAR */\n\n  .sidebar {\n    width: 250px;\n    min-height: 100vh;\n    flex-shrink: 0;\n    background: #151827;\n    color: white;\n    padding: 28px 18px;\n    display: flex;\n    flex-direction: column;\n  }\n\n  .brand {\n    font-size: 21px;\n    font-weight: 800;\n    padding: 0 12px 30px;\n    letter-spacing: -.5px;\n  }\n\n  .brand span {\n    color: #8d7cff;\n  }\n\n  .nav-label {\n    color: #777e95;\n    text-transform: uppercase;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 1px;\n    padding: 0 12px 10px;\n  }\n\n  .day {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    padding: 11px 12px;\n    margin-bottom: 4px;\n    border-radius: 10px;\n    color: #c8ccda;\n  }\n\n  .day.active {\n    background: #292c40;\n    color: white;\n  }\n\n  .day-count {\n    margin-left: auto;\n    color: #858ba0;\n    font-size: 12px;\n  }\n\n  .new-list {\n    margin: 18px 8px;\n    padding: 12px;\n    border: 1px dashed #4a4e62;\n    border-radius: 10px;\n    color: #b9bdd0;\n    text-align: center;\n  }\n\n  .sidebar-footer {\n    margin-top: auto;\n    padding: 12px;\n    color: #777e95;\n    font-size: 12px;\n  }\n\n  /* CONTENT */\n\n  .content {\n    flex: 1;\n    min-width: 0;\n    padding: 34px 42px 60px;\n  }\n\n  .content-inner {\n    width: 100%;\n    max-width: 1000px;\n    margin: 0 auto;\n  }\n\n  /* HEADER */\n\n  .top {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    margin-bottom: 28px;\n  }\n\n  .eyebrow {\n    color: var(--accent);\n    font-size: 13px;\n    font-weight: 800;\n    letter-spacing: .3px;\n    margin-bottom: 5px;\n  }\n\n  h1 {\n    margin: 0;\n    font-size: 31px;\n    line-height: 1.15;\n    letter-spacing: -1px;\n  }\n\n  .subtitle {\n    color: var(--muted);\n    margin-top: 6px;\n  }\n\n  .close-day {\n    padding: 11px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 700;\n    white-space: nowrap;\n  }\n\n  /* LIST GRID */\n\n  .lists {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    gap: 20px;\n  }\n\n  .list {\n    background: var(--surface);\n    border: 1px solid var(--line);\n    border-radius: 16px;\n    box-shadow: var(--shadow);\n    overflow: hidden;\n  }\n\n  .list-header {\n    padding: 18px 20px;\n    border-bottom: 1px solid var(--line);\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n  }\n\n  .list-name {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    font-size: 17px;\n    font-weight: 800;\n  }\n\n  .dot {\n    width: 10px;\n    height: 10px;\n    border-radius: 50%;\n    background: var(--accent);\n  }\n\n  .list-meta {\n    color: var(--muted);\n    font-size: 12px;\n    margin-top: 2px;\n  }\n\n  .tasks {\n    padding: 8px 20px;\n  }\n\n  .task {\n    min-height: 52px;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    border-bottom: 1px solid #f0f1f5;\n  }\n\n  .task:last-child {\n    border-bottom: 0;\n  }\n\n  .checkbox {\n    width: 21px;\n    height: 21px;\n    flex-shrink: 0;\n    border: 2px solid #ccd1dd;\n    border-radius: 7px;\n    background: white;\n  }\n\n  .task.completed .checkbox {\n    background: var(--green);\n    border-color: var(--green);\n    position: relative;\n  }\n\n  .task.completed .checkbox::after {\n    content: \"✓\";\n    position: absolute;\n    color: white;\n    font-size: 13px;\n    font-weight: 900;\n    left: 3px;\n    top: -3px;\n  }\n\n  .task.completed .task-text {\n    color: #a3a9b8;\n    text-decoration: line-through;\n  }\n\n  .task-text {\n    flex: 1;\n  }\n\n  .delete {\n    color: #c2c7d2;\n    font-size: 19px;\n  }\n\n  .add-task {\n    display: flex;\n    gap: 8px;\n    padding: 12px 20px 18px;\n  }\n\n  .input {\n    flex: 1;\n    min-width: 0;\n    height: 40px;\n    border: 1px solid var(--line);\n    border-radius: 9px;\n    background: white;\n    color: var(--muted);\n    padding: 0 12px;\n    display: flex;\n    align-items: center;\n  }\n\n  .add-button {\n    height: 40px;\n    padding: 0 14px;\n    border-radius: 9px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* DETAIL SCREEN */\n\n  .detail {\n    margin-top: 40px;\n  }\n\n  .detail-header {\n    display: flex;\n    align-items: center;\n    gap: 18px;\n    padding: 24px 0;\n    border-top: 1px solid var(--line);\n    border-bottom: 1px solid var(--line);\n  }\n\n  .back {\n    width: 42px;\n    height: 42px;\n    border-radius: 12px;\n    border: 1px solid var(--line);\n    background: white;\n    display: grid;\n    place-items: center;\n    font-size: 21px;\n  }\n\n  .detail-title h2 {\n    margin: 0;\n    font-size: 27px;\n    letter-spacing: -.7px;\n  }\n\n  .detail-meta {\n    color: var(--muted);\n    font-size: 13px;\n    margin-top: 2px;\n  }\n\n  .detail-done {\n    margin-left: auto;\n    padding: 10px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 750;\n  }\n\n  .detail-body {\n    margin-top: 22px;\n  }\n\n  .detail-task-list {\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 14px;\n    overflow: hidden;\n    box-shadow: var(--shadow);\n  }\n\n  .detail-task {\n    display: flex;\n    align-items: center;\n    gap: 15px;\n    padding: 18px;\n    min-height: 64px;\n    border-bottom: 1px solid var(--line);\n  }\n\n  .detail-task:last-child {\n    border-bottom: 0;\n  }\n\n  .detail-task .checkbox {\n    width: 24px;\n    height: 24px;\n  }\n\n  .detail-task-text {\n    font-size: 16px;\n    flex: 1;\n  }\n\n  .detail-add {\n    display: flex;\n    gap: 10px;\n    margin-top: 16px;\n  }\n\n  .detail-input {\n    flex: 1;\n    height: 48px;\n    padding: 0 14px;\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 11px;\n    color: var(--muted);\n    display: flex;\n    align-items: center;\n  }\n\n  .detail-add-button {\n    height: 48px;\n    padding: 0 18px;\n    border-radius: 11px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* FAB */\n\n  .fab {\n    position: fixed;\n    right: 32px;\n    bottom: 28px;\n    width: 52px;\n    height: 52px;\n    border-radius: 50%;\n    background: var(--accent);\n    color: white;\n    display: grid;\n    place-items: center;\n    font-size: 27px;\n    box-shadow: 0 10px 25px rgba(108,92,231,.35);\n  }\n\n  /* RESPONSIVE */\n\n  @media (max-width: 850px) {\n    .sidebar {\n      width: 72px;\n      padding: 20px 8px;\n    }\n\n    .brand {\n      font-size: 0;\n      text-align: center;\n      padding: 5px 0 25px;\n    }\n\n    .brand span {\n      font-size: 22px;\n    }\n\n    .nav-label,\n    .day-label,\n    .new-list,\n    .sidebar-footer {\n      display: none;\n    }\n\n    .day {\n      justify-content: center;\n    }\n\n    .day-count {\n      display: none;\n    }\n\n    .content {\n      padding: 24px 18px 50px;\n    }\n\n    .lists {\n      grid-template-columns: 1fr;\n    }\n  }\n\n  @media (max-width: 600px) {\n    .top {\n      align-items: flex-start;\n      flex-direction: column;\n      gap: 16px;\n    }\n\n    h1 {\n      font-size: 27px;\n    }\n\n    .detail-header {\n      gap: 12px;\n    }\n\n    .detail-title h2 {\n      font-size: 22px;\n    }\n\n    .detail-done {\n      font-size: 13px;\n    }\n  }\n</style>\n\n\n\n\n<div class=\"app\">\n\n  <!-- SIDEBAR -->\n\n  <aside class=\"sidebar\">\n\n    <div class=\"brand\">\n      daily<span>.</span>\n    </div>\n\n    <div class=\"nav-label\">\n      Your days\n    </div>\n\n    <div class=\"day active\">\n      <span>●</span>\n      <span class=\"day-label\">Today</span>\n      <span class=\"day-count\">4</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Tomorrow</span>\n      <span class=\"day-count\">3</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Yesterday</span>\n      <span class=\"day-count\">0</span>\n    </div>\n\n    <div class=\"new-list\">\n      ＋ New list\n    </div>\n\n    <div class=\"sidebar-footer\">\n      Keep it simple.<br>\n      One day at a time.\n    </div>\n\n  </aside>\n\n\n  <!-- CONTENT -->\n\n  <main class=\"content\">\n\n    <div class=\"content-inner\">\n\n      <!-- DAY HEADER -->\n\n      <div class=\"top\">\n\n        <div>\n          <div class=\"eyebrow\">TODAY</div>\n\n          <h1>\n            Saturday, August 22\n          </h1>\n\n          <div class=\"subtitle\">\n            A focused day starts with a clear list.\n          </div>\n        </div>\n\n        <div class=\"close-day\">\n          Close day\n        </div>\n\n      </div>\n\n\n      <!-- LISTS -->\n\n      <div class=\"lists\">\n\n        <!-- WORK -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Work\n              </div>\n\n              <div class=\"list-meta\">\n                1/3 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks em-mark em-mark-e74c3c\" data-em-mark-id=\"em-i975rlt\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task completed\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n\n        <!-- PERSONAL -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Personal\n              </div>\n\n              <div class=\"list-meta\">\n                0/2 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Go for a walk\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Buy groceries\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n      </div>\n\n\n      <!-- LIST DETAIL -->\n\n      <section class=\"detail\">\n\n        <div class=\"detail-header\">\n\n          <div class=\"back\">\n            ←\n          </div>\n\n          <div class=\"detail-title\">\n\n            <div class=\"screen-eyebrow\">\n              TASK LIST\n            </div>\n\n            <h2>\n              Work\n            </h2>\n\n            <div class=\"detail-meta\">\n              1 of 3 tasks completed · Saturday, August 22\n            </div>\n\n          </div>\n\n          <div class=\"detail-done\">\n            Done\n          </div>\n\n        </div>\n\n\n        <div class=\"detail-body\">\n\n          <div class=\"detail-task-list\">\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n          </div>\n\n\n          <div class=\"detail-add\">\n\n            <div class=\"detail-input\">\n              Add a task...\n            </div>\n\n            <div class=\"detail-add-button\">\n              Add task\n            </div>\n\n          </div>\n\n        </div>\n\n      </section>\n\n    </div>\n\n  </main>\n\n\n  <div class=\"fab\">\n    ＋\n  </div>\n\n</div>\n\n\n\n```\n"
+            ]
+          }
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "storylines": [],
+      "aggregates": []
+    },
+    {
+      "id": "7038cdf0-e956-48f4-97e9-470b00db2103",
+      "status": "Planned",
+      "index": 0,
+      "title": "Delete Task",
+      "context": "Todo List",
+      "sliceType": "STATE_CHANGE",
+      "commands": [
+        {
+          "id": "856c21a8-c849-4d27-85ea-8e9a582e4c48",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Delete Task",
+          "title": "Delete Task",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "COMMAND",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "4ffc6fd1-914e-4d59-adfc-55c1407d3e54",
+              "type": "OUTBOUND",
+              "title": "Task Deleted",
+              "elementType": "EVENT"
+            },
+            {
+              "id": "be48006f-60e9-45b0-b11e-10b8b1e2164d",
+              "type": "INBOUND",
+              "title": "Todo Lists",
+              "elementType": "SCREEN"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "856c21a8-c849-4d27-85ea-8e9a582e4c48",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "4ffc6fd1-914e-4d59-adfc-55c1407d3e54",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Delete Task",
+          "title": "Task Deleted",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "EVENT",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "856c21a8-c849-4d27-85ea-8e9a582e4c48",
+              "type": "INBOUND",
+              "title": "Delete Task",
+              "elementType": "COMMAND"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": false,
+          "linkedId": "4ffc6fd1-914e-4d59-adfc-55c1407d3e54",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false
+          }
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "be48006f-60e9-45b0-b11e-10b8b1e2164d",
+          "tags": [],
+          "modelContext": "Todo List",
+          "context": "INTERNAL",
+          "slice": "Delete Task",
+          "title": "Todo Lists",
+          "fields": [
+            {
+              "name": "id",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            },
+            {
+              "name": "name",
+              "optional": false,
+              "technicalAttribute": false,
+              "generated": false,
+              "idAttribute": false,
+              "pii": false,
+              "type": "String",
+              "cardinality": "Single",
+              "subfields": []
+            }
+          ],
+          "type": "SCREEN",
+          "description": "",
+          "aggregate": "default",
+          "aggregateDependencies": [],
+          "dependencies": [
+            {
+              "id": "856c21a8-c849-4d27-85ea-8e9a582e4c48",
+              "type": "OUTBOUND",
+              "title": "Delete Task",
+              "elementType": "COMMAND"
+            }
+          ],
+          "listElement": false,
+          "createsAggregate": false,
+          "triggers": [],
+          "elementCopy": true,
+          "linkedId": "ddef5622-2dee-4621-a530-dcb70a173ebb",
+          "sketched": false,
+          "prototype": {
+            "activeByDefault": false,
+            "pages": [
+              "```html\n\n\n\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\n<title>Daily Tasks</title>\n\n<style>\n  :root {\n    --bg: #f5f7fb;\n    --surface: #ffffff;\n    --text: #172033;\n    --muted: #8992a5;\n    --line: #e8ebf2;\n    --accent: #6c5ce7;\n    --green: #21b573;\n    --shadow: 0 12px 35px rgba(30, 38, 60, .08);\n  }\n\n  * {\n    box-sizing: border-box;\n  }\n\n  html,\n  body {\n    margin: 0;\n    min-height: 100%;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: Inter, ui-sans-serif, system-ui, -apple-system,\n      BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  }\n\n  /* APP */\n\n  .app {\n    min-height: 100vh;\n    display: flex;\n  }\n\n  /* SIDEBAR */\n\n  .sidebar {\n    width: 250px;\n    min-height: 100vh;\n    flex-shrink: 0;\n    background: #151827;\n    color: white;\n    padding: 28px 18px;\n    display: flex;\n    flex-direction: column;\n  }\n\n  .brand {\n    font-size: 21px;\n    font-weight: 800;\n    padding: 0 12px 30px;\n    letter-spacing: -.5px;\n  }\n\n  .brand span {\n    color: #8d7cff;\n  }\n\n  .nav-label {\n    color: #777e95;\n    text-transform: uppercase;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 1px;\n    padding: 0 12px 10px;\n  }\n\n  .day {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    padding: 11px 12px;\n    margin-bottom: 4px;\n    border-radius: 10px;\n    color: #c8ccda;\n  }\n\n  .day.active {\n    background: #292c40;\n    color: white;\n  }\n\n  .day-count {\n    margin-left: auto;\n    color: #858ba0;\n    font-size: 12px;\n  }\n\n  .new-list {\n    margin: 18px 8px;\n    padding: 12px;\n    border: 1px dashed #4a4e62;\n    border-radius: 10px;\n    color: #b9bdd0;\n    text-align: center;\n  }\n\n  .sidebar-footer {\n    margin-top: auto;\n    padding: 12px;\n    color: #777e95;\n    font-size: 12px;\n  }\n\n  /* CONTENT */\n\n  .content {\n    flex: 1;\n    min-width: 0;\n    padding: 34px 42px 60px;\n  }\n\n  .content-inner {\n    width: 100%;\n    max-width: 1000px;\n    margin: 0 auto;\n  }\n\n  /* HEADER */\n\n  .top {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    margin-bottom: 28px;\n  }\n\n  .eyebrow {\n    color: var(--accent);\n    font-size: 13px;\n    font-weight: 800;\n    letter-spacing: .3px;\n    margin-bottom: 5px;\n  }\n\n  h1 {\n    margin: 0;\n    font-size: 31px;\n    line-height: 1.15;\n    letter-spacing: -1px;\n  }\n\n  .subtitle {\n    color: var(--muted);\n    margin-top: 6px;\n  }\n\n  .close-day {\n    padding: 11px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 700;\n    white-space: nowrap;\n  }\n\n  /* LIST GRID */\n\n  .lists {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    gap: 20px;\n  }\n\n  .list {\n    background: var(--surface);\n    border: 1px solid var(--line);\n    border-radius: 16px;\n    box-shadow: var(--shadow);\n    overflow: hidden;\n  }\n\n  .list-header {\n    padding: 18px 20px;\n    border-bottom: 1px solid var(--line);\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n  }\n\n  .list-name {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    font-size: 17px;\n    font-weight: 800;\n  }\n\n  .dot {\n    width: 10px;\n    height: 10px;\n    border-radius: 50%;\n    background: var(--accent);\n  }\n\n  .list-meta {\n    color: var(--muted);\n    font-size: 12px;\n    margin-top: 2px;\n  }\n\n  .tasks {\n    padding: 8px 20px;\n  }\n\n  .task {\n    min-height: 52px;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    border-bottom: 1px solid #f0f1f5;\n  }\n\n  .task:last-child {\n    border-bottom: 0;\n  }\n\n  .checkbox {\n    width: 21px;\n    height: 21px;\n    flex-shrink: 0;\n    border: 2px solid #ccd1dd;\n    border-radius: 7px;\n    background: white;\n  }\n\n  .task.completed .checkbox {\n    background: var(--green);\n    border-color: var(--green);\n    position: relative;\n  }\n\n  .task.completed .checkbox::after {\n    content: \"✓\";\n    position: absolute;\n    color: white;\n    font-size: 13px;\n    font-weight: 900;\n    left: 3px;\n    top: -3px;\n  }\n\n  .task.completed .task-text {\n    color: #a3a9b8;\n    text-decoration: line-through;\n  }\n\n  .task-text {\n    flex: 1;\n  }\n\n  .delete {\n    color: #c2c7d2;\n    font-size: 19px;\n  }\n\n  .add-task {\n    display: flex;\n    gap: 8px;\n    padding: 12px 20px 18px;\n  }\n\n  .input {\n    flex: 1;\n    min-width: 0;\n    height: 40px;\n    border: 1px solid var(--line);\n    border-radius: 9px;\n    background: white;\n    color: var(--muted);\n    padding: 0 12px;\n    display: flex;\n    align-items: center;\n  }\n\n  .add-button {\n    height: 40px;\n    padding: 0 14px;\n    border-radius: 9px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* DETAIL SCREEN */\n\n  .detail {\n    margin-top: 40px;\n  }\n\n  .detail-header {\n    display: flex;\n    align-items: center;\n    gap: 18px;\n    padding: 24px 0;\n    border-top: 1px solid var(--line);\n    border-bottom: 1px solid var(--line);\n  }\n\n  .back {\n    width: 42px;\n    height: 42px;\n    border-radius: 12px;\n    border: 1px solid var(--line);\n    background: white;\n    display: grid;\n    place-items: center;\n    font-size: 21px;\n  }\n\n  .detail-title h2 {\n    margin: 0;\n    font-size: 27px;\n    letter-spacing: -.7px;\n  }\n\n  .detail-meta {\n    color: var(--muted);\n    font-size: 13px;\n    margin-top: 2px;\n  }\n\n  .detail-done {\n    margin-left: auto;\n    padding: 10px 17px;\n    border-radius: 10px;\n    background: var(--text);\n    color: white;\n    font-weight: 750;\n  }\n\n  .detail-body {\n    margin-top: 22px;\n  }\n\n  .detail-task-list {\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 14px;\n    overflow: hidden;\n    box-shadow: var(--shadow);\n  }\n\n  .detail-task {\n    display: flex;\n    align-items: center;\n    gap: 15px;\n    padding: 18px;\n    min-height: 64px;\n    border-bottom: 1px solid var(--line);\n  }\n\n  .detail-task:last-child {\n    border-bottom: 0;\n  }\n\n  .detail-task .checkbox {\n    width: 24px;\n    height: 24px;\n  }\n\n  .detail-task-text {\n    font-size: 16px;\n    flex: 1;\n  }\n\n  .detail-add {\n    display: flex;\n    gap: 10px;\n    margin-top: 16px;\n  }\n\n  .detail-input {\n    flex: 1;\n    height: 48px;\n    padding: 0 14px;\n    background: white;\n    border: 1px solid var(--line);\n    border-radius: 11px;\n    color: var(--muted);\n    display: flex;\n    align-items: center;\n  }\n\n  .detail-add-button {\n    height: 48px;\n    padding: 0 18px;\n    border-radius: 11px;\n    background: var(--accent);\n    color: white;\n    font-weight: 750;\n    display: flex;\n    align-items: center;\n  }\n\n  /* FAB */\n\n  .fab {\n    position: fixed;\n    right: 32px;\n    bottom: 28px;\n    width: 52px;\n    height: 52px;\n    border-radius: 50%;\n    background: var(--accent);\n    color: white;\n    display: grid;\n    place-items: center;\n    font-size: 27px;\n    box-shadow: 0 10px 25px rgba(108,92,231,.35);\n  }\n\n  /* RESPONSIVE */\n\n  @media (max-width: 850px) {\n    .sidebar {\n      width: 72px;\n      padding: 20px 8px;\n    }\n\n    .brand {\n      font-size: 0;\n      text-align: center;\n      padding: 5px 0 25px;\n    }\n\n    .brand span {\n      font-size: 22px;\n    }\n\n    .nav-label,\n    .day-label,\n    .new-list,\n    .sidebar-footer {\n      display: none;\n    }\n\n    .day {\n      justify-content: center;\n    }\n\n    .day-count {\n      display: none;\n    }\n\n    .content {\n      padding: 24px 18px 50px;\n    }\n\n    .lists {\n      grid-template-columns: 1fr;\n    }\n  }\n\n  @media (max-width: 600px) {\n    .top {\n      align-items: flex-start;\n      flex-direction: column;\n      gap: 16px;\n    }\n\n    h1 {\n      font-size: 27px;\n    }\n\n    .detail-header {\n      gap: 12px;\n    }\n\n    .detail-title h2 {\n      font-size: 22px;\n    }\n\n    .detail-done {\n      font-size: 13px;\n    }\n  }\n</style>\n\n\n\n\n<div class=\"app\">\n\n  <!-- SIDEBAR -->\n\n  <aside class=\"sidebar\">\n\n    <div class=\"brand\">\n      daily<span>.</span>\n    </div>\n\n    <div class=\"nav-label\">\n      Your days\n    </div>\n\n    <div class=\"day active\">\n      <span>●</span>\n      <span class=\"day-label\">Today</span>\n      <span class=\"day-count\">4</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Tomorrow</span>\n      <span class=\"day-count\">3</span>\n    </div>\n\n    <div class=\"day\">\n      <span>○</span>\n      <span class=\"day-label\">Yesterday</span>\n      <span class=\"day-count\">0</span>\n    </div>\n\n    <div class=\"new-list\">\n      ＋ New list\n    </div>\n\n    <div class=\"sidebar-footer\">\n      Keep it simple.<br>\n      One day at a time.\n    </div>\n\n  </aside>\n\n\n  <!-- CONTENT -->\n\n  <main class=\"content\">\n\n    <div class=\"content-inner\">\n\n      <!-- DAY HEADER -->\n\n      <div class=\"top\">\n\n        <div>\n          <div class=\"eyebrow\">TODAY</div>\n\n          <h1>\n            Saturday, August 22\n          </h1>\n\n          <div class=\"subtitle\">\n            A focused day starts with a clear list.\n          </div>\n        </div>\n\n        <div class=\"close-day\">\n          Close day\n        </div>\n\n      </div>\n\n\n      <!-- LISTS -->\n\n      <div class=\"lists\">\n\n        <!-- WORK -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Work\n              </div>\n\n              <div class=\"list-meta\">\n                1/3 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks em-mark em-mark-e74c3c\" data-em-mark-id=\"em-i975rlt\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task completed\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n\n        <!-- PERSONAL -->\n\n        <section class=\"list\">\n\n          <div class=\"list-header\">\n\n            <div>\n              <div class=\"list-name\">\n                <span class=\"dot\"></span>\n                Personal\n              </div>\n\n              <div class=\"list-meta\">\n                0/2 completed\n              </div>\n            </div>\n\n          </div>\n\n          <div class=\"tasks\">\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Go for a walk\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n            <div class=\"task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"task-text\">\n                Buy groceries\n              </div>\n\n              <span class=\"delete\">×</span>\n\n            </div>\n\n          </div>\n\n          <div class=\"add-task\">\n\n            <div class=\"input\">\n              Add a task...\n            </div>\n\n            <div class=\"add-button\">\n              Add\n            </div>\n\n          </div>\n\n        </section>\n\n      </div>\n\n\n      <!-- LIST DETAIL -->\n\n      <section class=\"detail\">\n\n        <div class=\"detail-header\">\n\n          <div class=\"back\">\n            ←\n          </div>\n\n          <div class=\"detail-title\">\n\n            <div class=\"screen-eyebrow\">\n              TASK LIST\n            </div>\n\n            <h2>\n              Work\n            </h2>\n\n            <div class=\"detail-meta\">\n              1 of 3 tasks completed · Saturday, August 22\n            </div>\n\n          </div>\n\n          <div class=\"detail-done\">\n            Done\n          </div>\n\n        </div>\n\n\n        <div class=\"detail-body\">\n\n          <div class=\"detail-task-list\">\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Review open pull requests\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Prepare client workshop\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n            <div class=\"detail-task\">\n\n              <span class=\"checkbox\"></span>\n\n              <div class=\"detail-task-text\">\n                Reply to important emails\n              </div>\n\n              <span class=\"delete\">\n                ×\n              </span>\n\n            </div>\n\n          </div>\n\n\n          <div class=\"detail-add\">\n\n            <div class=\"detail-input\">\n              Add a task...\n            </div>\n\n            <div class=\"detail-add-button\">\n              Add task\n            </div>\n\n          </div>\n\n        </div>\n\n      </section>\n\n    </div>\n\n  </main>\n\n\n  <div class=\"fab\">\n    ＋\n  </div>\n\n</div>\n\n\n\n```\n"
+            ]
+          }
+        }
+      ],
+      "screenImages": [],
+      "processors": [],
+      "tables": [],
+      "specifications": [],
+      "storylines": [],
+      "aggregates": []
+    }
+  ]
+}

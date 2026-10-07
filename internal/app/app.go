@@ -14,6 +14,7 @@ import (
 	"os"
 
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/formatter"
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/interchange"
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/model"
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/renderer"
 	sourcepkg "github.com/event-modeling-hcl/eventmodeling-hcl/internal/source"
@@ -31,6 +32,85 @@ const (
 	Valid    = validator.Valid
 	Strict   = validator.Strict
 )
+
+// ExportResult is the output of Export.
+type ExportResult struct {
+	// JSON is the slice-based tool interchange document, or empty when
+	// Diagnostics contains an error.
+	JSON        string      `json:"json"`
+	Warnings    []string    `json:"warnings,omitempty"`
+	Diagnostics Diagnostics `json:"diagnostics"`
+}
+
+// Export validates source and converts it to slice-based Event Modeling tool
+// JSON. Warnings disclose native data the interchange representation cannot carry.
+func Export(filename string, source []byte) ExportResult {
+	built, diagnostics := ValidatedModel(filename, source, Valid)
+	result := ExportResult{Diagnostics: diagnostics}
+	if diagnostics.HasErrors() {
+		return result
+	}
+	document, warnings, err := interchange.Export(built)
+	result.Warnings = warnings
+	if err != nil {
+		result.Diagnostics = append(result.Diagnostics, Diagnostic{Severity: "Error", Summary: "Failed to export JSON", Detail: fmt.Sprintf("%s: %v", filename, err)})
+		return result
+	}
+	encoded, err := interchange.MarshalDocument(document)
+	if err != nil {
+		result.Diagnostics = append(result.Diagnostics, Diagnostic{Severity: "Error", Summary: "Failed to encode JSON", Detail: fmt.Sprintf("%s: %v", filename, err)})
+		return result
+	}
+	result.JSON = string(encoded)
+	result.Warnings = warnings
+	return result
+}
+
+// ExportFile reads and exports one Event Modeling document.
+func ExportFile(path string) ExportResult {
+	source, diagnostics := readSource(path)
+	if diagnostics.HasErrors() {
+		return ExportResult{Diagnostics: diagnostics}
+	}
+	return Export(path, source)
+}
+
+// ImportResult is the output of Import.
+type ImportResult struct {
+	// Source is the formatted .em.hcl document. It is populated after decoding
+	// and formatting succeed, even if native validation reports errors.
+	Source      string      `json:"source"`
+	Warnings    []string    `json:"warnings,omitempty"`
+	Diagnostics Diagnostics `json:"diagnostics"`
+}
+
+// Import converts a real Event Modeling tool export into formatted native HCL
+// and validates it under the valid profile. Warnings disclose unsupported
+// source data; outputName names the generated document in diagnostics.
+func Import(filename string, data []byte, outputName string) ImportResult {
+	document, err := interchange.ParseDocument(data)
+	if err != nil {
+		return ImportResult{Diagnostics: Diagnostics{{Severity: "Error", Summary: "Failed to import JSON", Detail: fmt.Sprintf("%s: %v", filename, err)}}}
+	}
+	generated, warnings, err := interchange.Import(document)
+	if err != nil {
+		return ImportResult{Warnings: warnings, Diagnostics: Diagnostics{{Severity: "Error", Summary: "Failed to import JSON", Detail: fmt.Sprintf("%s: %v", filename, err)}}}
+	}
+	formatted := Format(outputName, generated)
+	if formatted.Diagnostics.HasErrors() {
+		return ImportResult{Warnings: warnings, Diagnostics: formatted.Diagnostics}
+	}
+	return ImportResult{Source: formatted.Source, Warnings: warnings, Diagnostics: Validate(outputName, []byte(formatted.Source), Valid)}
+}
+
+// ImportFile reads and imports one interchange JSON document.
+func ImportFile(path, outputName string) ImportResult {
+	data, diagnostics := readSource(path)
+	if diagnostics.HasErrors() {
+		return ImportResult{Diagnostics: diagnostics}
+	}
+	return Import(path, data, outputName)
+}
 
 // ParseProfile converts a profile name ("workshop", "valid", "strict") into
 // its typed Profile, so callers such as cmd/wasm and internal/serve need not

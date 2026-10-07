@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 )
 
 func usageMessage(name string) string {
-	return "usage: " + name + " <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve> <model.em.hcl> [diagram: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
+	return "usage: " + name + " <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve | export> <model.em.hcl> | import <model.json> [diagram/export/import: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
 }
 
 // defaultServeAddr and defaultServePort are serve's defaults when a
@@ -35,6 +36,8 @@ const (
 	formatCommand
 	diagramCommand
 	serveCommand
+	exportCommand
+	importCommand
 	versionCommand
 )
 
@@ -69,6 +72,12 @@ func Run(name, toolVersion string, args []string, stdout, stderr io.Writer) int 
 	}
 	if command.kind == diagramCommand {
 		return diagramFile(command, stdout, stderr)
+	}
+	if command.kind == exportCommand {
+		return exportFile(command, stdout, stderr)
+	}
+	if command.kind == importCommand {
+		return importFile(command, stdout, stderr)
 	}
 	if command.kind == serveCommand {
 		return serveFile(command, stderr)
@@ -109,7 +118,13 @@ func parseCommand(name string, args []string) (cliCommand, error) {
 		return formatCLICommand(args[2], true)
 	}
 	if len(args) >= 1 && args[0] == "diagram" {
-		return diagramCLICommand(args[1:], usage)
+		return outputCLICommand(diagramCommand, args[1:], ".em.hcl", usage)
+	}
+	if len(args) >= 1 && args[0] == "export" {
+		return outputCLICommand(exportCommand, args[1:], ".em.hcl", usage)
+	}
+	if len(args) >= 1 && args[0] == "import" {
+		return outputCLICommand(importCommand, args[1:], ".json", usage)
 	}
 	if len(args) >= 1 && args[0] == "serve" {
 		return serveCLICommand(args[1:], usage)
@@ -131,7 +146,9 @@ func formatCLICommand(path string, write bool) (cliCommand, error) {
 	return cliCommand{kind: formatCommand, path: path, write: write}, nil
 }
 
-func diagramCLICommand(args []string, usage string) (cliCommand, error) {
+// outputCLICommand parses "<path> [-o <file>]" in either order for the
+// commands that read one input file and write one output.
+func outputCLICommand(kind commandKind, args []string, extension, usage string) (cliCommand, error) {
 	var path string
 	var output string
 	for index := 0; index < len(args); index++ {
@@ -152,10 +169,27 @@ func diagramCLICommand(args []string, usage string) (cliCommand, error) {
 	if path == "" {
 		return cliCommand{}, errors.New(usage)
 	}
-	if !strings.HasSuffix(path, ".em.hcl") {
+	if !strings.HasSuffix(path, extension) {
+		if extension == ".json" {
+			return cliCommand{}, errors.New("event model JSON file must use the .json extension")
+		}
 		return cliCommand{}, errors.New("model file must use the .em.hcl extension")
 	}
-	return cliCommand{kind: diagramCommand, path: path, output: output}, nil
+	if kind == importCommand && output != "" && !strings.HasSuffix(output, ".em.hcl") {
+		return cliCommand{}, errors.New("import output must use the .em.hcl extension")
+	}
+	if kind == exportCommand && output != "" {
+		inputPath, inputErr := filepath.Abs(path)
+		outputPath, outputErr := filepath.Abs(output)
+		samePath := inputErr == nil && outputErr == nil && inputPath == outputPath
+		inputInfo, inputStatErr := os.Stat(path)
+		outputInfo, outputStatErr := os.Stat(output)
+		sameFile := inputStatErr == nil && outputStatErr == nil && os.SameFile(inputInfo, outputInfo)
+		if samePath || sameFile || strings.HasSuffix(output, ".em.hcl") {
+			return cliCommand{}, errors.New("export output must not overwrite the source or use the .em.hcl extension; use -o <model.json> or omit -o to write JSON to stdout")
+		}
+	}
+	return cliCommand{kind: kind, path: path, output: output}, nil
 }
 
 // serveCLICommand parses the arguments following "serve": exactly one
@@ -260,15 +294,63 @@ func diagramFile(command cliCommand, stdout, stderr io.Writer) int {
 	if result.Diagnostics.HasErrors() {
 		return 1
 	}
-	if command.output == "" {
-		_, _ = io.WriteString(stdout, result.HTML)
-		return 0
+	return writeOutput(command.output, result.HTML, stdout, stderr)
+}
+
+func exportFile(command cliCommand, stdout, stderr io.Writer) int {
+	result := app.ExportFile(command.path)
+	if len(result.Diagnostics) > 0 {
+		writeDiagnostics(stderr, result.Diagnostics)
 	}
-	if err := os.WriteFile(command.output, []byte(result.HTML), 0o644); err != nil {
-		fmt.Fprintf(stderr, "failed to write %s: %v\n", command.output, err)
+	if result.Diagnostics.HasErrors() {
 		return 1
 	}
-	fmt.Fprintf(stderr, "wrote %s\n", command.output)
+	writeWarnings(stderr, result.Warnings)
+	return writeOutput(command.output, result.JSON, stdout, stderr)
+}
+
+// importFile writes the converted model even when validating it reports
+// errors, so the generated source can be repaired by hand; the exit code
+// still signals the failure.
+func importFile(command cliCommand, stdout, stderr io.Writer) int {
+	outputName := command.output
+	if outputName == "" {
+		outputName = "<stdout>"
+	}
+	result := app.ImportFile(command.path, outputName)
+	writeWarnings(stderr, result.Warnings)
+	if len(result.Diagnostics) > 0 {
+		writeDiagnostics(stderr, result.Diagnostics)
+	}
+	if result.Source == "" && result.Diagnostics.HasErrors() {
+		return 1
+	}
+	if code := writeOutput(command.output, result.Source, stdout, stderr); code != 0 {
+		return code
+	}
+	if result.Diagnostics.HasErrors() {
+		return 1
+	}
+	return 0
+}
+
+func writeWarnings(w io.Writer, warnings []string) {
+	for _, warning := range warnings {
+		fmt.Fprintf(w, "Warning: %s\n", warning)
+	}
+}
+
+// writeOutput writes content to path, or to stdout when path is empty.
+func writeOutput(path, content string, stdout, stderr io.Writer) int {
+	if path == "" {
+		_, _ = io.WriteString(stdout, content)
+		return 0
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		fmt.Fprintf(stderr, "failed to write %s: %v\n", path, err)
+		return 1
+	}
+	fmt.Fprintf(stderr, "wrote %s\n", path)
 	return 0
 }
 
@@ -302,7 +384,8 @@ func mapSlice[T, U any](items []T, transform func(T) U) []U {
 // which app.Diagnostic only ever leaves unset when the underlying
 // hcl.Diagnostic had no Subject.
 func formatDiagnostic(diagnostic app.Diagnostic) string {
-	message := fmt.Sprintf("%s %s: %s", diagnostic.Severity, diagnostic.Code, diagnostic.Summary)
+	label := strings.TrimSpace(diagnostic.Severity + " " + diagnostic.Code)
+	message := fmt.Sprintf("%s: %s", label, diagnostic.Summary)
 	if diagnostic.Detail != "" {
 		message += ": " + diagnostic.Detail
 	}

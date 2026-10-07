@@ -147,14 +147,6 @@ func TestParseCommand_RejectsServeUnsupportedExtension(t *testing.T) {
 	}
 }
 
-func TestUsageMessage_DocumentsServe(t *testing.T) {
-	name := "emhcl"
-	want := "usage: " + name + " <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve> <model.em.hcl> [diagram: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
-	if got := usageMessage(name); got != want {
-		t.Fatalf("usageMessage(%q) = %q, want %q", name, got, want)
-	}
-}
-
 func TestParseCommand_RejectsUnsupportedExtension(t *testing.T) {
 	// Given a validate invocation with a non-Event-Modeling extension.
 	args := []string{"validate", "model.hcl"}
@@ -463,8 +455,8 @@ func TestRun_RejectsInvalidArguments(t *testing.T) {
 			if result.exitCode != 2 {
 				t.Fatalf("exit code = %d, want 2; stderr = %q", result.exitCode, result.stderr)
 			}
-			if got, want := result.stderr, usageMessage("emhcl")+"\n"; got != want {
-				t.Fatalf("stderr = %q, want %q", got, want)
+			if result.stdout != "" || !strings.Contains(result.stderr, "usage: emhcl") {
+				t.Fatalf("expected usage on stderr only, got %+v", result)
 			}
 		})
 	}

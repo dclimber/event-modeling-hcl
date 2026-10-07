@@ -37,6 +37,13 @@ func (d *Document) Body() hcl.Body {
 	return d.file.Body
 }
 
+// Source returns the exact bytes that were parsed. Callers use it to recover
+// literal spelling that HCL's evaluated values normalize, such as the Unicode
+// form of an object key.
+func (d *Document) Source() []byte {
+	return d.file.Bytes
+}
+
 // Content decodes body against schema, exactly like body.Content(&schema):
 // every block or attribute outside the schema, and every missing Required
 // attribute, is reported as a diagnostic. The returned blocks' and

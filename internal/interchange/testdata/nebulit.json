@@ -1,0 +1,119 @@
+{
+  "slices": [
+    {
+      "id": "3458764513820540929",
+      "title": "slice: Add Item",
+      "sliceType": "STATE_CHANGE",
+      "status": "InProgress",
+      "index": 0,
+      "context": "Cart",
+      "commands": [
+        {
+          "id": "3458764513820540931",
+          "title": "Add Item",
+          "type": "COMMAND",
+          "aggregate": "Cart",
+          "fields": [
+            { "name": "cartId", "type": "UUID", "idAttribute": true, "example": "8f5f7c2e-0000-4000-8000-000000000001" },
+            { "name": "quantity", "type": "Int", "example": "2" },
+            { "name": "price", "type": "Number", "example": "9.99" }
+          ],
+          "dependencies": [
+            { "id": "3458764513820540930", "type": "INBOUND", "title": "Cart Screen", "elementType": "SCREEN" },
+            { "id": "3458764513820540932", "type": "OUTBOUND", "title": "Item Added", "elementType": "EVENT" }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "id": "3458764513820540932",
+          "title": "Item Added",
+          "type": "EVENT",
+          "aggregate": "Cart",
+          "fields": [
+            { "name": "cartId", "type": "UUID", "idAttribute": true },
+            { "name": "items", "type": "Custom", "cardinality": "List", "subfields": [ { "name": "itemId", "type": "UUID" } ] }
+          ],
+          "dependencies": [
+            { "id": "3458764513820540931", "type": "INBOUND", "title": "Add Item", "elementType": "COMMAND" }
+          ]
+        }
+      ],
+      "readmodels": [],
+      "screens": [
+        {
+          "id": "3458764513820540930",
+          "title": "Cart Screen",
+          "type": "SCREEN",
+          "fields": [],
+          "dependencies": [
+            { "id": "3458764513820540931", "type": "OUTBOUND", "title": "Add Item", "elementType": "COMMAND" }
+          ]
+        }
+      ],
+      "processors": [],
+      "tables": [],
+      "actors": [ { "name": "Shopper", "authRequired": false } ],
+      "specifications": [
+        {
+          "id": "3458764513820540940",
+          "title": "spec: Add Item",
+          "linkedId": "3458764513820540931",
+          "given": [],
+          "when": [ { "id": "s1", "title": "Add Item", "type": "SPEC_COMMAND", "linkedId": "3458764513820540931" } ],
+          "then": [
+            { "id": "s2", "title": "Item Added", "type": "SPEC_EVENT", "linkedId": "3458764513820540932" },
+            { "id": "s3", "title": "Cart is full", "type": "SPEC_ERROR" }
+          ],
+          "comments": [ { "description": "Max 3 items" } ]
+        }
+      ]
+    },
+    {
+      "id": "3458764513820540950",
+      "title": "slice: Cart Items",
+      "sliceType": "STATE_VIEW",
+      "index": 1,
+      "commands": [],
+      "events": [
+        {
+          "id": "3458764513820540951",
+          "title": "Item Added",
+          "type": "EVENT",
+          "elementCopy": true,
+          "linkedId": "3458764513820540932",
+          "fields": [],
+          "dependencies": [
+            { "id": "3458764513820540952", "type": "OUTBOUND", "title": "Cart Items", "elementType": "READMODEL" }
+          ]
+        },
+        {
+          "id": "3458764513820540955",
+          "title": "Inventory Changed",
+          "type": "EVENT",
+          "context": "EXTERNAL",
+          "fields": [ { "name": "productId", "type": "UUID" } ],
+          "dependencies": [
+            { "id": "3458764513820540952", "type": "OUTBOUND", "title": "Cart Items", "elementType": "READMODEL" }
+          ]
+        }
+      ],
+      "readmodels": [
+        {
+          "id": "3458764513820540952",
+          "title": "Cart Items",
+          "type": "READMODEL",
+          "fields": [ { "name": "cartId", "type": "UUID" } ],
+          "dependencies": [
+            { "id": "3458764513820540951", "type": "INBOUND", "title": "Item Added", "elementType": "EVENT" },
+            { "id": "3458764513820540955", "type": "INBOUND", "title": "Inventory Changed", "elementType": "EVENT" }
+          ]
+        }
+      ],
+      "screens": [],
+      "processors": [],
+      "tables": [],
+      "specifications": []
+    }
+  ]
+}

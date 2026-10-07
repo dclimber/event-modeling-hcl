@@ -4,6 +4,86 @@ This repository records implementation releases of the validator, formatter,
 and typed IR. The authoritative Event Modeling HCL language history is in the
 [specification changelog](https://github.com/event-modeling-hcl/spec/blob/main/CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+- `emhcl export <model.em.hcl> [-o file.json]` converts a valid model to
+  slice-based Event Modeling JSON; `emhcl import <file.json> [-o model.em.hcl]`
+  converts JSON to formatted, validated `.em.hcl`. These operations are
+  projections, not lossless canvas persistence. The native language remains
+  Specification v0.3.0, with actor references on screens, not workflows.
+- The typed IR carries `example` on fields and field types, and `mapping`,
+  `optional`, `technical_attribute`, `generated` and `schema` on field types.
+- A declared `sliceType` is authoritative on import: forbidden children
+  (for example processors in `STATE_CHANGE`) are omitted with warnings
+  instead of re-typing the slice.
+
+### Fixed
+
+- JSON import validates the published Event Modeling JSON schema: missing
+  required properties, values outside an enum, mistyped values, unknown
+  properties and trailing content are errors naming the JSON path, and
+  nothing is overwritten. Export checks its output against the same rules.
+  Schema conformance is separate from semantic convertibility, including
+  the single-actor limit. The document root contains only `slices`, with actors
+  and aggregate titles carried in slices. See `testdata/valid/*.json` for
+  schema-conformant fixtures.
+- JSON round trips keep the author order of `to`/`from` lists (export no
+  longer sorts dependencies by id) and bounded-context identity: a context is
+  exported by its title when that re-imports as the same label, titles equal
+  to the derived title are not written back, and an external context named
+  like an internal one keeps its `_external` label. Export-import-export
+  stability applies to tested, representable inputs, not equality with
+  arbitrary original tool JSON; conversion normalizes IDs, names and types
+  and warns about losses.
+- Import/export error diagnostics no longer print a fake `file:0:0` location
+  or an empty diagnostic code.
+- Prototype objects survive canonical model lowering and JSON export instead
+  of becoming `{}`. The renderer-facing presence flag remains available;
+  prototype content is retained separately and is never executed.
+- Event identity no longer merges different IDs merely because their titles
+  match. All linked event copies resolve after originals, local element
+  snapshots retain their workflow scope, and dependencies keep their direction.
+  ID-less/repeated-ID images and tables retain separate occurrence labels;
+  context-free workflows no longer acquire an unused bounded context.
+- Import preserves the declared workflow kind. It avoids illegal workflow
+  children, checks specification target kinds and scenario shape, and warns
+  about every unsupported dependency/target or omitted specification rather
+  than silently retargeting.
+- Field and specification examples preserve instance values, nested objects
+  and repeated steps. Field examples outside the schema's string/object types
+  use JSON text strings, including `null`. Singleton `Custom`/`List` samples become
+  one-item lists with warnings; incompatible typed samples are warned about
+  and omitted. Specification tags survive lowering. Explicit `false` and
+  empty field metadata override reusable field-type defaults on export.
+- Import/export warnings disclose canvas-ID/name mapping, assignments,
+  layout, catalog metadata and partially assigned single-actor screens.
+  Export reports aggregate catalog identity and unused actor declaration loss
+  rather than adding properties outside the schema, and does not assign a sole actor to
+  previously unassigned screens.
+- Import and export reject more than one actor per slice instead of choosing
+  one or dropping associations. Import fails for a slice that lists several
+  actors, even without screens; export fails for a workflow whose screens
+  name several distinct actors. `examples/course_subscriptions.em.hcl` now
+  gives the student and course-manager catalog views separate workflows.
+- Object values in prototypes, field examples and specification examples keep
+  every key: HCL keywords such as `for` and non-identifier keys are quoted,
+  keys differing only by Unicode normalization stay distinct, and key order
+  survives import and export.
+- Export no longer overflows the stack on a field type that contains itself;
+  it expands one level and warns.
+- Import keeps context-free events out of external contexts, shares a context
+  between canonical and foreign event IDs that name it, and tracks events
+  without an `id` by occurrence, so their flows are kept and an empty
+  `linkedId` never binds to another event.
+- Export marks an event as a copy only when another workflow produces it,
+  keeps a specification's `linkedId` on its slice, and warns about dropped
+  error-step titles, label-equal context titles and unexposed contexts.
+- `emhcl export` refuses an `-o` target that ends in `.em.hcl` or is the
+  source file. `emhcl import` accepts a document with no slices, and labels
+  diagnostics `<stdout>` when writing to stdout.
+
 ## [v0.7.3]
 
 ### Added

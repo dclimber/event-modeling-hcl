@@ -280,14 +280,14 @@ state_view "course_catalog" {
 
   readmodel "course_catalog" {
     title    = "Course Catalog"
-    question = "Which courses can I subscribe to?"
+    question = "Which courses are in the catalog, with their capacity and subscription counts?"
     from = [
       event.course_subscriptions.course_registered,
       event.course_subscriptions.course_capacity_changed,
       event.course_subscriptions.student_subscribed,
       event.course_subscriptions.student_unsubscribed,
     ]
-    to = [screen.available_courses, screen.course_catalog]
+    to = [screen.course_catalog]
 
     field "course_id" {
     }
@@ -300,11 +300,6 @@ state_view "course_catalog" {
 
     field "number_of_subscriptions" {
     }
-  }
-
-  screen "available_courses" {
-    title = "Available Courses"
-    actor = actor.student
   }
 
   screen "course_catalog" {
@@ -369,6 +364,99 @@ state_view "course_catalog" {
 
     then {
       readmodel = readmodel.course_catalog
+    }
+  }
+}
+
+state_view "available_courses" {
+  title = "Available Courses"
+
+  readmodel "available_courses" {
+    title    = "Available Courses"
+    question = "Which courses can I subscribe to?"
+    from = [
+      event.course_subscriptions.course_registered,
+      event.course_subscriptions.course_capacity_changed,
+      event.course_subscriptions.student_subscribed,
+      event.course_subscriptions.student_unsubscribed,
+    ]
+    to = [screen.available_courses]
+
+    field "course_id" {
+    }
+
+    field "title" {
+    }
+
+    field "capacity" {
+    }
+
+    field "number_of_subscriptions" {
+    }
+  }
+
+  screen "available_courses" {
+    title = "Available Courses"
+    actor = actor.student
+  }
+
+  scenario "courses_are_shown_with_title_and_capacity" {
+    title = "Courses are shown with their title and capacity"
+
+    given {
+      event = event.course_subscriptions.course_registered
+    }
+
+    then {
+      readmodel = readmodel.available_courses
+    }
+  }
+
+  scenario "empty_catalogue" {
+    title = "Empty catalogue"
+
+    given {
+      event = event.registrar.student_registered
+    }
+
+    then {
+      readmodel = readmodel.available_courses
+    }
+
+    comment {
+      description = "No course has been registered yet; the catalogue is empty."
+    }
+  }
+
+  scenario "account_for_changes_in_capacity" {
+    title = "Account for changes in capacity"
+
+    given {
+      event = event.course_subscriptions.course_registered
+    }
+
+    given {
+      event = event.course_subscriptions.course_capacity_changed
+    }
+
+    then {
+      readmodel = readmodel.available_courses
+    }
+  }
+
+  scenario "subscriptions_are_counted" {
+    title = "Subscriptions are counted"
+
+    given {
+      event = event.course_subscriptions.course_registered
+    }
+
+    given {
+      event = event.course_subscriptions.student_subscribed
+    }
+
+    then {
+      readmodel = readmodel.available_courses
     }
   }
 }

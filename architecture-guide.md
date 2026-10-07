@@ -1,56 +1,50 @@
 # Architecture Guide
 
-This guide describes how `emhcl` is organized and how its design
-uses Axiomatic Design to keep changes predictable. It is descriptive of the
-current repository. The language contract itself remains in the
-[Event Modeling HCL specification](https://github.com/event-modeling-hcl/spec).
+This guide describes how `emhcl` is organized. It also shows how the design uses Axiomatic Design to keep changes predictable. The guide describes the current repository. The language contract is in the [Event Modeling HCL specification](https://github.com/event-modeling-hcl/spec). The tool implements Specification v0.3.0.
 
-## Axiomatic Design in Brief
+## Axiomatic Design terms
 
-Axiomatic Design separates what a system must achieve from the mechanisms used
-to achieve it:
+Axiomatic Design separates what a system must do from the mechanisms that do it. This guide uses these terms:
 
-- A **customer need** is an outcome expected by a user or maintainer.
-- A **functional requirement (FR)** is a testable, solution-independent outcome.
-- A **design parameter (DP)** is the mechanism selected to satisfy an FR.
-- The **Independence Axiom** asks that FRs remain independently controllable. An
-  uncoupled design has a diagonal FR-DP influence matrix. A decoupled design has
-  a triangular matrix and is valid when its required sequence is preserved.
-- The **Information Axiom** prefers, among designs that satisfy the Independence
-  Axiom, the design with the highest probability of meeting all requirements.
-  Information content is `I = -log2(p)`. Source lines or package counts are not
-  substitutes for measured success probability.
+- A need is an outcome that a user or a maintainer expects.
+- A functional requirement (FR) is a testable outcome that does not name a mechanism.
+- A design parameter (DP) is the mechanism that satisfies an FR.
+- The Independence Axiom states that each FR must stay controllable by its own DP.
+- The Information Axiom prefers the design with the highest probability of meeting all FRs.
 
-The tool is intentionally a decoupled pipeline. Later stages depend on facts
-established by earlier stages, while later-stage choices cannot change an
-earlier-stage result.
+An influence matrix shows which DP changes which FR. Each row is an FR and each column is a DP. `X` means that a change to the DP changes the FR. `0` means that the DP has no material influence on the FR in the supported range. The supported range is one model document per run.
 
-## Needs, Requirements, and Parameters
+A design is uncoupled when the matrix has `X` only on the diagonal. A design is decoupled when the matrix is triangular. A decoupled design is valid when you set the DPs in the order of the matrix. A design is coupled when no order makes the matrix triangular.
+
+Information content is `I = -log2(p)`, where `p` is the probability of meeting the requirement. Source lines and package counts do not measure it.
+
+## Needs, requirements, and parameters
 
 | Need | Functional requirement | Acceptance criterion | Design parameter |
 | --- | --- | --- | --- |
-| N1: Authors receive trustworthy feedback | FR1: Parse native `.em.hcl` syntax | Syntax errors retain HCL source locations | DP1: `internal/syntax` grammar and parser |
-| N1 | FR2: Decode shared source facts once | Catalog and reference interpretation has one owner | DP2: `internal/source` decoded document |
+| N1: Authors receive feedback that they can trust | FR1: Parse native `.em.hcl` syntax | Syntax errors keep their HCL source locations | DP1: `internal/syntax` grammar and parser |
+| N1 | FR2: Decode shared source facts once | One owner interprets catalogs and references | DP2: `internal/source` decoded document |
 | N1 | FR3: Enforce language and modeling rules | Invalid models produce stable diagnostics for the selected profile | DP3: `internal/validator` semantic passes |
-| N2: Every frontend sees the same model | FR4: Construct one canonical IR | Only validated input can reach model construction | DP4: `internal/model` lowering |
-| N3: Models can be consumed in useful forms | FR5: Format or render deterministically | Formatting and HTML generation contain no OS actions | DP5: `internal/formatter` and `internal/renderer` |
-| N4: CLI, browser, and server behavior agree | FR6: Compose and expose the use cases | Entry points delegate to one application service | DP6: `internal/app` plus thin runtime adapters |
+| N2: Every frontend sees the same model | FR4: Construct one canonical model | Only validated input reaches model construction | DP4: `internal/model` lowering |
+| N3: Users can consume models in useful forms | FR5: Format or render the same output for the same input | Formatting and HTML generation do no OS actions | DP5: `internal/formatter` and `internal/renderer` |
+| N5: Users exchange models with Event Modeling JSON tools | FR7: Convert between the canonical model and slice-based JSON | Each conversion gives a schema-valid document or a native model, or it fails with a stated reason | DP7: `internal/interchange` |
+| N4: The CLI, the browser, and the server agree | FR6: Compose and expose the use cases | Each entry point delegates to one application service | DP6: `internal/app` and thin runtime adapters |
 
-## Independence Matrix
+Slice-based JSON is the document format that the [published Event Modeling JSON schema](https://github.com/dilgerma/event-modeling-spec/blob/main/eventmodeling.schema.json) defines. A slice is one JSON entry that matches one native workflow.
 
-`X` means that changing the DP materially influences the FR. `0` means there is
-no material influence within the supported single-document operating range.
+## Independence matrix for the tool
 
-| FR \ DP | DP1 Syntax | DP2 Source | DP3 Validation | DP4 Model | DP5 Output | DP6 Adapters |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| FR1 Parse syntax | X | 0 | 0 | 0 | 0 | 0 |
-| FR2 Decode source facts | X | X | 0 | 0 | 0 | 0 |
-| FR3 Enforce validity | X | X | X | 0 | 0 | 0 |
-| FR4 Construct canonical IR | X | X | X | X | 0 | 0 |
-| FR5 Produce deterministic output | X | X | X | X | X | 0 |
-| FR6 Expose consistent operations | X | X | X | X | X | X |
+| FR \ DP | DP1 Syntax | DP2 Source | DP3 Validation | DP4 Model | DP5 Output | DP7 Interchange | DP6 Adapters |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| FR1 Parse syntax | X | 0 | 0 | 0 | 0 | 0 | 0 |
+| FR2 Decode source facts | X | X | 0 | 0 | 0 | 0 | 0 |
+| FR3 Enforce validity | X | X | X | 0 | 0 | 0 | 0 |
+| FR4 Construct canonical model | X | X | X | X | 0 | 0 | 0 |
+| FR5 Produce the same output | X | X | X | X | X | 0 | 0 |
+| FR7 Convert to and from JSON | X | X | X | X | 0 | X | 0 |
+| FR6 Expose consistent operations | X | X | X | X | X | X | X |
 
-This lower-triangular matrix is **decoupled**. Its control sequence is:
+The matrix is lower triangular, so the design is decoupled. The control sequence for the native pipeline is:
 
 ```text
 syntax.Parse
@@ -60,61 +54,140 @@ syntax.Parse
   -> renderer.Render
 ```
 
-The sequence is enforced by `validator.ValidatedDocument`: `model.Build` cannot
-accept merely parsed input. Formatting is a deliberate side branch because it
-needs syntactically parseable HCL but must not require a semantically valid
-model.
+`validator.ValidatedDocument` enforces this sequence. `model.Build` does not accept input that was only parsed. Formatting is a separate branch. It needs HCL that parses, but it does not need a valid model.
 
-The important zeros are directional. Renderer or CLI changes cannot alter what
-syntax is accepted; model or renderer changes cannot make invalid input valid;
-and adapters cannot define a second diagnostic or rendering policy.
+The important zeros go in one direction. A change to the renderer or the CLI cannot change what syntax the parser accepts. A change to the model or the renderer cannot make invalid input valid. Adapters do not define a second diagnostic policy or a second rendering policy.
 
-## Module Contracts
+The FR7 row has `X` under DP1 to DP4 for two reasons. Export reads only the canonical model. Import must write HCL that the grammar and the validator accept. The `0` under DP5 is correct because `interchange.Import` returns unformatted source. `internal/app` formats it afterward. The `0` under DP6 is correct because the conversion result is the same for every entry point.
+
+## Interchange sequence
+
+`internal/app` runs each conversion in one fixed sequence.
+
+Export:
+
+```text
+app.ValidatedModel (profile valid)
+  -> interchange.Export
+  -> interchange.MarshalDocument (schema check)
+```
+
+Import:
+
+```text
+interchange.ParseDocument (schema check, then decode)
+  -> interchange.Import
+  -> app.Format
+  -> app.Validate (profile valid)
+```
+
+Import sends its result through the native formatter and the native validator. Thus `internal/validator` stays the only owner of model validity. `internal/interchange` depends only on `internal/model` and the HCL libraries.
+
+## Requirements for the interchange module
+
+FR7 has six child requirements. The table gives each one its mechanism.
+
+| Child FR | Acceptance criterion | DP | Location |
+| --- | --- | --- | --- |
+| FR7.1: Accept and write only schema-valid documents | Import accepts a document only when `ajv` accepts it. Export applies the same rules to its output. | DP7.1: Schema check | `conform.go`, `decode.go` |
+| FR7.2: Map JSON identities to stable native labels | One JSON context gives one native context. An event without an `id` keeps its own flows. | DP7.2: Identity mapping | `import.go` context and event-occurrence maps |
+| FR7.3: Keep JSON values unchanged | Object keys keep their text and their order. Keys such as `for` and `a-b` produce valid HCL. | DP7.3: Value writer and reader | `jsonTokens` in `import.go`, `jsonValue` in `internal/model` |
+| FR7.4: Write only flows that the grammar allows | Import writes no illegal flow. Each omitted flow has a warning. | DP7.4: Flow and scenario policy | `import_policy.go` |
+| FR7.5: Keep at most one actor per slice | Import refuses a slice with two or more actors. Export refuses a workflow whose screens name two or more actors. | DP7.5: Actor gate | `rejectMultipleActors` in `import.go`, `slice` in `export.go` |
+| FR7.6: Disclose each loss | Each value that a conversion drops produces a warning. | DP7.6: Warnings at the point of loss | `warn` calls in `import.go`, `import_policy.go`, `export.go` |
+
+The actor gate follows from the language. Specification v0.3.0 gives a screen one optional actor and gives a workflow no actor attribute. A JSON slice lists actors without links to screens. Thus a slice with two actors has no correct native form. The gate stops the conversion instead of guessing.
+
+Round-trip stability is an acceptance criterion, not a separate FR. A round trip is export, then import, then a second export. The round trip is stable when the second export is identical to the first, byte for byte. It is the result of FR7.1 to FR7.6 together, so it has no DP of its own.
+
+## Independence matrix for the interchange module
+
+| FR \ DP | DP7.1 Schema | DP7.2 Identity | DP7.3 Values | DP7.4 Flows | DP7.5 Actors | DP7.6 Warnings |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| FR7.1 Schema-valid documents | X | 0 | 0 | 0 | 0 | 0 |
+| FR7.2 Stable labels | X | X | 0 | 0 | 0 | 0 |
+| FR7.3 Unchanged values | X | 0 | X | 0 | 0 | 0 |
+| FR7.4 Legal flows | X | X | 0 | X | 0 | 0 |
+| FR7.5 One actor per slice | X | 0 | 0 | 0 | X | 0 |
+| FR7.6 Disclosed losses | X | X | X | X | X | X |
+
+This matrix is also lower triangular, so the module is decoupled. Set the DPs in this order: schema check, identity mapping, value writer, flow policy, actor gate, warnings.
+
+The first column has `X` in every row because each later step reads only the decoded document. The repository gave evidence for the FR7.3 entry. `ParseDocument` once encoded the checked document a second time. That step sorted the keys in every prototype. It now decodes the original bytes.
+
+FR7.4 depends on DP7.2 because each flow refers to identities that DP7.2 resolves. An empty event `id` once sent flows to the wrong event. Event occurrences now have their own map.
+
+FR7.6 depends on every DP, because each DP decides what it drops. For this reason, each DP writes its own warning where the loss occurs. No separate step tries to find losses later.
+
+The zeros in the FR7.3 row are correct. Labels and flows do not change the content of a value.
+
+## Influences across branches
+
+Two influences cross from other branches into FR7. Each one has a cost when it changes.
+
+DP3 influences FR7.4. `import_policy.go` repeats the flow rules of `internal/validator` so that import writes no illegal flow. If you change a flow rule in the validator, you must change `import_policy.go` in the same change.
+
+DP4 influences FR7.3. Export reads JSON values from the canonical model. `jsonValue` in `internal/model` builds each value from the HCL source text. It does not convert the value through `cty` first, because `cty` normalizes Unicode keys. Normalization would merge the keys `é` and `e\u0301`.
+
+## Module contracts
 
 | Module | Owns | Input | Output and failure contract |
 | --- | --- | --- | --- |
 | `internal/syntax` | HCL body schemas and parsing | Filename and source bytes | Parsed document or HCL syntax diagnostics |
-| `internal/source` | Shared source catalogs and reference normalization | Parsed document | Immutable decoded source facts; no I/O or policy |
-| `internal/validator` | Structural, reference, scenario, and smell policy | Decoded source plus profile | Diagnostics and, only without errors, `ValidatedDocument` |
-| `internal/model` | Canonical renderer-facing IR and normalized edges | `ValidatedDocument` | Deterministic `Model`; no parsing, validation, or I/O |
+| `internal/source` | Shared source catalogs and reference normalization | Parsed document | Decoded source facts that do not change. No I/O and no policy. |
+| `internal/validator` | Structural, reference, scenario, and smell policy | Decoded source and a profile | Diagnostics. Without errors, also a `ValidatedDocument`. |
+| `internal/model` | Canonical model for renderers and interchange, with normalized edges | `ValidatedDocument` | The same `Model` for the same input. No parsing, no validation, no I/O. |
 | `internal/formatter` | Canonical HCL layout | Source bytes | Formatted bytes or parse diagnostics |
-| `internal/renderer` | Standalone HTML representation | Canonical `Model` | HTML or template/serialization error |
-| `internal/app` | Use-case sequencing and plain diagnostics | In-memory source or a one-shot file path | Validate, format, and render results shared by all adapters |
-| CLI, WASM, `internal/serve` | Runtime-specific actions | Arguments, files, signals, HTTP, JavaScript values | Exit codes, files, browser values, and server lifecycle |
+| `internal/renderer` | Standalone HTML | Canonical `Model` | HTML, or a template or serialization error |
+| `internal/interchange` | Schema check and conversion for slice-based JSON | JSON bytes, or a canonical `Model` | A document or unformatted HCL with warnings. A returned error means that the input has no correct conversion. No I/O. |
+| `internal/app` | Use-case sequence and plain diagnostics | Source in memory or one file path | Results for validate, format, render, import, and export that all adapters share |
+| CLI, WASM, `internal/serve` | Actions for each runtime | Arguments, files, signals, HTTP, JavaScript values | Exit codes, files, browser values, and server lifecycle |
 
-OS interactions remain at the boundary. The server injects file, listener,
-browser, stream, and signal actions so lifecycle behavior can be tested without
-changing language calculations.
+OS actions stay at the boundary. The server injects file, listener, browser, stream, and signal actions. Thus tests can examine lifecycle behavior without a change to language calculations.
 
-## Change Rules
+The CLI owns output-file safety. `emhcl export` refuses an `-o` target that has the `.em.hcl` extension or that is the source file. It exits with code 2. When a decode or a conversion fails, `emhcl import` does not change an existing output file.
 
-1. Change the language grammar in `internal/syntax` and the normative spec
-   first; update source decoding and validator rules in that order.
-2. Add a shared interpretation to `internal/source`. Do not independently
-   reconstruct catalogs, inferred addresses, or traversals in validators or
-   renderers.
-3. Keep validation policy in `internal/validator`. A model or renderer must not
-   silently compensate for invalid input.
-4. Keep the canonical IR presentation-independent. Renderer-specific layout
-   belongs in `internal/renderer`.
-5. Add a use case once in `internal/app`; runtime adapters translate inputs and
-   outputs but do not reassemble the pipeline.
-6. Route new OS effects through an adapter or injected server environment and
-   define cancellation and failure behavior for every worker.
+## Change rules
 
-A change violates the Independence Axiom when, for example, a renderer starts
-deciding validity, a new frontend reconstructs diagnostics, model construction
-accepts unvalidated HCL, or a grammar fact acquires multiple owners.
+1. Change the language grammar in `internal/syntax` and in the normative specification first. Then update source decoding and validator rules, in that order.
+2. Add a shared interpretation to `internal/source`. Do not rebuild catalogs, inferred addresses, or traversals in validators or renderers.
+3. Keep validation policy in `internal/validator`. A model or a renderer must not correct invalid input without a diagnostic.
+4. Keep the canonical model independent of presentation. Layout for a renderer belongs in `internal/renderer`.
+5. Add a use case one time, in `internal/app`. Runtime adapters translate inputs and outputs. They do not build the pipeline again.
+6. Send new OS effects through an adapter or the injected server environment. Define cancellation and failure behavior for each worker.
+7. Keep the JSON schema rules in `conform.go`. Import and export must both use them.
+8. Decode the original JSON bytes. Do not encode an accepted document a second time, because that changes key order.
+9. Write JSON values with `jsonTokens`. Do not send object keys through `cty` on import or on export.
+10. If a conversion has no correct native form, return an error. If it drops data, write a warning at the place where it drops the data.
+11. If you change a flow rule in `internal/validator`, change `import_policy.go` in the same change.
+12. After each change to the interchange mapping, make sure that the round trip stays stable. Do this for each file in `examples/` and `testdata/valid/`.
 
-## Information Axiom and Evidence
+A change breaks the Independence Axiom when, for example:
 
-The repository does not claim a numerical information-content score because it
-does not yet measure the probability of satisfying each FR in production. The
-design reduces credible failure modes through one-way dependencies, capability-
-based sequencing, stable diagnostics, injected effects, and automated checks.
+- A renderer starts to decide validity.
+- A new frontend builds its own diagnostics.
+- Model construction accepts HCL that the validator did not accept.
+- A grammar fact gets two owners.
+- The importer writes a model that the validator did not accept.
 
-`make verify` supplies repeatable evidence through formatting, module-tidiness,
-vet, unit, race, static-analysis, vulnerability, WASM-build, and example checks.
-Release history, escaped defect counts, flaky-test rates, and change lead time
-would be appropriate measurements for comparing this architecture with a
-future alternative under the Information Axiom.
+## Information Axiom and evidence
+
+The repository does not give a number for information content. It does not measure the probability that each FR succeeds in production. The design reduces known failure modes with these mechanisms:
+
+- Dependencies that go in one direction.
+- A sequence that the types enforce.
+- Stable diagnostics.
+- Injected effects.
+- Automated tests.
+
+`make verify` runs a repeatable set of steps. They cover formatting, module tidiness, `go vet`, unit tests, the race detector, static analysis, vulnerabilities, the WASM build, and the examples.
+
+The interchange module has this evidence:
+
+- Regression tests for each defect from the review of the `json-cmd` branch. They are in `review_regressions_test.go` and `export_value_regressions_test.go` in `internal/interchange`, and in `internal/cli/interchange_test.go`.
+- `TestExportImport_RoundTripsEveryShippedExample`, which compares the first and the second export of each example.
+- Import, `ajv`, and round-trip runs on the five fixtures in `testdata/valid/`. The source files and the exported files pass `ajv`, and the second export is identical to the first.
+
+Some limits are known. String values (not keys) pass through `cty` on both import and export. Thus Unicode normalization can change the text of a string value. Two read models in the Cart fixtures have different `aggregate` metadata. No evidence shows which value is correct.
+
+To compare this architecture with an alternative under the Information Axiom, measure release history, escaped defect counts, flaky-test rates, and change lead time.
