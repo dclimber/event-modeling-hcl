@@ -1,6 +1,6 @@
 # Architecture Guide
 
-This guide describes how `emhcl` is organized. It also shows how the design uses Axiomatic Design to keep changes predictable. The guide describes the current repository. The language contract is in the [Event Modeling HCL specification](https://github.com/event-modeling-hcl/spec). The tool implements Specification v0.3.0 and loads folder models from Specification v0.4.0.
+This guide describes how `emhcl` is organized. It also shows how the design uses Axiomatic Design to keep changes predictable. The guide describes the current repository. The language contract is in the [Event Modeling HCL specification](https://github.com/event-modeling-hcl/spec). The tool implements Specification v0.4.0, which includes folder models.
 
 ## Axiomatic Design terms
 
@@ -108,7 +108,7 @@ FR7 has six child requirements. The table gives each one its mechanism.
 | FR7.5: Keep at most one actor per slice | Import refuses a slice with two or more actors. Export refuses a workflow whose screens name two or more actors. | DP7.5: Actor gate | `rejectMultipleActors` in `import.go`, `slice` in `export.go` |
 | FR7.6: Disclose each loss | Each value that a conversion drops produces a warning. | DP7.6: Warnings at the point of loss | `warn` calls in `import.go`, `import_policy.go`, `export.go` |
 
-The actor gate follows from the language. Specification v0.3.0 gives a screen one optional actor and gives a workflow no actor attribute. A JSON slice lists actors without links to screens. Thus a slice with two actors has no correct native form. The gate stops the conversion instead of guessing.
+The actor gate follows from the language. Specification v0.4.0 gives a screen one optional actor and gives a workflow no actor attribute. A JSON slice lists actors without links to screens. Thus a slice with two actors has no correct native form. The gate stops the conversion instead of guessing.
 
 Round-trip stability is an acceptance criterion, not a separate FR. A round trip is export, then import, then a second export. The round trip is stable when the second export is identical to the first, byte for byte. It is the result of FR7.1 to FR7.6 together, so it has no DP of its own.
 

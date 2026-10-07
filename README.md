@@ -4,10 +4,8 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/event-modeling-hcl/eventmodeling-hcl.svg)](https://pkg.go.dev/github.com/event-modeling-hcl/eventmodeling-hcl)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-`emhcl` v0.8.0 implements Event Modeling HCL Specification v0.3.0. The current
-source also loads folder models from Specification v0.4.0 (RFC 0002). No
-release has folder models yet. The Unreleased section of
-[CHANGELOG.md](CHANGELOG.md) lists them.
+`emhcl` v0.9.0 implements Event Modeling HCL Specification v0.4.0. A model can
+be one `.em.hcl` file or a folder of `.em.hcl` files.
 This repository provides a strict validator, canonical formatter, typed semantic model,
 normative language documentation, and executable examples. The domain reference is the upstream [Event Modeling
 Specification](https://github.com/dilgerma/event-modeling-spec); the HCL
@@ -26,7 +24,7 @@ preserve the rules and durable artifacts of an Event Modeling session.
 Install the tagged command with Go 1.25 or newer:
 
 ```bash
-go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.8.0
+go install github.com/event-modeling-hcl/eventmodeling-hcl/cmd/emhcl@v0.9.0
 ```
 
 Go writes the executable to `GOBIN`, or to `$(go env GOPATH)/bin` when
@@ -48,7 +46,7 @@ the [GitHub Releases page](https://github.com/event-modeling-hcl/eventmodeling-h
 Verify a downloaded archive with that release's `checksums.txt`:
 
 ```bash
-archive=emhcl_0.8.0_linux_amd64.tar.gz
+archive=emhcl_0.9.0_linux_amd64.tar.gz
 grep " ${archive}$" checksums.txt | sha256sum -c -
 # macOS: grep " ${archive}$" checksums.txt | shasum -a 256 -c -
 ```
@@ -58,7 +56,7 @@ With GitHub CLI 2.49.0 or newer, verify the downloaded archive was produced by
 this repository's release workflow:
 
 ```bash
-gh attestation verify emhcl_0.8.0_linux_amd64.tar.gz \
+gh attestation verify emhcl_0.9.0_linux_amd64.tar.gz \
   --repo event-modeling-hcl/eventmodeling-hcl
 ```
 
@@ -128,10 +126,8 @@ available port; the actual browser URL is printed after binding.
 
 ## Multi-file models
 
-Folder models (Specification v0.4.0, RFC 0002) are in the current source and
-are not in a release yet. The Unreleased section of
-[CHANGELOG.md](CHANGELOG.md) lists them. The v0.8.0 release loads one file
-only.
+Folder models follow Specification v0.4.0 (RFC 0002). Release v0.8.0 and
+earlier load one file only.
 
 A model can be one `.em.hcl` file or a folder of `.em.hcl` files. A folder
 model is one model that you write in several files. This follows Specification
@@ -230,7 +226,7 @@ required properties (such as `sliceType`, element `fields`/`dependencies` or
 specification `linkedId`), values outside an enum, mistyped values and trailing
 content are import errors that name the offending JSON path.
 
-The native language remains Specification **v0.3.0**. Actors are declared at
+The native language remains Specification **v0.4.0**. Actors are declared at
 the top level and referenced by screens; workflows have no actor attribute
 or actor inheritance.
 
@@ -461,7 +457,7 @@ exhaustiveness, vulnerability, example-validation, and release checks.
 
 ## Boundaries
 
-The supported HCL Specification v0.3.0 resolves references within a single
+The supported HCL Specification v0.4.0 resolves references within a single
 document and enforces scoped identity, canonical typed flows, scenario shape,
 field examples, and workflow patterns. Folder models from Specification v0.4.0
 resolve references across all files of one folder, as the

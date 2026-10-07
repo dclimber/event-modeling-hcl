@@ -6,6 +6,10 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ## [Unreleased]
 
+## [v0.9.0] - 2026-10-07
+
+This release implements Event Modeling HCL Specification v0.4.0. A model can be one `.em.hcl` file or a folder of `.em.hcl` files.
+
 ### Added
 
 - Folder models, as Specification v0.4.0 and RFC 0002 define them. A folder is one model. Every `.em.hcl` file directly in the folder joins the model, in file name order.
@@ -21,6 +25,7 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 - The detail of EM002 names the first declaration as `file:line:column`. This applies only to duplicate top-level declarations: catalog blocks, chapters, hotspots, workflows, and the events, aggregates, and field types that a bounded context owns. It does not apply to workflow children or fields.
 - Each diagnostic names the member file that it points at.
 - `emhcl fmt` refuses a folder and formats one `.em.hcl` file at a time.
+- The diagram states Specification v0.4.0 as its language version.
 
 ## [v0.8.0] - 2026-10-07
 

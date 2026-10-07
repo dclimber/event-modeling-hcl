@@ -26,7 +26,7 @@ func TestBuildViewModel_AdaptsCurrentCompleteModel(t *testing.T) {
 	if got, want := view.Title, "Complete"; got != want {
 		t.Fatalf("title = %q, want %q", got, want)
 	}
-	if got, want := view.Version, "v0.3.0"; got != want {
+	if got, want := view.Version, "v0.4.0"; got != want {
 		t.Fatalf("version = %q, want %q", got, want)
 	}
 	if got, want := len(view.Slices), 4; got != want {
