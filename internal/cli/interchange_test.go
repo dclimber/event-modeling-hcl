@@ -138,6 +138,57 @@ func TestRun_ExportRejectsSourceOverwrite(t *testing.T) {
 	}
 }
 
+func TestRun_ExportRejectsFolderMemberOverwrite(t *testing.T) {
+	for _, name := range []string{"output symlink to member", "output hardlink to member", "member symlink to output"} {
+		t.Run(name, func(t *testing.T) {
+			folder := filepath.Join(t.TempDir(), "model")
+			if err := os.Mkdir(folder, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			const original = "bounded_context \"source\" {}\n"
+			member := filepath.Join(folder, "x.em.hcl")
+			if err := os.WriteFile(member, []byte(original), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			output := filepath.Join(t.TempDir(), "alias.json")
+			switch name {
+			case "output symlink to member":
+				if err := os.Symlink(member, output); err != nil {
+					t.Fatal(err)
+				}
+			case "output hardlink to member":
+				if err := os.Link(member, output); err != nil {
+					t.Fatal(err)
+				}
+			case "member symlink to output":
+				if err := os.WriteFile(output, []byte(original), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				member = filepath.Join(folder, "link.em.hcl")
+				if err := os.Symlink(output, member); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Remove(filepath.Join(folder, "x.em.hcl")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			result := runCLI(t, "export", folder, "-o", output)
+			if result.exitCode != 2 || result.stdout != "" || !strings.Contains(result.stderr, "export output must not overwrite the source") {
+				t.Fatalf("expected refusal, got %+v", result)
+			}
+			for _, path := range []string{member, output} {
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(data) != original {
+					t.Fatalf("%s overwritten: %q", path, data)
+				}
+			}
+		})
+	}
+}
+
 func TestRun_ImportEmptySlicesSucceeds(t *testing.T) {
 	input := filepath.Join(t.TempDir(), "empty.json")
 	if err := os.WriteFile(input, []byte(`{"slices":[]}`), 0o600); err != nil {

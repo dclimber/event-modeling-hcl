@@ -7,18 +7,20 @@ type diagnosticCode string
 const (
 	codeUnclassified diagnosticCode = "EM000"
 
-	codeReadFile             diagnosticCode = "EM001"
-	codeDuplicateID          diagnosticCode = "EM002"
-	codeInvalidBlockLabel    diagnosticCode = "EM003"
-	codeInvalidWorkflowChild diagnosticCode = "EM004"
-	codeInvalidChapter       diagnosticCode = "EM005"
-	codeInvalidChapterRange  diagnosticCode = "EM006"
-	codeInvalidAttribute     diagnosticCode = "EM007"
-	codeInvalidEnum          diagnosticCode = "EM008"
-	codeInvalidFieldType     diagnosticCode = "EM009"
-	codeInvalidExample       diagnosticCode = "EM010"
-	codeInvalidTranslation   diagnosticCode = "EM011"
-	codeInvalidAutomation    diagnosticCode = "EM012"
+	codeReadFile                  diagnosticCode = "EM001"
+	codeDuplicateID               diagnosticCode = "EM002"
+	codeInvalidBlockLabel         diagnosticCode = "EM003"
+	codeInvalidWorkflowChild      diagnosticCode = "EM004"
+	codeInvalidChapter            diagnosticCode = "EM005"
+	codeInvalidChapterRange       diagnosticCode = "EM006"
+	codeInvalidAttribute          diagnosticCode = "EM007"
+	codeInvalidEnum               diagnosticCode = "EM008"
+	codeInvalidFieldType          diagnosticCode = "EM009"
+	codeInvalidExample            diagnosticCode = "EM010"
+	codeInvalidTranslation        diagnosticCode = "EM011"
+	codeInvalidAutomation         diagnosticCode = "EM012"
+	codeChaptersInSeveralFiles    diagnosticCode = "EM013"
+	codeWorkflowInSeveralChapters diagnosticCode = "EM014"
 
 	codeInvalidReference    diagnosticCode = "EM101"
 	codeUnresolvedReference diagnosticCode = "EM102"
@@ -35,6 +37,7 @@ const (
 	codeCommandWithoutReason  diagnosticCode = "EM404"
 	codeShelfAntiPattern      diagnosticCode = "EM405"
 	codeOpenHotspot           diagnosticCode = "EM406"
+	codeUnchapteredWorkflow   diagnosticCode = "EM407"
 )
 
 var profileSeverities = map[Profile]map[diagnosticCode]hcl.DiagnosticSeverity{
@@ -45,10 +48,12 @@ var profileSeverities = map[Profile]map[diagnosticCode]hcl.DiagnosticSeverity{
 		codeCommandWithoutReason:  hcl.DiagInvalid,
 		codeShelfAntiPattern:      hcl.DiagInvalid,
 		codeOpenHotspot:           hcl.DiagInvalid,
+		codeUnchapteredWorkflow:   hcl.DiagInvalid,
 	},
 	Strict: {
 		codeCommandWithoutReason: hcl.DiagError,
 		codeOpenHotspot:          hcl.DiagError,
+		codeUnchapteredWorkflow:  hcl.DiagError,
 	},
 }
 

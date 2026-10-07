@@ -142,7 +142,7 @@ func TestParseCommand_RejectsServeInvalidProfile(t *testing.T) {
 
 func TestParseCommand_RejectsServeUnsupportedExtension(t *testing.T) {
 	_, err := parseCommand("emhcl", []string{"serve", "model.hcl"})
-	if got, want := err, "model file must use the .em.hcl extension"; got == nil || got.Error() != want {
+	if got, want := err, "model path must be a .em.hcl file or a folder"; got == nil || got.Error() != want {
 		t.Fatalf("err = %v, want %q", got, want)
 	}
 }
@@ -155,7 +155,7 @@ func TestParseCommand_RejectsUnsupportedExtension(t *testing.T) {
 	_, err := parseCommand("emhcl", args)
 
 	// Then it produces the extension error.
-	if got, want := err, "model file must use the .em.hcl extension"; got == nil || got.Error() != want {
+	if got, want := err, "model path must be a .em.hcl file or a folder"; got == nil || got.Error() != want {
 		t.Fatalf("err = %v, want %q", got, want)
 	}
 }
@@ -423,8 +423,149 @@ state_change "example" {
 	if result.exitCode != 2 {
 		t.Fatalf("exit code = %d, want 2; stderr = %q", result.exitCode, result.stderr)
 	}
-	if !strings.Contains(result.stderr, "must use the .em.hcl extension") {
+	if !strings.Contains(result.stderr, "model path must be a .em.hcl file or a folder") {
 		t.Fatalf("stderr = %q, want extension diagnostic", result.stderr)
+	}
+}
+
+// writeFolderModel writes the minimal example split over two files that
+// reference each other and returns the folder path.
+func writeFolderModel(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	files := map[string]string{
+		"a-catalog.em.hcl": `bounded_context "pet_management" {
+  title = "Pet Management"
+
+  aggregate "pet" {
+  }
+
+  field_type "pet_id" {
+    type         = "Int"
+    id_attribute = true
+    example      = 5
+  }
+
+  event "pet_added" {
+    title     = "Pet Added"
+    aggregate = aggregate.pet
+
+    field "pet_id" {
+      type = field_type.pet_id
+    }
+  }
+}
+`,
+		"b-slice.em.hcl": `state_change "add_pet" {
+  title = "Add Pet"
+
+  screen "add_pet_form" {
+    title = "Add Pet Form"
+    to    = [command.add_pet_command]
+  }
+
+  command "add_pet_command" {
+    title     = "Add Pet"
+    aggregate = aggregate.pet_management.pet
+    to        = [event.pet_management.pet_added]
+
+    field "pet_id" {
+      type = field_type.pet_management.pet_id
+    }
+  }
+}
+`,
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+	return dir
+}
+
+func TestRun_ValidateFolderWhoseFilesReferenceEachOther(t *testing.T) {
+	dir := writeFolderModel(t)
+
+	result := runCLI(t, "validate", dir)
+
+	if result.exitCode != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr = %q", result.exitCode, result.stderr)
+	}
+	if got, want := result.stdout, dir+" valid\n"; got != want {
+		t.Fatalf("stdout = %q, want %q", got, want)
+	}
+}
+
+func TestRun_DiagramAndExportAcceptAFolder(t *testing.T) {
+	dir := writeFolderModel(t)
+
+	for _, command := range []string{"diagram", "export"} {
+		result := runCLI(t, command, dir)
+
+		if result.exitCode != 0 {
+			t.Fatalf("%s: exit code = %d, want 0; stderr = %q", command, result.exitCode, result.stderr)
+		}
+		if result.stdout == "" {
+			t.Fatalf("%s: stdout is empty, want the rendered or exported model", command)
+		}
+	}
+}
+
+func TestRun_FolderDiagnosticsNameTheMemberFile(t *testing.T) {
+	dir := writeFolderModel(t)
+	broken := filepath.Join(dir, "c-broken.em.hcl")
+	if err := os.WriteFile(broken, []byte("bounded_context \"example\" {\n"), 0o600); err != nil {
+		t.Fatalf("write broken file: %v", err)
+	}
+
+	result := runCLI(t, "validate", dir)
+
+	if result.exitCode != 1 {
+		t.Fatalf("exit code = %d, want 1; stderr = %q", result.exitCode, result.stderr)
+	}
+	location := regexp.MustCompile(regexp.QuoteMeta(broken) + `:\d+:\d+: Error EM000:`)
+	if !location.MatchString(result.stderr) {
+		t.Fatalf("stderr = %q, want a diagnostic located in %s", result.stderr, broken)
+	}
+	if result.stdout != "" {
+		t.Fatalf("stdout = %q, want empty", result.stdout)
+	}
+}
+
+func TestRun_RejectsModelPathsThatAreNeitherAFileNorAFolder(t *testing.T) {
+	existing := filepath.Join(t.TempDir(), "x.txt")
+	if err := os.WriteFile(existing, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	missing := filepath.Join(t.TempDir(), "missing")
+
+	for _, command := range []string{"validate", "diagram", "export", "serve"} {
+		for _, path := range []string{existing, missing, "x.txt"} {
+			result := runCLI(t, command, path)
+
+			if result.exitCode != 2 {
+				t.Fatalf("%s %s: exit code = %d, want 2; stderr = %q", command, path, result.exitCode, result.stderr)
+			}
+			if got, want := result.stderr, "model path must be a .em.hcl file or a folder\n"; got != want {
+				t.Fatalf("%s %s: stderr = %q, want %q", command, path, got, want)
+			}
+		}
+	}
+}
+
+func TestRun_FormatRejectsAFolder(t *testing.T) {
+	dir := writeFolderModel(t)
+
+	for _, args := range [][]string{{"fmt", dir}, {"fmt", "-w", dir}} {
+		result := runCLI(t, args...)
+
+		if result.exitCode != 2 {
+			t.Fatalf("%v: exit code = %d, want 2; stderr = %q", args, result.exitCode, result.stderr)
+		}
+		if got, want := result.stderr, "fmt formats one .em.hcl file at a time\n"; got != want {
+			t.Fatalf("%v: stderr = %q, want %q", args, got, want)
+		}
 	}
 }
 
@@ -527,10 +668,24 @@ func writeModel(t *testing.T, name, model string) string {
 func modelPaths(t *testing.T, directories ...string) []string {
 	t.Helper()
 	pattern := filepath.Join(append([]string{"..", ".."}, directories...)...)
+
+	// Get files
 	paths, err := filepath.Glob(filepath.Join(pattern, "*.em.hcl"))
 	if err != nil {
 		t.Fatalf("find models: %v", err)
 	}
+
+	// Get folders
+	entries, err := os.ReadDir(pattern)
+	if err != nil {
+		t.Fatalf("read dir: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			paths = append(paths, filepath.Join(pattern, entry.Name()))
+		}
+	}
+
 	if len(paths) == 0 {
 		t.Fatalf("no Event Modeling files found at %s", pattern)
 	}

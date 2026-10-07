@@ -256,7 +256,7 @@ func TestImport_WarnsAboutUnsupportedSchemaMetadataAndInvalidScenarioTargets(t *
 }
 
 func TestExportImport_CourseActorsRemainUnambiguous(t *testing.T) {
-	exported := app.ExportFile(filepath.Join("..", "..", "examples", "course_subscriptions.em.hcl"))
+	exported := app.ExportPath(filepath.Join("..", "..", "examples", "course_subscriptions.em.hcl"))
 	if exported.Diagnostics.HasErrors() {
 		t.Fatalf("export diagnostics: %+v", exported.Diagnostics)
 	}

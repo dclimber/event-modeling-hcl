@@ -1,9 +1,9 @@
-// Package serve runs a local live-reload HTTP server for one .em.hcl model:
-// it watches the file, re-renders it with internal/app on every change,
-// and serves the result in a browser tab that reloads itself. All rendering
-// is delegated to app's plain RenderResult/Diagnostic types — this
-// package owns only HTTP and file-watching, never HCL parsing or the
-// renderer's output format.
+// Package serve runs a local live-reload HTTP server for one event model,
+// a .em.hcl file or a folder of them: it watches the model's files,
+// re-renders them with internal/app on every change, and serves the result
+// in a browser tab that reloads itself. All rendering is delegated to app's
+// plain RenderResult/Diagnostic types — this package owns only HTTP and
+// file-watching, never HCL parsing or the renderer's output format.
 package serve
 
 import (
@@ -24,11 +24,12 @@ import (
 	"time"
 
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/app"
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/syntax"
 )
 
-// pollInterval is how often the watch loop checks the model file's content.
-// It is a var, not a const, so tests can shrink it instead of waiting on
-// the real interval.
+// pollInterval is how often the watch loop checks the model's files. It is
+// a var, not a const, so tests can shrink it instead of waiting on the real
+// interval.
 var pollInterval = 500 * time.Millisecond
 
 // state holds the most recently rendered result and lets HTTP handlers read
@@ -55,10 +56,11 @@ func (s *state) snapshot() (app.RenderResult, string) {
 }
 
 // hashResult hashes everything a viewer could see: the rendered HTML, or —
-// when a model has errors — its diagnostics. Hashing only the HTML would
-// make any two error states indistinguishable, since both render no HTML
-// at all, and the served page would never know to reload from one error to
-// a different one.
+// when a model has errors — its diagnostics, including the file each one
+// points at (Diagnostic.Filename is not part of the JSON encoding). Hashing
+// only the HTML would make any two error states indistinguishable, since
+// both render no HTML at all, and the served page would never know to
+// reload from one error to a different one.
 func hashResult(result app.RenderResult) string {
 	encoded, err := json.Marshal(result)
 	if err != nil {
@@ -66,8 +68,12 @@ func hashResult(result app.RenderResult) string {
 		// this cannot fail in practice, but a distinct hash beats a panic.
 		return "unhashable"
 	}
-	sum := sha256.Sum256(encoded)
-	return hex.EncodeToString(sum[:])
+	h := sha256.New()
+	h.Write(encoded)
+	for _, diagnostic := range result.Diagnostics {
+		fmt.Fprintf(h, "%d:%s", len(diagnostic.Filename), diagnostic.Filename)
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 const pollScript = `<script>
@@ -118,7 +124,12 @@ func diagnosticsPage(diagnostics []app.Diagnostic) []byte {
 			items.WriteString(html.EscapeString(diagnostic.Detail))
 		}
 		if diagnostic.Line > 0 {
-			fmt.Fprintf(&items, " (line %d, column %d)", diagnostic.Line, diagnostic.Column)
+			items.WriteString(" ")
+			if diagnostic.Filename != "" {
+				items.WriteString(html.EscapeString(diagnostic.Filename))
+				items.WriteString(" ")
+			}
+			fmt.Fprintf(&items, "(line %d, column %d)", diagnostic.Line, diagnostic.Column)
 		}
 		items.WriteString("</li>\n")
 	}
@@ -165,47 +176,91 @@ func newMux(s *state) *http.ServeMux {
 	return mux
 }
 
-// regenerate reads filePath (via env.readFile) and renders it into s, under
-// profile.
-func regenerate(env environment, s *state, filePath string, profile app.Profile) error {
-	source, err := env.readFile(filePath)
+// loadModel lists the model's member files via env.readModel. The first
+// error diagnostic becomes the returned error, since a model that cannot be
+// read has nothing to render or hash.
+func loadModel(env environment, path string) ([]syntax.File, error) {
+	files, diagnostics := env.readModel(path)
+	for _, diagnostic := range diagnostics {
+		if diagnostic.Severity == "Error" {
+			return nil, fmt.Errorf("%s: %s", diagnostic.Summary, diagnostic.Detail)
+		}
+	}
+	return files, nil
+}
+
+// regenerate reads the model at path (a file or a folder, via
+// env.readModel) and renders it into s, under profile.
+func regenerate(env environment, s *state, path string, profile app.Profile) error {
+	files, err := loadModel(env, path)
 	if err != nil {
 		return err
 	}
-	s.update(app.Render(filePath, source, profile))
+	s.update(app.RenderFiles(path, files, profile))
 	return nil
 }
 
-func sourceHash(source []byte) string {
-	sum := sha256.Sum256(source)
-	return hex.EncodeToString(sum[:])
+// sourceHash hashes every member file's name and content, in order. Each
+// field is length-prefixed so that the file lists ("ab", "c") and
+// ("a", "bc") never collide.
+func sourceHash(files []syntax.File) string {
+	h := sha256.New()
+	for _, file := range files {
+		fmt.Fprintf(h, "%d:%s%d:", len(file.Name), file.Name, len(file.Source))
+		h.Write(file.Source)
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
-func fileSourceHash(env environment, filePath string) (string, error) {
-	source, err := env.readFile(filePath)
+// fileSourceHash is the hash of the model's member files. It fails when the
+// model cannot be loaded, which start treats as a fatal error.
+func fileSourceHash(env environment, path string) (string, error) {
+	files, err := loadModel(env, path)
 	if err != nil {
 		return "", err
 	}
-	return sourceHash(source), nil
+	return sourceHash(files), nil
 }
 
-// watch polls filePath every pollInterval and re-renders it whenever its
-// content changes. Content, rather than mtime, is the reliable contract:
-// editors and source-control tools may preserve timestamps when replacing a
-// file.
+// watch polls the model at filePath every pollInterval and re-renders it
+// whenever the member files' names or content change. Content, rather than
+// mtime, is the reliable contract: editors and source-control tools may
+// preserve timestamps when replacing a file.
+//
+// A model that cannot be loaded, such as a folder whose last .em.hcl file was
+// removed, is published as its read diagnostics with no HTML. The same failure
+// must appear on two polls in a row, so that an editor that saves through a
+// temporary file and a rename does not flash an error page. The hash of the
+// published state is the hash of those diagnostics, so the watcher publishes
+// once and notices when the members come back.
 func watch(ctx context.Context, env environment, s *state, filePath string, profile app.Profile, lastSourceHash string) {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
+	pendingFailureHash := ""
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			currentSourceHash, err := fileSourceHash(env, filePath)
-			if err != nil {
+			files, diagnostics := env.readModel(filePath)
+			if diagnostics.HasErrors() {
+				unloadable := app.RenderResult{Diagnostics: diagnostics}
+				unloadableHash := hashResult(unloadable)
+				if unloadableHash == lastSourceHash {
+					continue
+				}
+				if unloadableHash != pendingFailureHash {
+					pendingFailureHash = unloadableHash
+					continue
+				}
+				s.update(unloadable)
+				lastSourceHash = unloadableHash
+				fmt.Fprintln(env.stdout, "Diagram updated.")
 				continue
 			}
+			pendingFailureHash = ""
+			currentSourceHash := sourceHash(files)
 			if currentSourceHash == lastSourceHash {
 				continue
 			}
@@ -248,10 +303,11 @@ func servingURL(listener net.Listener, requestedHost string) string {
 	return "http://" + net.JoinHostPort(host, port)
 }
 
-// Start renders filePath once, then serves it at http://addr:port, live-
-// reloading in the browser whenever filePath changes on disk, until it
-// receives SIGINT. It runs against the real OS environment; see start for
-// the version that takes an injected environment.
+// Start renders the model at filePath (a .em.hcl file or a folder of them)
+// once, then serves it at http://addr:port, live-reloading in the browser
+// whenever a model file is added, removed, renamed or changed on disk,
+// until it receives SIGINT. It runs against the real OS environment; see
+// start for the version that takes an injected environment.
 func Start(filePath string, addr string, port int, profile app.Profile) error {
 	return start(filePath, addr, port, profile, defaultEnvironment())
 }

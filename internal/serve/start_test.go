@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/app"
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/syntax"
 )
 
 // syncBuffer is a bytes.Buffer safe for concurrent Write (from the
@@ -79,7 +80,7 @@ func TestStart_OpensBrowserAtTheServedURL(t *testing.T) {
 	urlCh := make(chan string, 1)
 
 	env := environment{
-		readFile:    os.ReadFile,
+		readModel:   app.ReadModel,
 		listen:      net.Listen,
 		openBrowser: func(url string) { urlCh <- url },
 		stdout:      &bytes.Buffer{},
@@ -117,7 +118,7 @@ func TestStart_ShutsDownCleanlyOnSignalAndPrintsTheShutdownLine(t *testing.T) {
 	stdout := &syncBuffer{}
 
 	env := environment{
-		readFile:    os.ReadFile,
+		readModel:   app.ReadModel,
 		listen:      net.Listen,
 		openBrowser: func(string) {},
 		stdout:      stdout,
@@ -153,12 +154,13 @@ func TestStart_ShutsDownCleanlyOnSignalAndPrintsTheShutdownLine(t *testing.T) {
 	}
 }
 
-func TestStart_ReadFileErrorOnInitialRegeneratePropagates(t *testing.T) {
-	sentinel := errors.New("boom: cannot read model")
+func TestStart_ReadModelErrorOnInitialRegeneratePropagates(t *testing.T) {
 	_, signals := fakeSignals()
 
 	env := environment{
-		readFile:    func(string) ([]byte, error) { return nil, sentinel },
+		readModel: func(string) ([]syntax.File, app.Diagnostics) {
+			return nil, app.Diagnostics{{Severity: "Error", Summary: "Failed to read model", Detail: "boom: cannot read model"}}
+		},
 		listen:      net.Listen,
 		openBrowser: func(string) {},
 		stdout:      &bytes.Buffer{},
@@ -167,8 +169,8 @@ func TestStart_ReadFileErrorOnInitialRegeneratePropagates(t *testing.T) {
 	}
 
 	err := start(testModelPath(), "127.0.0.1", 0, app.Valid, env)
-	if !errors.Is(err, sentinel) {
-		t.Fatalf("start() error = %v, want it to wrap/equal %v", err, sentinel)
+	if err == nil || !strings.Contains(err.Error(), "boom: cannot read model") {
+		t.Fatalf("start() error = %v, want it to carry the read failure detail", err)
 	}
 }
 
@@ -177,7 +179,7 @@ func TestStart_ListenErrorPropagates(t *testing.T) {
 	_, signals := fakeSignals()
 
 	env := environment{
-		readFile: os.ReadFile,
+		readModel: app.ReadModel,
 		listen: func(network, address string) (net.Listener, error) {
 			return nil, sentinel
 		},
@@ -198,7 +200,7 @@ func TestStart_ServeFailureStopsSignalWorker(t *testing.T) {
 	sigCh, signals := fakeSignals()
 	stdout := &syncBuffer{}
 	env := environment{
-		readFile:    os.ReadFile,
+		readModel:   app.ReadModel,
 		listen:      func(string, string) (net.Listener, error) { return failingListener{err: sentinel}, nil },
 		openBrowser: func(string) {},
 		stdout:      stdout,
@@ -235,9 +237,9 @@ func TestWatch_PrintsDiagramUpdatedToTheInjectedStdout(t *testing.T) {
 
 	stdout := &syncBuffer{}
 	env := environment{
-		readFile: os.ReadFile,
-		stdout:   stdout,
-		stderr:   &bytes.Buffer{},
+		readModel: app.ReadModel,
+		stdout:    stdout,
+		stderr:    &bytes.Buffer{},
 	}
 
 	s := &state{}
@@ -290,9 +292,9 @@ func TestWatch_PrintsRegenerationErrorToTheInjectedStderr(t *testing.T) {
 		t.Fatalf("read fixture: %v", err)
 	}
 
-	// The fake readFile lets every read of the *seed* content through (there
-	// may be any number of watch ticks before the rewrite lands), but once
-	// it sees the *changed* content for the first time — which is
+	// The fake readModel lets every read of the *seed* content through
+	// (there may be any number of watch ticks before the rewrite lands),
+	// but once it sees the *changed* content for the first time — which is
 	// necessarily watch's own fileSourceHash poll, since that always runs
 	// before regenerate — it fails every read after that. That forces the
 	// very next read (regenerate's) to fail, regardless of tick timing.
@@ -300,20 +302,20 @@ func TestWatch_PrintsRegenerationErrorToTheInjectedStderr(t *testing.T) {
 	seenChangedOnce := false
 	stderrBuf := &syncBuffer{}
 	env := environment{
-		readFile: func(p string) ([]byte, error) {
-			data, err := os.ReadFile(p)
-			if err != nil {
-				return nil, err
+		readModel: func(p string) ([]syntax.File, app.Diagnostics) {
+			files, diagnostics := app.ReadModel(p)
+			if diagnostics.HasErrors() {
+				return nil, diagnostics
 			}
 			latchMu.Lock()
 			defer latchMu.Unlock()
-			if bytes.Equal(data, changed) {
+			if bytes.Equal(files[0].Source, changed) {
 				if seenChangedOnce {
-					return nil, errors.New("boom: cannot read on rewatch")
+					return nil, app.Diagnostics{{Severity: "Error", Summary: "Failed to read model", Detail: "boom: cannot read on rewatch"}}
 				}
 				seenChangedOnce = true
 			}
-			return data, nil
+			return files, nil
 		},
 		stdout: &bytes.Buffer{},
 		stderr: stderrBuf,
@@ -349,7 +351,7 @@ func TestWatch_PrintsRegenerationErrorToTheInjectedStderr(t *testing.T) {
 func TestDefaultEnvironment_WiresUpTheRealSeams(t *testing.T) {
 	env := defaultEnvironment()
 
-	if env.readFile == nil || env.listen == nil || env.openBrowser == nil {
+	if env.readModel == nil || env.listen == nil || env.openBrowser == nil {
 		t.Fatal("defaultEnvironment left a seam nil")
 	}
 	if env.stdout == nil || env.stderr == nil {

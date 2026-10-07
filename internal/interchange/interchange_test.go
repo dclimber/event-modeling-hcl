@@ -26,13 +26,29 @@ func parsed(t *testing.T, encoded string) *interchange.Document {
 }
 
 func TestExportImport_RoundTripsEveryShippedExample(t *testing.T) {
-	paths, err := filepath.Glob(filepath.Join("..", "..", "examples", "*.em.hcl"))
-	if err != nil || len(paths) == 0 {
+	// Test files
+	filePaths, err := filepath.Glob(filepath.Join("..", "..", "examples", "*.em.hcl"))
+	if err != nil || len(filePaths) == 0 {
 		t.Fatalf("find examples: %v", err)
 	}
+	// Test folders
+	entries, err := os.ReadDir(filepath.Join("..", "..", "examples"))
+	if err != nil {
+		t.Fatalf("read examples dir: %v", err)
+	}
+	var folderPaths []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			folderPaths = append(folderPaths, filepath.Join("..", "..", "examples", entry.Name()))
+		}
+	}
+
+	// Combine paths
+	paths := append(filePaths, folderPaths...)
+
 	for _, path := range paths {
 		t.Run(filepath.Base(path), func(t *testing.T) {
-			exported := app.ExportFile(path)
+			exported := app.ExportPath(path)
 			if exported.Diagnostics.HasErrors() {
 				t.Fatalf("export diagnostics = %#v", exported.Diagnostics)
 			}
@@ -158,13 +174,29 @@ func TestParseDocument_AcceptsSchemaValidEdgeValues(t *testing.T) {
 // Every shipped example must export JSON that the interchange schema accepts,
 // so the output can be validated with ajv and imported by other tools.
 func TestExport_EveryShippedExampleConformsToTheSchema(t *testing.T) {
-	paths, err := filepath.Glob(filepath.Join("..", "..", "examples", "*.em.hcl"))
-	if err != nil || len(paths) == 0 {
-		t.Fatalf("examples: %v %v", paths, err)
+	// Test files
+	filePaths, err := filepath.Glob(filepath.Join("..", "..", "examples", "*.em.hcl"))
+	if err != nil || len(filePaths) == 0 {
+		t.Fatalf("examples: %v %v", filePaths, err)
 	}
+	// Test folders
+	entries, err := os.ReadDir(filepath.Join("..", "..", "examples"))
+	if err != nil {
+		t.Fatalf("read examples dir: %v", err)
+	}
+	var folderPaths []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			folderPaths = append(folderPaths, filepath.Join("..", "..", "examples", entry.Name()))
+		}
+	}
+
+	// Combine paths
+	paths := append(filePaths, folderPaths...)
+
 	for _, path := range paths {
 		t.Run(filepath.Base(path), func(t *testing.T) {
-			exported := app.ExportFile(path)
+			exported := app.ExportPath(path)
 			if exported.Diagnostics.HasErrors() {
 				t.Fatalf("export diagnostics = %#v", exported.Diagnostics)
 			}

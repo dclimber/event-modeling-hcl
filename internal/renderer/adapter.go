@@ -603,8 +603,22 @@ func maxIndex(indices []int) int {
 	return maximum
 }
 
+// humanizeFilename turns a model path into a title. A file path uses its file
+// name without the .em.hcl suffix. A path without that suffix is a folder
+// model and uses the folder's own name, resolving "." and "/" through the
+// absolute path.
 func humanizeFilename(filename string) string {
-	base := strings.TrimSuffix(filepath.Base(filename), ".em.hcl")
+	base := filepath.Base(filename)
+	if strings.HasSuffix(base, ".em.hcl") {
+		base = strings.TrimSuffix(base, ".em.hcl")
+	} else {
+		base = filepath.Base(filepath.Clean(filename))
+		if base == "." || base == string(filepath.Separator) {
+			if absolute, err := filepath.Abs(filename); err == nil {
+				base = filepath.Base(absolute)
+			}
+		}
+	}
 	words := strings.FieldsFunc(base, func(character rune) bool {
 		return character == '_' || character == '-'
 	})

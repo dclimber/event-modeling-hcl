@@ -1,6 +1,8 @@
 // Command wasm compiles the emhcl core to WebAssembly and
 // exposes it to a browser as two global functions, eventModelingRender and
-// eventModelingFormat. It holds no logic of its own beyond marshaling
+// eventModelingFormat. eventModelingRender takes either one source string or
+// an array of {name, source} files that form one folder model. It holds no
+// logic of its own beyond marshaling
 // js.Value arguments into internal/app calls and its plain result structs
 // back into JS values — every real behavior (parsing, validating, rendering,
 // formatting, diagnostic codes) lives in app, where it is unit-tested under
@@ -13,9 +15,11 @@
 package main
 
 import (
+	"sort"
 	"syscall/js"
 
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/app"
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/syntax"
 )
 
 // profileArg reads an optional profile-name argument (args[index]), falling
@@ -42,22 +46,69 @@ func diagnosticsToJS(diagnostics []app.Diagnostic) []interface{} {
 			"detail":   diagnostic.Detail,
 			"line":     diagnostic.Line,
 			"column":   diagnostic.Column,
+			"file":     diagnostic.Filename,
 		}
 	}
 	return items
 }
 
-// render implements eventModelingRender(source, profile?) -> {html, diagnostics}.
+// render implements eventModelingRender(input, profile?) -> {html, diagnostics}.
+//
+// input is either a string — one source rendered under the name
+// "playground.em.hcl" — or an array of {name, source} objects, which the
+// playground treats as a folder model: the files are sorted by name
+// (byte-wise, like a directory listing) and rendered together as the model
+// "playground". Each diagnostic carries its source file name as "file".
 func render(_ js.Value, args []js.Value) interface{} {
-	if len(args) < 1 || args[0].Type() != js.TypeString {
+	if len(args) < 1 {
 		return map[string]interface{}{"error": "eventModelingRender: missing source string argument"}
 	}
 
-	result := app.Render("playground.em.hcl", []byte(args[0].String()), profileArg(args, 1))
+	var result app.RenderResult
+	switch {
+	case args[0].Type() == js.TypeString:
+		result = app.Render("playground.em.hcl", []byte(args[0].String()), profileArg(args, 1))
+	case js.Global().Get("Array").Call("isArray", args[0]).Bool():
+		files, message := filesArg(args[0])
+		if message != "" {
+			return map[string]interface{}{"error": message}
+		}
+		result = app.RenderFiles("playground", files, profileArg(args, 1))
+	default:
+		return map[string]interface{}{"error": "eventModelingRender: missing source string argument"}
+	}
 	return map[string]interface{}{
 		"html":        result.HTML,
 		"diagnostics": diagnosticsToJS(result.Diagnostics),
 	}
+}
+
+// filesArg converts a JS array of {name, source} objects into files sorted
+// by name. A non-empty message is the error to report to the caller.
+func filesArg(array js.Value) ([]syntax.File, string) {
+	length := array.Length()
+	if length == 0 {
+		return nil, "eventModelingRender: no files"
+	}
+	files := make([]syntax.File, length)
+	seen := make(map[string]bool, length)
+	for index := range files {
+		entry := array.Index(index)
+		if entry.Type() != js.TypeObject {
+			return nil, "eventModelingRender: each file needs a string name and source"
+		}
+		name, source := entry.Get("name"), entry.Get("source")
+		if name.Type() != js.TypeString || source.Type() != js.TypeString {
+			return nil, "eventModelingRender: each file needs a string name and source"
+		}
+		if seen[name.String()] {
+			return nil, "eventModelingRender: duplicate file name " + name.String()
+		}
+		seen[name.String()] = true
+		files[index] = syntax.File{Name: name.String(), Source: []byte(source.String())}
+	}
+	sort.Slice(files, func(left, right int) bool { return files[left].Name < files[right].Name })
+	return files, ""
 }
 
 // format implements eventModelingFormat(source) -> {source, diagnostics}.

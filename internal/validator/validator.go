@@ -79,6 +79,7 @@ type modelIndex struct {
 	workflowOrder    []string
 	scenarioCounts   map[string]int
 	definitionRanges map[string]hcl.Range
+	declarations     map[string]hcl.Range
 	externalContexts map[string]bool
 }
 
@@ -117,6 +118,9 @@ func validateBody(document *source.Document) hcl.Diagnostics {
 		case "state_change", "state_view", "automation", "translation":
 			diagnostics = append(diagnostics, validator.validateWorkflow(block)...)
 		}
+	}
+	if document.Parsed().FileCount() > 1 {
+		diagnostics = append(diagnostics, validator.validateComposition(content.Blocks)...)
 	}
 	diagnostics = append(diagnostics, validator.validateShelfSmell()...)
 	return diagnostics

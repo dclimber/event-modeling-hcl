@@ -1,6 +1,6 @@
 GO ?= go
 BINARY := bin/emhcl
-EXAMPLES := $(wildcard examples/*.em.hcl)
+EXAMPLES := $(wildcard examples/*.em.hcl) $(patsubst %/,%,$(wildcard examples/*/))
 WASM_DIR := web/playground
 
 .DEFAULT_GOAL := help

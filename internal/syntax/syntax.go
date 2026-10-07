@@ -1,47 +1,108 @@
 // Package syntax is the single owner of the HCL grammar for the native
 // Event Modeling language. Every hcl.BodySchema describing which blocks and
-// attributes the language allows lives here, and Parse performs exactly one
-// HCL parse of a document's source. Later stages decode the same parsed content
-// through Content/PartialContent instead of re-declaring the grammar.
+// attributes the language allows lives here, and ParseFiles performs exactly
+// one HCL parse of each file of a model's source. Later stages decode the same
+// parsed content through Content/PartialContent instead of re-declaring the
+// grammar.
 package syntax
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 )
 
-// Document is one native HCL Event Modeling source file, parsed exactly
-// once. It carries no interpretation of the content — callers decode
-// bodies (the root body from Body, or a nested block's Body) against the
-// schema functions below via Content/PartialContent.
-type Document struct {
-	file *hcl.File
+// File is one named source file of a model.
+type File struct {
+	Name   string
+	Source []byte
 }
 
-// Parse parses filename's source as HCL. On a syntax error it returns a nil
-// Document along with the diagnostics describing the error; callers must
-// not call methods on a nil Document. On success it returns a Document
-// wrapping the parsed file and no diagnostics.
+// Document is one native HCL Event Modeling model: one or more source files,
+// each parsed exactly once. It carries no interpretation of the content —
+// callers decode bodies (the root body from Body, or a nested block's Body)
+// against the schema functions below via Content/PartialContent.
+type Document struct {
+	files []*hcl.File
+	bytes map[string][]byte
+}
+
+// Parse parses filename's source as a one-file model. It is ParseFiles of a
+// single File.
 func Parse(filename string, source []byte) (*Document, hcl.Diagnostics) {
+	return ParseFiles([]File{{Name: filename, Source: source}})
+}
+
+// ParseFiles parses every file as HCL, in the given order. File names must be
+// unique, because the HCL parser caches by name and would silently reuse the
+// first file's content. When a name repeats, ParseFiles parses nothing and
+// returns a nil Document with one error diagnostic per repeated name. The
+// diagnostic has the summary "Duplicate file name" and no source range.
+// Otherwise every file is parsed even after an error, so the diagnostics report
+// the syntax errors of all files. On any syntax error it returns a nil Document
+// along with the diagnostics; callers must not call methods on a nil Document.
+// On success it returns a Document wrapping the parsed files and no error
+// diagnostics.
+func ParseFiles(files []File) (*Document, hcl.Diagnostics) {
+	if diagnostics := duplicateNames(files); len(diagnostics) > 0 {
+		return nil, diagnostics
+	}
 	parser := hclparse.NewParser()
-	file, diagnostics := parser.ParseHCL(source, filename)
+	document := &Document{files: make([]*hcl.File, 0, len(files)), bytes: make(map[string][]byte, len(files))}
+	var diagnostics hcl.Diagnostics
+	for _, file := range files {
+		parsed, fileDiagnostics := parser.ParseHCL(file.Source, file.Name)
+		diagnostics = append(diagnostics, fileDiagnostics...)
+		document.files = append(document.files, parsed)
+		document.bytes[file.Name] = file.Source
+	}
 	if diagnostics.HasErrors() {
 		return nil, diagnostics
 	}
-	return &Document{file: file}, diagnostics
+	return document, diagnostics
+}
+
+// duplicateNames returns one error per file name that appears more than once,
+// in the order each name first repeats.
+func duplicateNames(files []File) hcl.Diagnostics {
+	seen := make(map[string]bool, len(files))
+	reported := make(map[string]bool)
+	var diagnostics hcl.Diagnostics
+	for _, file := range files {
+		if seen[file.Name] && !reported[file.Name] {
+			reported[file.Name] = true
+			diagnostics = append(diagnostics, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Duplicate file name",
+				Detail:   fmt.Sprintf("the model has two files named %s.", file.Name),
+			})
+		}
+		seen[file.Name] = true
+	}
+	return diagnostics
 }
 
 // Body returns the document's root HCL body — the body decoded against
-// ModelSchema.
+// ModelSchema. For several files it is their merged body: blocks come back
+// file by file, in the order the files were given.
 func (d *Document) Body() hcl.Body {
-	return d.file.Body
+	if len(d.files) == 1 {
+		return d.files[0].Body
+	}
+	return hcl.MergeFiles(d.files)
 }
 
-// Source returns the exact bytes that were parsed. Callers use it to recover
-// literal spelling that HCL's evaluated values normalize, such as the Unicode
-// form of an object key.
-func (d *Document) Source() []byte {
-	return d.file.Bytes
+// FileCount returns the number of files the document was parsed from.
+func (d *Document) FileCount() int {
+	return len(d.files)
+}
+
+// SourceOf returns the exact bytes of the file named by rng.Filename, or nil
+// when no file has that name. Callers use it to recover literal spelling that
+// HCL's evaluated values normalize, such as the Unicode form of an object key.
+func (d *Document) SourceOf(rng hcl.Range) []byte {
+	return d.bytes[rng.Filename]
 }
 
 // Content decodes body against schema, exactly like body.Content(&schema):

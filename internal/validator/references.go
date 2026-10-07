@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/source"
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/syntax"
 )
 
 func (v *modelValidator) validateOwnerReference(attribute *hcl.Attribute) hcl.Diagnostics {
@@ -75,9 +76,12 @@ func (v *modelValidator) validateReferenceList(attribute *hcl.Attribute, expecte
 	return diagnostics
 }
 
+// validateChapterRange enforces the contiguous source-order chapter rule of a
+// one-file model. A multi-file model orders workflows by its chapters instead,
+// so the rule does not apply there.
 func (v *modelValidator) validateChapterRange(attribute *hcl.Attribute) hcl.Diagnostics {
 	expressions, diagnostics := hcl.ExprList(attribute.Expr)
-	if diagnostics.HasErrors() || len(expressions) < 2 {
+	if diagnostics.HasErrors() || len(expressions) < 2 || v.document.Parsed().FileCount() > 1 {
 		return diagnostics
 	}
 	positions := make(map[string]int, len(v.index.workflowOrder))
@@ -104,6 +108,71 @@ func (v *modelValidator) validateChapterRange(attribute *hcl.Attribute) hcl.Diag
 		previous = position
 	}
 	return nil
+}
+
+// validateComposition checks the rules that only apply to a model made of
+// several files: chapters live in one file, no workflow is in two chapters,
+// and every workflow is in a chapter. References that do not resolve are
+// already reported as EM102 and take no part in these checks.
+func (v *modelValidator) validateComposition(blocks hcl.Blocks) hcl.Diagnostics {
+	var diagnostics hcl.Diagnostics
+	chapterFile := ""
+	chaptered := map[string]string{}
+	for _, block := range blocks {
+		if block.Type != "chapter" || len(block.Labels) == 0 {
+			continue
+		}
+		if chapterFile == "" {
+			chapterFile = block.DefRange.Filename
+		}
+		if block.DefRange.Filename != chapterFile {
+			diagnostics = append(diagnostics, errorDiagnostic(codeChaptersInSeveralFiles, block.DefRange, "Chapters in several files", fmt.Sprintf("all chapter blocks of a multi-file model must be in one file; first chapter file is %s.", chapterFile)))
+		}
+		diagnostics = append(diagnostics, v.collectChapterWorkflows(block, chaptered)...)
+	}
+	for _, workflow := range v.index.workflowOrder {
+		if _, ok := chaptered[workflow]; !ok {
+			diagnostics = append(diagnostics, warningDiagnostic(codeUnchapteredWorkflow, v.index.definitionRanges[workflow], "Workflow outside every chapter", fmt.Sprintf("workflow.%s is in no chapter; it is placed after chaptered workflows in file name order. Add it to a chapter.", workflow)))
+		}
+	}
+	return diagnostics
+}
+
+// collectChapterWorkflows records each declared workflow listed by a chapter in
+// chaptered, mapping it to that chapter's id. A workflow already recorded for
+// an earlier chapter block is reported as EM014 on the later list item.
+func (v *modelValidator) collectChapterWorkflows(chapter *hcl.Block, chaptered map[string]string) hcl.Diagnostics {
+	content, _, _ := syntax.PartialContent(chapter.Body, syntax.ChapterSchema())
+	attribute := content.Attributes["workflows"]
+	if attribute == nil {
+		return nil
+	}
+	expressions, listDiagnostics := hcl.ExprList(attribute.Expr)
+	if listDiagnostics.HasErrors() {
+		return nil
+	}
+	var diagnostics hcl.Diagnostics
+	listed := map[string]bool{}
+	for _, expression := range expressions {
+		traversal, traversalDiagnostics := hcl.AbsTraversalForExpr(expression)
+		if traversalDiagnostics.HasErrors() {
+			continue
+		}
+		parts, ok := traversalParts(traversal)
+		if !ok || len(parts) != 2 || parts[0] != "workflow" {
+			continue
+		}
+		if _, declared := v.index.workflows[parts[1]]; !declared {
+			continue
+		}
+		if owner, exists := chaptered[parts[1]]; exists && !listed[parts[1]] {
+			diagnostics = append(diagnostics, errorDiagnostic(codeWorkflowInSeveralChapters, expression.Range(), "Workflow in several chapters", fmt.Sprintf("workflow.%s is already in chapter.%s.", parts[1], owner)))
+			continue
+		}
+		chaptered[parts[1]] = chapter.Labels[0]
+		listed[parts[1]] = true
+	}
+	return diagnostics
 }
 
 func (v *modelValidator) validateFlowReferences(attribute *hcl.Attribute, workflowType, workflowID, ownerKind, direction string) hcl.Diagnostics {

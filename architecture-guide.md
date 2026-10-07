@@ -1,6 +1,6 @@
 # Architecture Guide
 
-This guide describes how `emhcl` is organized. It also shows how the design uses Axiomatic Design to keep changes predictable. The guide describes the current repository. The language contract is in the [Event Modeling HCL specification](https://github.com/event-modeling-hcl/spec). The tool implements Specification v0.3.0.
+This guide describes how `emhcl` is organized. It also shows how the design uses Axiomatic Design to keep changes predictable. The guide describes the current repository. The language contract is in the [Event Modeling HCL specification](https://github.com/event-modeling-hcl/spec). The tool implements Specification v0.3.0 and loads folder models from Specification v0.4.0.
 
 ## Axiomatic Design terms
 
@@ -12,7 +12,7 @@ Axiomatic Design separates what a system must do from the mechanisms that do it.
 - The Independence Axiom states that each FR must stay controllable by its own DP.
 - The Information Axiom prefers the design with the highest probability of meeting all FRs.
 
-An influence matrix shows which DP changes which FR. Each row is an FR and each column is a DP. `X` means that a change to the DP changes the FR. `0` means that the DP has no material influence on the FR in the supported range. The supported range is one model document per run.
+An influence matrix shows which DP changes which FR. Each row is an FR and each column is a DP. `X` means that a change to the DP changes the FR. `0` means that the DP has no material influence on the FR in the supported range. The supported range is one model per run. A model is one file or one folder of files.
 
 A design is uncoupled when the matrix has `X` only on the diagonal. A design is decoupled when the matrix is triangular. A decoupled design is valid when you set the DPs in the order of the matrix. A design is coupled when no order makes the matrix triangular.
 
@@ -23,6 +23,7 @@ Information content is `I = -log2(p)`, where `p` is the probability of meeting t
 | Need | Functional requirement | Acceptance criterion | Design parameter |
 | --- | --- | --- | --- |
 | N1: Authors receive feedback that they can trust | FR1: Parse native `.em.hcl` syntax | Syntax errors keep their HCL source locations | DP1: `internal/syntax` grammar and parser |
+| N2: Every frontend sees the same model | FR8: Load a model from a file or a folder | A path to a file or a folder gives the same ordered files every time, and each diagnostic names its own file | DP8: Model loader (`app.ReadModel`, `syntax.ParseFiles`, `syntax.Document.SourceOf`) |
 | N1 | FR2: Decode shared source facts once | One owner interprets catalogs and references | DP2: `internal/source` decoded document |
 | N1 | FR3: Enforce language and modeling rules | Invalid models produce stable diagnostics for the selected profile | DP3: `internal/validator` semantic passes |
 | N2: Every frontend sees the same model | FR4: Construct one canonical model | Only validated input reaches model construction | DP4: `internal/model` lowering |
@@ -34,20 +35,22 @@ Slice-based JSON is the document format that the [published Event Modeling JSON 
 
 ## Independence matrix for the tool
 
-| FR \ DP | DP1 Syntax | DP2 Source | DP3 Validation | DP4 Model | DP5 Output | DP7 Interchange | DP6 Adapters |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| FR1 Parse syntax | X | 0 | 0 | 0 | 0 | 0 | 0 |
-| FR2 Decode source facts | X | X | 0 | 0 | 0 | 0 | 0 |
-| FR3 Enforce validity | X | X | X | 0 | 0 | 0 | 0 |
-| FR4 Construct canonical model | X | X | X | X | 0 | 0 | 0 |
-| FR5 Produce the same output | X | X | X | X | X | 0 | 0 |
-| FR7 Convert to and from JSON | X | X | X | X | 0 | X | 0 |
-| FR6 Expose consistent operations | X | X | X | X | X | X | X |
+| FR \ DP | DP1 Syntax | DP8 Loader | DP2 Source | DP3 Validation | DP4 Model | DP5 Output | DP7 Interchange | DP6 Adapters |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| FR1 Parse syntax | X | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| FR8 Load a model from a file or a folder | X | X | 0 | 0 | 0 | 0 | 0 | 0 |
+| FR2 Decode source facts | X | X | X | 0 | 0 | 0 | 0 | 0 |
+| FR3 Enforce validity | X | X | X | X | 0 | 0 | 0 | 0 |
+| FR4 Construct canonical model | X | X | X | X | X | 0 | 0 | 0 |
+| FR5 Produce the same output | X | X | X | X | X | X | 0 | 0 |
+| FR7 Convert to and from JSON | X | X | X | X | X | 0 | X | 0 |
+| FR6 Expose consistent operations | X | X | X | X | X | X | X | X |
 
 The matrix is lower triangular, so the design is decoupled. The control sequence for the native pipeline is:
 
 ```text
-syntax.Parse
+app.ReadModel
+  -> syntax.ParseFiles
   -> source.Decode
   -> validator.ValidateDecodedDocument
   -> model.Build
@@ -57,6 +60,15 @@ syntax.Parse
 `validator.ValidatedDocument` enforces this sequence. `model.Build` does not accept input that was only parsed. Formatting is a separate branch. It needs HCL that parses, but it does not need a valid model.
 
 The important zeros go in one direction. A change to the renderer or the CLI cannot change what syntax the parser accepts. A change to the model or the renderer cannot make invalid input valid. Adapters do not define a second diagnostic policy or a second rendering policy.
+
+The DP8 column has an `X` in every row from FR8 down, and a `0` in the FR1 row. The FR8 entry is the diagonal. FR1 has a `0` because the syntax rules do not depend on which files the loader finds. The other entries are real influences:
+
+- FR2: `source.Decode` reads the merged body that DP1 and DP8 produce, so file discovery changes the facts that it decodes.
+- FR3: The validator uses `FileCount()` to turn on EM013, EM014, and EM407 and to turn off EM006, so file discovery changes validation. The sort order also changes which duplicate declaration counts as the first one.
+- FR4: The sort order changes the order of catalog items and of unchaptered workflows, and it changes which duplicate is first.
+- FR5, FR7, and FR6: These rows depend on DP8 through DP2, DP3, and DP4, in the same way that the guide treats DP1.
+
+DP8 comes after DP1 in the build order because `syntax.File` and `syntax.ParseFiles` belong to the syntax package.
 
 The FR7 row has `X` under DP1 to DP4 for two reasons. Export reads only the canonical model. Import must write HCL that the grammar and the validator accept. The `0` under DP5 is correct because `interchange.Import` returns unformatted source. `internal/app` formats it afterward. The `0` under DP6 is correct because the conversion result is the same for every entry point.
 
@@ -133,15 +145,24 @@ DP4 influences FR7.3. Export reads JSON values from the canonical model. `jsonVa
 
 | Module | Owns | Input | Output and failure contract |
 | --- | --- | --- | --- |
-| `internal/syntax` | HCL body schemas and parsing | Filename and source bytes | Parsed document or HCL syntax diagnostics |
+| `internal/syntax` | HCL body schemas and parsing | One or more files, each with a filename and source bytes | Parsed document or HCL syntax diagnostics. Each diagnostic names its own file. |
 | `internal/source` | Shared source catalogs and reference normalization | Parsed document | Decoded source facts that do not change. No I/O and no policy. |
 | `internal/validator` | Structural, reference, scenario, and smell policy | Decoded source and a profile | Diagnostics. Without errors, also a `ValidatedDocument`. |
 | `internal/model` | Canonical model for renderers and interchange, with normalized edges | `ValidatedDocument` | The same `Model` for the same input. No parsing, no validation, no I/O. |
 | `internal/formatter` | Canonical HCL layout | Source bytes | Formatted bytes or parse diagnostics |
 | `internal/renderer` | Standalone HTML | Canonical `Model` | HTML, or a template or serialization error |
 | `internal/interchange` | Schema check and conversion for slice-based JSON | JSON bytes, or a canonical `Model` | A document or unformatted HCL with warnings. A returned error means that the input has no correct conversion. No I/O. |
-| `internal/app` | Use-case sequence and plain diagnostics | Source in memory or one file path | Results for validate, format, render, import, and export that all adapters share |
+| `internal/app` | Use-case sequence and plain diagnostics | Source in memory, or a model path (one file or one folder) | Results for validate, format, render, import, and export that all adapters share |
 | CLI, WASM, `internal/serve` | Actions for each runtime | Arguments, files, signals, HTTP, JavaScript values | Exit codes, files, browser values, and server lifecycle |
+
+The loader (DP8) is `app.ReadModel` with `syntax.ParseFiles` and `syntax.Document.SourceOf`. Its contract has four rules:
+
+- R1: A path to a file is a one-file model. A path to a folder is a folder model.
+- R2: A folder model uses every regular file directly in the folder whose name ends in `.em.hcl` and does not start with a dot. Symlinks to files count. Subfolders and other files are ignored.
+- R3: `app.ReadModel` sorts the member files by name, byte by byte, and not by locale. Model order is file order, then source order inside each file.
+- R4: A folder with no member file gives error EM001 with the detail `folder <path> has no .em.hcl files`.
+
+`syntax.ParseFiles` takes the files in that order and parses each one on its own. If any file has a syntax error, it returns no document and all the syntax diagnostics. `SourceOf` returns the bytes of the file whose name equals the filename of an HCL range, so each diagnostic and each source excerpt names its own file. A folder with one member file behaves like that file.
 
 OS actions stay at the boundary. The server injects file, listener, browser, stream, and signal actions. Thus tests can examine lifecycle behavior without a change to language calculations.
 
@@ -161,6 +182,7 @@ The CLI owns output-file safety. `emhcl export` refuses an `-o` target that has 
 10. If a conversion has no correct native form, return an error. If it drops data, write a warning at the place where it drops the data.
 11. If you change a flow rule in `internal/validator`, change `import_policy.go` in the same change.
 12. After each change to the interchange mapping, make sure that the round trip stays stable. Do this for each file in `examples/` and `testdata/valid/`.
+13. Renaming a member file keeps the order of chaptered workflows, because chapters set that order. It can move unchaptered workflows, because they follow file name order. It can also change which duplicate declaration EM002 reports as the first one.
 
 A change breaks the Independence Axiom when, for example:
 

@@ -6,6 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/app"
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/syntax"
 )
 
 // environment collects every external/OS interaction start makes, so
@@ -13,8 +16,9 @@ import (
 // each supply their own without start knowing the difference. Nothing in
 // start should reach past this struct for the outside world.
 type environment struct {
-	// readFile reads the model file's contents. Default: os.ReadFile.
-	readFile func(path string) ([]byte, error)
+	// readModel lists the model's member files: the file itself, or every
+	// .em.hcl file of a folder, in model order. Default: app.ReadModel.
+	readModel func(path string) ([]syntax.File, app.Diagnostics)
 	// listen creates the TCP listener the HTTP server serves on.
 	// Default: net.Listen.
 	listen func(network, address string) (net.Listener, error)
@@ -38,7 +42,7 @@ type environment struct {
 // environment instead.
 func defaultEnvironment() environment {
 	return environment{
-		readFile:    os.ReadFile,
+		readModel:   app.ReadModel,
 		listen:      net.Listen,
 		openBrowser: openBrowser,
 		stdout:      os.Stdout,

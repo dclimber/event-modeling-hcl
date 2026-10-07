@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/app"
+	"github.com/event-modeling-hcl/eventmodeling-hcl/internal/syntax"
 )
 
 // discardEnv is an environment that reads real files but throws away all
@@ -19,9 +20,9 @@ import (
 // that only care about regenerate/watch's file-driven behavior.
 func discardEnv() environment {
 	return environment{
-		readFile: os.ReadFile,
-		stdout:   io.Discard,
-		stderr:   io.Discard,
+		readModel: app.ReadModel,
+		stdout:    io.Discard,
+		stderr:    io.Discard,
 	}
 }
 
@@ -302,4 +303,258 @@ func TestWatch_RegeneratesWhenContentChangesWithoutMTimeAdvancing(t *testing.T) 
 		time.Sleep(5 * time.Millisecond)
 	}
 	t.Fatal("watch did not regenerate after a same-mtime content change")
+}
+
+// Folder models: the watch contract covers the set of member files, not
+// just one file's content.
+
+func TestSourceHash_SeparatesFileNameFromContentAndFileFromFile(t *testing.T) {
+	pairs := [][]syntax.File{
+		{{Name: "ab", Source: []byte("c")}},
+		{{Name: "a", Source: []byte("bc")}},
+		{{Name: "a", Source: []byte("b")}, {Name: "c", Source: []byte("d")}},
+		{{Name: "a", Source: []byte("bc")}, {Name: "d"}},
+	}
+	seen := map[string]int{}
+	for index, files := range pairs {
+		hash := sourceHash(files)
+		if previous, ok := seen[hash]; ok {
+			t.Errorf("file lists %d and %d hash identically", previous, index)
+		}
+		seen[hash] = index
+	}
+}
+
+func TestFileSourceHash_ChangesWhenAFolderFileIsAddedRemovedRenamedOrEdited(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+	hash := func() string {
+		t.Helper()
+		got, err := fileSourceHash(discardEnv(), dir)
+		if err != nil {
+			t.Fatalf("hash folder: %v", err)
+		}
+		return got
+	}
+
+	write("a.em.hcl", "# a\n")
+	base := hash()
+	if again := hash(); again != base {
+		t.Fatalf("hash of an unchanged folder changed: %q -> %q", base, again)
+	}
+
+	write("b.em.hcl", "# b\n")
+	added := hash()
+	if added == base {
+		t.Error("hash did not change when a file was added")
+	}
+
+	write("b.em.hcl", "# b edited\n")
+	edited := hash()
+	if edited == added {
+		t.Error("hash did not change when a file was edited")
+	}
+
+	if err := os.Rename(filepath.Join(dir, "b.em.hcl"), filepath.Join(dir, "c.em.hcl")); err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+	renamed := hash()
+	if renamed == edited {
+		t.Error("hash did not change when a file was renamed")
+	}
+
+	if err := os.Remove(filepath.Join(dir, "c.em.hcl")); err != nil {
+		t.Fatalf("remove: %v", err)
+	}
+	if removed := hash(); removed != base {
+		t.Errorf("hash after removing the added file = %q, want the original %q", removed, base)
+	}
+}
+
+func TestFileSourceHash_ReportsAnUnreadableModel(t *testing.T) {
+	if _, err := fileSourceHash(discardEnv(), filepath.Join(t.TempDir(), "missing")); err == nil {
+		t.Fatal("expected an error for a path that does not exist")
+	}
+}
+
+func TestRegenerate_RendersAFolderModel(t *testing.T) {
+	s := &state{}
+	folder := filepath.Join("..", "..", "examples", "pet-clinic")
+	if err := regenerate(discardEnv(), s, folder, app.Valid); err != nil {
+		t.Fatalf("regenerate folder: %v", err)
+	}
+	result, _ := s.snapshot()
+	if result.HTML == "" {
+		t.Fatalf("expected the folder to render, got diagnostics %+v", result.Diagnostics)
+	}
+}
+
+func TestWatch_RegeneratesWhenAFileIsAddedToTheFolder(t *testing.T) {
+	originalPollInterval := pollInterval
+	pollInterval = 20 * time.Millisecond
+	defer func() { pollInterval = originalPollInterval }()
+
+	dir := t.TempDir()
+	seed, err := os.ReadFile(filepath.Join("..", "..", "examples", "minimal.em.hcl"))
+	if err != nil {
+		t.Fatalf("read seed example: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "model.em.hcl"), seed, 0o644); err != nil {
+		t.Fatalf("write seed file: %v", err)
+	}
+
+	s := &state{}
+	if err := regenerate(discardEnv(), s, dir, app.Valid); err != nil {
+		t.Fatalf("initial regenerate: %v", err)
+	}
+	_, hashBefore := s.snapshot()
+	startHash, err := fileSourceHash(discardEnv(), dir)
+	if err != nil {
+		t.Fatalf("hash seed folder: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go watch(ctx, discardEnv(), s, dir, app.Valid, startHash)
+	// A duplicate of the seed's blocks makes the merged model invalid, so
+	// the regenerated state clears the HTML. The file is written under a
+	// non-member name and renamed into place, so a poll never reads it
+	// half-written.
+	temp := filepath.Join(dir, "other.tmp")
+	if err := os.WriteFile(temp, seed, 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+	if err := os.Rename(temp, filepath.Join(dir, "other.em.hcl")); err != nil {
+		t.Fatalf("add file: %v", err)
+	}
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		result, hashAfter := s.snapshot()
+		if hashAfter != hashBefore {
+			if result.HTML != "" {
+				t.Fatal("expected the duplicate declarations to clear the HTML")
+			}
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("watch did not regenerate after a file was added to the folder")
+}
+
+func TestWatch_PublishesDiagnosticsWhenTheLastMemberIsRemovedAndRecovers(t *testing.T) {
+	originalPollInterval := pollInterval
+	pollInterval = 20 * time.Millisecond
+	defer func() { pollInterval = originalPollInterval }()
+
+	dir := t.TempDir()
+	member := filepath.Join(dir, "model.em.hcl")
+	seed, err := os.ReadFile(filepath.Join("..", "..", "examples", "minimal.em.hcl"))
+	if err != nil {
+		t.Fatalf("read seed example: %v", err)
+	}
+	if err := os.WriteFile(member, seed, 0o644); err != nil {
+		t.Fatalf("write seed file: %v", err)
+	}
+
+	s := &state{}
+	if err := regenerate(discardEnv(), s, dir, app.Valid); err != nil {
+		t.Fatalf("initial regenerate: %v", err)
+	}
+	loadedResult, loadedHash := s.snapshot()
+	if loadedResult.HTML == "" {
+		t.Fatalf("expected the seed folder to render, got diagnostics %+v", loadedResult.Diagnostics)
+	}
+	startHash, err := fileSourceHash(discardEnv(), dir)
+	if err != nil {
+		t.Fatalf("hash seed folder: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go watch(ctx, discardEnv(), s, dir, app.Valid, startHash)
+
+	if err := os.Remove(member); err != nil {
+		t.Fatalf("remove member: %v", err)
+	}
+
+	var emptyHash string
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		result, hash := s.snapshot()
+		if hash != loadedHash {
+			if result.HTML != "" {
+				t.Fatal("expected a folder with no member to clear the HTML")
+			}
+			found := false
+			for _, diagnostic := range result.Diagnostics {
+				if diagnostic.Code == "EM001" {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("diagnostics = %+v, want an EM001 diagnostic", result.Diagnostics)
+			}
+			emptyHash = hash
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if emptyHash == "" {
+		t.Fatal("watch did not publish the unloadable folder")
+	}
+
+	// Restore the member through a rename so a poll never reads it half-written.
+	temp := filepath.Join(dir, "model.tmp")
+	if err := os.WriteFile(temp, seed, 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+	if err := os.Rename(temp, member); err != nil {
+		t.Fatalf("restore member: %v", err)
+	}
+
+	deadline = time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		result, hash := s.snapshot()
+		if hash != emptyHash {
+			if result.HTML == "" {
+				t.Fatalf("expected the restored member to render again, got diagnostics %+v", result.Diagnostics)
+			}
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("watch did not render again after the member was restored")
+}
+
+func TestState_HashChangesWhenOnlyADiagnosticFilenameChanges(t *testing.T) {
+	diagnostic := app.Diagnostic{Code: "EM002", Severity: "Error", Summary: "Duplicate ID", Line: 3, Column: 1}
+	inA, inB := diagnostic, diagnostic
+	inA.Filename = "model/a.em.hcl"
+	inB.Filename = "model/b.em.hcl"
+
+	hashA := hashResult(app.RenderResult{Diagnostics: []app.Diagnostic{inA}})
+	hashB := hashResult(app.RenderResult{Diagnostics: []app.Diagnostic{inB}})
+	if hashA == hashB {
+		t.Error("hash did not change when only the diagnostic's file changed")
+	}
+}
+
+func TestDiagnosticsPage_ShowsTheFileNameOfADiagnostic(t *testing.T) {
+	page := string(diagnosticsPage([]app.Diagnostic{
+		{Code: "EM002", Severity: "Error", Summary: "Duplicate ID", Line: 3, Column: 7, Filename: "model/b.em.hcl"},
+		{Code: "EM001", Severity: "Error", Summary: "Failed to read model"},
+	}))
+
+	if !strings.Contains(page, "model/b.em.hcl (line 3, column 7)") {
+		t.Errorf("diagnostics page = %q, want it to show the file with the location", page)
+	}
+	if strings.Contains(page, "(line 0") {
+		t.Errorf("diagnostics page = %q, want no location for a diagnostic without one", page)
+	}
 }

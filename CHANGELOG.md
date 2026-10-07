@@ -4,6 +4,24 @@ This repository records implementation releases of the validator, formatter,
 and typed IR. The authoritative Event Modeling HCL language history is in the
 [specification changelog](https://github.com/event-modeling-hcl/spec/blob/main/CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+- Folder models, as Specification v0.4.0 and RFC 0002 define them. A folder is one model. Every `.em.hcl` file directly in the folder joins the model, in file name order.
+- The new diagnostics EM013 (chapters in several files), EM014 (workflow in several chapters), and EM407 (workflow outside every chapter).
+- The example folder `examples/pet-clinic/`.
+- `emhcl serve` reloads the page when a member file of the model folder is added, removed, renamed, or edited. A member file is a `.em.hcl` file directly in the folder with a name that does not start with a dot. An empty folder shows error EM001 in `serve`.
+- The browser playground has file tabs when the host page has a `#files` element. You can add, rename, and remove files. The playground renders all tabs as one folder model, and a click on a diagnostic opens its file.
+- `eventModelingRender` in the WebAssembly module accepts an array of `{name, source}` files as well as one string. Each diagnostic has a `file` field.
+
+### Changed
+
+- `emhcl validate`, `emhcl diagram`, `emhcl serve`, and `emhcl export` accept a `.em.hcl` file or a folder.
+- The detail of EM002 names the first declaration as `file:line:column`. This applies only to duplicate top-level declarations: catalog blocks, chapters, hotspots, workflows, and the events, aggregates, and field types that a bounded context owns. It does not apply to workflow children or fields.
+- Each diagnostic names the member file that it points at.
+- `emhcl fmt` refuses a folder and formats one `.em.hcl` file at a time.
+
 ## [v0.8.0] - 2026-10-07
 
 ### Added

@@ -4,7 +4,10 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/event-modeling-hcl/eventmodeling-hcl.svg)](https://pkg.go.dev/github.com/event-modeling-hcl/eventmodeling-hcl)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-`emhcl` v0.8.0 implements Event Modeling HCL Specification v0.3.0.
+`emhcl` v0.8.0 implements Event Modeling HCL Specification v0.3.0. The current
+source also loads folder models from Specification v0.4.0 (RFC 0002). No
+release has folder models yet. The Unreleased section of
+[CHANGELOG.md](CHANGELOG.md) lists them.
 This repository provides a strict validator, canonical formatter, typed semantic model,
 normative language documentation, and executable examples. The domain reference is the upstream [Event Modeling
 Specification](https://github.com/dilgerma/event-modeling-spec); the HCL
@@ -122,6 +125,90 @@ emhcl serve examples/minimal.em.hcl
 
 `serve` binds to `127.0.0.1:8080` by default. Use `--port 0` to request an
 available port; the actual browser URL is printed after binding.
+
+## Multi-file models
+
+Folder models (Specification v0.4.0, RFC 0002) are in the current source and
+are not in a release yet. The Unreleased section of
+[CHANGELOG.md](CHANGELOG.md) lists them. The v0.8.0 release loads one file
+only.
+
+A model can be one `.em.hcl` file or a folder of `.em.hcl` files. A folder
+model is one model that you write in several files. This follows Specification
+v0.4.0 (RFC 0002). Use a folder when one file becomes too large to read, or
+when different people own different bounded contexts or slices.
+
+### Split a file into a folder
+
+1. Make a new folder for the model.
+2. Move the catalog blocks (`bounded_context`, `actor`, `team`, `system`) into one file, for example `00-catalog.em.hcl`.
+3. Move every `chapter` block into one file, for example `01-chapters.em.hcl`.
+4. Move each workflow block into its own file, for example `10-register-pet.em.hcl`.
+5. Move the other blocks, such as `hotspot`, into any file, for example `90-hotspots.em.hcl`.
+6. Move each block whole. Do not split one block over two files.
+7. Add each workflow to a chapter. A workflow that is in no chapter gives a warning.
+8. Run `emhcl validate <folder>` and fix each error that it prints.
+
+The folder `examples/pet-clinic` is `examples/complete.em.hcl` split this way:
+
+```text
+examples/pet-clinic/
+  00-catalog.em.hcl
+  01-chapters.em.hcl
+  10-register-pet.em.hcl
+  11-pet-directory.em.hcl
+  12-notify-owner.em.hcl
+  13-import-partner-pet.em.hcl
+  90-hotspots.em.hcl
+```
+
+The number prefix is not part of the language. It only keeps the files in
+reading order, because the tool sorts files by name.
+
+### How the files join
+
+Every `.em.hcl` file directly in the folder is a member of the model. The tool
+ignores subfolders, other files, and files with a name that starts with a dot.
+It sorts the member files by name, byte by byte. Model order is the order of
+the blocks after this sort: file order first, then source order in each file.
+
+The model contains all top-level blocks of all member files. A reference in
+one file can point to a block in any other member file. IDs are global across
+files, within the same ID space as in a one-file model. Each block kind has its
+own ID space: actors, teams, systems, bounded contexts, chapters, and hotspots
+each have a separate space, and all workflow kinds share one space. The same ID
+twice in one space is error EM002, in one file or in two. The detail of that
+error gives the location of the first declaration as `file:line:column`.
+
+### Board order and chapters
+
+A chapter is a named group of workflows. In a folder model, the chapters set
+the order of the workflows on the board. The tool places the workflows in
+chapter order, and in list order in each chapter. All `chapter` blocks must be
+in one file. Chapters in two or more files give error EM013. A workflow in two
+chapters gives error EM014.
+
+A workflow that is in no chapter gives warning EM407. The tool places it after
+all chaptered workflows, in model order. Thus, a new file name can move it on
+the board. The `strict` profile makes EM407 an error, and the `workshop`
+profile makes it information only.
+
+### Commands
+
+The `validate`, `diagram`, `serve`, and `export` commands accept a file or a
+folder. Each diagnostic gives the member file that it points to. The `serve`
+command reloads the page when you add, remove, rename, or edit a member file.
+If no member file is left, the page shows error EM001 until a member file
+returns. The `fmt` command formats one file at a time and refuses a folder. The
+`import` command writes one file.
+
+```bash
+emhcl validate examples/pet-clinic
+emhcl serve examples/pet-clinic
+```
+
+A folder with exactly one member file gives the same result as that file. A
+folder with no member file gives error EM001.
 
 ## Import and export JSON
 
@@ -376,12 +463,15 @@ exhaustiveness, vulnerability, example-validation, and release checks.
 
 The supported HCL Specification v0.3.0 resolves references within a single
 document and enforces scoped identity, canonical typed flows, scenario shape,
-field examples, and workflow patterns. `internal/app` exposes the shared
-application operations, and `internal/model.Build` constructs a typed IR only
-from a validator-issued `ValidatedDocument`. The tool does not support event
-groups, multi-file loading, cross-file reference resolution, or editor
-integration. JSON conversion is a warned projection, not canvas persistence;
-the Context Map view is an experimental rendering heuristic.
+field examples, and workflow patterns. Folder models from Specification v0.4.0
+resolve references across all files of one folder, as the
+[Multi-file models](#multi-file-models) section describes. `internal/app`
+exposes the shared application operations, and `internal/model.Build`
+constructs a typed IR only from a validator-issued `ValidatedDocument`. The
+tool does not support event groups, include or import blocks, subfolders as
+part of a model, or editor integration. JSON conversion is a warned
+projection, not canvas persistence; the Context Map view is an experimental
+rendering heuristic.
 
 ## License
 

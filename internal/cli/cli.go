@@ -15,7 +15,7 @@ import (
 )
 
 func usageMessage(name string) string {
-	return "usage: " + name + " <validate [--profile workshop|valid|strict] | fmt [-w] | diagram | serve | export> <model.em.hcl> | import <model.json> [diagram/export/import: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
+	return "usage: " + name + " <validate [--profile workshop|valid|strict] | diagram | serve | export> <model.em.hcl | folder> | fmt [-w] <model.em.hcl> | import <model.json> [diagram/export/import: -o <file>] [serve: --addr <host> --port <n> --profile <p>]"
 }
 
 // defaultServeAddr and defaultServePort are serve's defaults when a
@@ -82,7 +82,7 @@ func Run(name, toolVersion string, args []string, stdout, stderr io.Writer) int 
 	if command.kind == serveCommand {
 		return serveFile(command, stderr)
 	}
-	diagnostics := app.ValidateFile(command.path, command.profile)
+	diagnostics := app.ValidatePath(command.path, command.profile)
 	if len(diagnostics) > 0 {
 		writeDiagnostics(stderr, diagnostics)
 	}
@@ -118,13 +118,13 @@ func parseCommand(name string, args []string) (cliCommand, error) {
 		return formatCLICommand(args[2], true)
 	}
 	if len(args) >= 1 && args[0] == "diagram" {
-		return outputCLICommand(diagramCommand, args[1:], ".em.hcl", usage)
+		return outputCLICommand(diagramCommand, args[1:], usage)
 	}
 	if len(args) >= 1 && args[0] == "export" {
-		return outputCLICommand(exportCommand, args[1:], ".em.hcl", usage)
+		return outputCLICommand(exportCommand, args[1:], usage)
 	}
 	if len(args) >= 1 && args[0] == "import" {
-		return outputCLICommand(importCommand, args[1:], ".json", usage)
+		return outputCLICommand(importCommand, args[1:], usage)
 	}
 	if len(args) >= 1 && args[0] == "serve" {
 		return serveCLICommand(args[1:], usage)
@@ -132,14 +132,33 @@ func parseCommand(name string, args []string) (cliCommand, error) {
 	return cliCommand{}, errors.New(usage)
 }
 
+// modelPathError is the usage error for a model path that is neither a
+// .em.hcl file nor a folder.
+const modelPathError = "model path must be a .em.hcl file or a folder"
+
+// isModelPath reports whether path names a model: a path ending in .em.hcl,
+// or an existing folder. Whether the file or folder can actually be read is
+// the model loader's concern.
+func isModelPath(path string) bool {
+	return strings.HasSuffix(path, ".em.hcl") || isDirectory(path)
+}
+
+func isDirectory(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
 func validateCLICommand(path string, profile app.Profile) (cliCommand, error) {
-	if !strings.HasSuffix(path, ".em.hcl") {
-		return cliCommand{}, errors.New("model file must use the .em.hcl extension")
+	if !isModelPath(path) {
+		return cliCommand{}, errors.New(modelPathError)
 	}
 	return cliCommand{kind: validateCommand, path: path, profile: profile}, nil
 }
 
 func formatCLICommand(path string, write bool) (cliCommand, error) {
+	if isDirectory(path) {
+		return cliCommand{}, errors.New("fmt formats one .em.hcl file at a time")
+	}
 	if !strings.HasSuffix(path, ".em.hcl") {
 		return cliCommand{}, errors.New("model file must use the .em.hcl extension")
 	}
@@ -147,8 +166,9 @@ func formatCLICommand(path string, write bool) (cliCommand, error) {
 }
 
 // outputCLICommand parses "<path> [-o <file>]" in either order for the
-// commands that read one input file and write one output.
-func outputCLICommand(kind commandKind, args []string, extension, usage string) (cliCommand, error) {
+// commands that read one input and write one output. The input is a model
+// path for diagram and export, and a JSON file for import.
+func outputCLICommand(kind commandKind, args []string, usage string) (cliCommand, error) {
 	var path string
 	var output string
 	for index := 0; index < len(args); index++ {
@@ -169,11 +189,12 @@ func outputCLICommand(kind commandKind, args []string, extension, usage string) 
 	if path == "" {
 		return cliCommand{}, errors.New(usage)
 	}
-	if !strings.HasSuffix(path, extension) {
-		if extension == ".json" {
+	if kind == importCommand {
+		if !strings.HasSuffix(path, ".json") {
 			return cliCommand{}, errors.New("event model JSON file must use the .json extension")
 		}
-		return cliCommand{}, errors.New("model file must use the .em.hcl extension")
+	} else if !isModelPath(path) {
+		return cliCommand{}, errors.New(modelPathError)
 	}
 	if kind == importCommand && output != "" && !strings.HasSuffix(output, ".em.hcl") {
 		return cliCommand{}, errors.New("import output must use the .em.hcl extension")
@@ -185,11 +206,38 @@ func outputCLICommand(kind commandKind, args []string, extension, usage string) 
 		inputInfo, inputStatErr := os.Stat(path)
 		outputInfo, outputStatErr := os.Stat(output)
 		sameFile := inputStatErr == nil && outputStatErr == nil && os.SameFile(inputInfo, outputInfo)
-		if samePath || sameFile || strings.HasSuffix(output, ".em.hcl") {
+		if samePath || sameFile || strings.HasSuffix(output, ".em.hcl") || (isDirectory(path) && overwritesFolderMember(path, output)) {
 			return cliCommand{}, errors.New("export output must not overwrite the source or use the .em.hcl extension; use -o <model.json> or omit -o to write JSON to stdout")
 		}
 	}
 	return cliCommand{kind: kind, path: path, output: output}, nil
+}
+
+// overwritesFolderMember reports whether writing output would replace a member
+// file of the folder model at folder. It matches a member by cleaned absolute
+// path, and by file identity when output exists, which also catches symlinks
+// and hard links in either direction because os.Stat follows symlinks. When the
+// members cannot be listed it reports false and leaves the read error to the
+// export itself.
+func overwritesFolderMember(folder, output string) bool {
+	files, diagnostics := app.ReadModel(folder)
+	if diagnostics.HasErrors() {
+		return false
+	}
+	outputPath, outputErr := filepath.Abs(output)
+	outputInfo, outputStatErr := os.Stat(output)
+	for _, file := range files {
+		if memberPath, err := filepath.Abs(file.Name); err == nil && outputErr == nil && memberPath == outputPath {
+			return true
+		}
+		if outputStatErr != nil {
+			continue
+		}
+		if memberInfo, err := os.Stat(file.Name); err == nil && os.SameFile(memberInfo, outputInfo) {
+			return true
+		}
+	}
+	return false
 }
 
 // serveCLICommand parses the arguments following "serve": exactly one
@@ -241,8 +289,8 @@ func serveCLICommand(args []string, usage string) (cliCommand, error) {
 	if path == "" {
 		return cliCommand{}, errors.New(usage)
 	}
-	if !strings.HasSuffix(path, ".em.hcl") {
-		return cliCommand{}, errors.New("model file must use the .em.hcl extension")
+	if !isModelPath(path) {
+		return cliCommand{}, errors.New(modelPathError)
 	}
 	return cliCommand{kind: serveCommand, path: path, profile: profile, addr: addr, port: port}, nil
 }
@@ -287,7 +335,7 @@ func serveFile(command cliCommand, stderr io.Writer) int {
 }
 
 func diagramFile(command cliCommand, stdout, stderr io.Writer) int {
-	result := app.RenderFile(command.path, app.Valid)
+	result := app.RenderPath(command.path, app.Valid)
 	if len(result.Diagnostics) > 0 {
 		writeDiagnostics(stderr, result.Diagnostics)
 	}
@@ -298,7 +346,7 @@ func diagramFile(command cliCommand, stdout, stderr io.Writer) int {
 }
 
 func exportFile(command cliCommand, stdout, stderr io.Writer) int {
-	result := app.ExportFile(command.path)
+	result := app.ExportPath(command.path)
 	if len(result.Diagnostics) > 0 {
 		writeDiagnostics(stderr, result.Diagnostics)
 	}

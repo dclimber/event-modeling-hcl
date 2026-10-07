@@ -26,6 +26,7 @@ func buildIndex(document *source.Document) (modelIndex, hcl.Diagnostics) {
 		workflows:        map[string]workflowIndex{},
 		scenarioCounts:   map[string]int{},
 		definitionRanges: map[string]hcl.Range{},
+		declarations:     map[string]hcl.Range{},
 		externalContexts: map[string]bool{},
 	}
 	var diagnostics hcl.Diagnostics
@@ -39,15 +40,15 @@ func buildIndex(document *source.Document) (modelIndex, hcl.Diagnostics) {
 		case "bounded_context":
 			diagnostics = append(diagnostics, index.addBoundedContext(block)...)
 		case "actor":
-			diagnostics = append(diagnostics, addNamedSymbol(index.actors, block, "actor")...)
+			diagnostics = append(diagnostics, index.addNamedSymbol(index.actors, block, "actor")...)
 		case "team":
-			diagnostics = append(diagnostics, addNamedSymbol(index.teams, block, "team")...)
+			diagnostics = append(diagnostics, index.addNamedSymbol(index.teams, block, "team")...)
 		case "system":
-			diagnostics = append(diagnostics, addNamedSymbol(index.systems, block, "system")...)
+			diagnostics = append(diagnostics, index.addNamedSymbol(index.systems, block, "system")...)
 		case "chapter":
-			diagnostics = append(diagnostics, addNamedSymbol(index.chapters, block, "chapter")...)
+			diagnostics = append(diagnostics, index.addNamedSymbol(index.chapters, block, "chapter")...)
 		case "hotspot":
-			diagnostics = append(diagnostics, addNamedSymbol(index.hotspots, block, "hotspot")...)
+			diagnostics = append(diagnostics, index.addNamedSymbol(index.hotspots, block, "hotspot")...)
 		case "state_change", "state_view", "automation", "translation":
 			diagnostics = append(diagnostics, index.addWorkflow(block)...)
 		}
@@ -57,7 +58,7 @@ func buildIndex(document *source.Document) (modelIndex, hcl.Diagnostics) {
 
 func (i *modelIndex) addBoundedContext(block *hcl.Block) hcl.Diagnostics {
 	contextID := block.Labels[0]
-	diagnostics := addNamedSymbol(i.boundedContexts, block, "bounded_context")
+	diagnostics := i.addNamedSymbol(i.boundedContexts, block, "bounded_context")
 	content, _, _ := syntax.PartialContent(block.Body, syntax.BoundedContextSchema())
 	if external, ok := literalBool(content.Attributes["external"]); ok && external {
 		i.externalContexts[contextID] = true
@@ -70,14 +71,15 @@ func (i *modelIndex) addBoundedContext(block *hcl.Block) hcl.Diagnostics {
 		address := contextID + "." + child.Labels[0]
 		switch child.Type {
 		case "aggregate":
-			diagnostics = append(diagnostics, addAddress(i.aggregates, child, "aggregate", address)...)
+			diagnostics = append(diagnostics, i.addAddress(i.aggregates, child, "aggregate", address)...)
 		case "event":
-			diagnostics = append(diagnostics, addAddress(i.catalogEvents, child, "event", address)...)
+			diagnostics = append(diagnostics, i.addAddress(i.catalogEvents, child, "event", address)...)
 		case "field_type":
-			if _, exists := i.fieldTypes[address]; exists {
-				diagnostics = append(diagnostics, duplicateDiagnostic(child, "field_type", address))
+			if first, exists := i.declarations[declarationKey("field_type", address)]; exists {
+				diagnostics = append(diagnostics, duplicateDeclarationDiagnostic(child, "field_type", address, first))
 				continue
 			}
+			i.declarations[declarationKey("field_type", address)] = child.DefRange
 			i.fieldTypes[address] = readFieldType(child.Body)
 		}
 	}
@@ -86,8 +88,8 @@ func (i *modelIndex) addBoundedContext(block *hcl.Block) hcl.Diagnostics {
 
 func (i *modelIndex) addWorkflow(block *hcl.Block) hcl.Diagnostics {
 	id := block.Labels[0]
-	if _, exists := i.workflows[id]; exists {
-		return hcl.Diagnostics{duplicateDiagnostic(block, "workflow", id)}
+	if first, exists := i.definitionRanges[id]; exists {
+		return hcl.Diagnostics{duplicateDeclarationDiagnostic(block, "workflow", id, first)}
 	}
 	workflow := workflowIndex{elements: map[string]map[string]bool{
 		"command": {}, "readmodel": {}, "screen": {}, "processor": {},
@@ -116,21 +118,29 @@ func (i *modelIndex) addWorkflow(block *hcl.Block) hcl.Diagnostics {
 	return diagnostics
 }
 
-func addNamedSymbol(symbols map[string]bool, block *hcl.Block, kind string) hcl.Diagnostics {
-	id := block.Labels[0]
-	if symbols[id] {
-		return hcl.Diagnostics{duplicateDiagnostic(block, kind, id)}
+func (i *modelIndex) addNamedSymbol(symbols map[string]bool, block *hcl.Block, kind string) hcl.Diagnostics {
+	return i.addAddress(symbols, block, kind, block.Labels[0])
+}
+
+func (i *modelIndex) addAddress(symbols map[string]bool, block *hcl.Block, kind, address string) hcl.Diagnostics {
+	key := declarationKey(kind, address)
+	if first, exists := i.declarations[key]; exists {
+		return hcl.Diagnostics{duplicateDeclarationDiagnostic(block, kind, address, first)}
 	}
-	symbols[id] = true
+	i.declarations[key] = block.DefRange
+	symbols[address] = true
 	return nil
 }
 
-func addAddress(symbols map[string]bool, block *hcl.Block, kind, address string) hcl.Diagnostics {
-	if symbols[address] {
-		return hcl.Diagnostics{duplicateDiagnostic(block, kind, address)}
-	}
-	symbols[address] = true
-	return nil
+func declarationKey(kind, id string) string {
+	return kind + " " + id
+}
+
+// duplicateDeclarationDiagnostic reports an ID declared again after its first
+// declaration at first, so that a model split across files names both places.
+func duplicateDeclarationDiagnostic(block *hcl.Block, kind, id string, first hcl.Range) *hcl.Diagnostic {
+	detail := fmt.Sprintf("%s %q is declared more than once in its namespace. First declared at %s:%d:%d.", kind, id, first.Filename, first.Start.Line, first.Start.Column)
+	return errorDiagnostic(codeDuplicateID, block.DefRange, "Duplicate "+kind+" id", detail)
 }
 
 func duplicateDiagnostic(block *hcl.Block, kind, id string) *hcl.Diagnostic {

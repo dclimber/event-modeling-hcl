@@ -160,3 +160,122 @@ func TestContent_PreservesSourceRanges(t *testing.T) {
 		t.Fatalf("title.NameRange.Start.Column = %d, want %d", title.NameRange.Start.Column, wantNameRangeColumn)
 	}
 }
+
+func twoFileFixture() []syntax.File {
+	return []syntax.File{
+		{Name: "model/a.em.hcl", Source: []byte("actor \"first\" {\n  auth_required = false\n}\n\nactor \"second\" {\n  auth_required = true\n}\n")},
+		{Name: "model/b.em.hcl", Source: []byte("actor \"third\" {\n  auth_required = false\n}\n")},
+	}
+}
+
+func TestParseFiles_MergesBlocksInFileOrder(t *testing.T) {
+	document, diagnostics := syntax.ParseFiles(twoFileFixture())
+	if diagnostics.HasErrors() {
+		t.Fatalf("diagnostics = %s, want no errors", diagnostics.Error())
+	}
+	if got, want := document.FileCount(), 2; got != want {
+		t.Fatalf("FileCount() = %d, want %d", got, want)
+	}
+	content, modelDiagnostics := syntax.Content(document.Body(), syntax.ModelSchema())
+	if modelDiagnostics.HasErrors() {
+		t.Fatalf("model diagnostics = %s", modelDiagnostics.Error())
+	}
+	var ids []string
+	files := map[string]string{}
+	for _, block := range content.Blocks {
+		ids = append(ids, block.Labels[0])
+		files[block.Labels[0]] = block.DefRange.Filename
+	}
+	if got, want := ids, []string{"first", "second", "third"}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
+		t.Fatalf("block order = %v, want %v", got, want)
+	}
+	if got, want := files["third"], "model/b.em.hcl"; got != want {
+		t.Fatalf("third block file = %q, want %q", got, want)
+	}
+}
+
+func TestParse_IsOneFileDocument(t *testing.T) {
+	document, diagnostics := syntax.Parse("model.em.hcl", []byte("actor \"first\" {\n  auth_required = false\n}\n"))
+	if diagnostics.HasErrors() {
+		t.Fatalf("diagnostics = %s, want no errors", diagnostics.Error())
+	}
+	if got, want := document.FileCount(), 1; got != want {
+		t.Fatalf("FileCount() = %d, want %d", got, want)
+	}
+}
+
+func TestParseFiles_NamesTheFileWithTheSyntaxError(t *testing.T) {
+	files := twoFileFixture()
+	files[1].Source = []byte("actor \"third\" {\n  auth_required = false\n")
+
+	document, diagnostics := syntax.ParseFiles(files)
+
+	if !diagnostics.HasErrors() {
+		t.Fatal("diagnostics has no errors, want a syntax error for the unclosed block")
+	}
+	if document != nil {
+		t.Fatalf("document = %#v, want nil Document on a syntax error", document)
+	}
+	for _, diagnostic := range diagnostics {
+		if diagnostic.Subject == nil || diagnostic.Subject.Filename != "model/b.em.hcl" {
+			t.Fatalf("diagnostic subject = %v, want file model/b.em.hcl", diagnostic.Subject)
+		}
+	}
+}
+
+func TestParseFiles_ReportsSyntaxErrorsOfEveryFile(t *testing.T) {
+	files := []syntax.File{
+		{Name: "a.em.hcl", Source: []byte("actor \"first\" {\n")},
+		{Name: "b.em.hcl", Source: []byte("actor \"second\" {\n")},
+	}
+
+	_, diagnostics := syntax.ParseFiles(files)
+
+	seen := map[string]bool{}
+	for _, diagnostic := range diagnostics {
+		if diagnostic.Subject != nil {
+			seen[diagnostic.Subject.Filename] = true
+		}
+	}
+	if !seen["a.em.hcl"] || !seen["b.em.hcl"] {
+		t.Fatalf("diagnostics name files %v, want both a.em.hcl and b.em.hcl", seen)
+	}
+}
+
+func TestParseFiles_RejectsRepeatedFileNames(t *testing.T) {
+	files := []syntax.File{
+		{Name: "a.em.hcl", Source: nil},
+		{Name: "a.em.hcl", Source: []byte("actor \"second\" {\n")},
+	}
+
+	document, diagnostics := syntax.ParseFiles(files)
+
+	if document != nil {
+		t.Fatalf("document = %#v, want nil for repeated file names", document)
+	}
+	if len(diagnostics) != 1 {
+		t.Fatalf("diagnostics = %s, want exactly one", diagnostics.Error())
+	}
+	diagnostic := diagnostics[0]
+	if diagnostic.Severity != hcl.DiagError || diagnostic.Summary != "Duplicate file name" || diagnostic.Detail != "the model has two files named a.em.hcl." || diagnostic.Subject != nil {
+		t.Fatalf("diagnostic = %#v, want an error Duplicate file name for a.em.hcl without a range", diagnostic)
+	}
+}
+
+func TestSourceOf_ReturnsTheBytesOfEachFile(t *testing.T) {
+	files := twoFileFixture()
+	document, diagnostics := syntax.ParseFiles(files)
+	if diagnostics.HasErrors() {
+		t.Fatalf("diagnostics = %s, want no errors", diagnostics.Error())
+	}
+
+	for _, file := range files {
+		got := document.SourceOf(hcl.Range{Filename: file.Name})
+		if string(got) != string(file.Source) {
+			t.Fatalf("SourceOf(%q) = %q, want %q", file.Name, got, file.Source)
+		}
+	}
+	if got := document.SourceOf(hcl.Range{Filename: "missing.em.hcl"}); got != nil {
+		t.Fatalf("SourceOf(missing) = %q, want nil", got)
+	}
+}
