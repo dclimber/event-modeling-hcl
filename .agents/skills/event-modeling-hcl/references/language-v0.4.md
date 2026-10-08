@@ -428,7 +428,8 @@ emhcl export model.em.hcl -o model.json
   the result has validation errors. Repair the written source.
 - `export` accepts a file or a folder. It refuses an `-o` target that ends in
   `.em.hcl` or that is the source file.
-- Conversion is not lossless. Read each warning. Chapters, hotspots, teams,
-  systems, read-model questions, and canvas IDs have no JSON equivalent.
+- Conversion is not lossless. Read each warning. `export` drops chapters,
+  hotspots, teams, systems, and read-model questions. `import` drops the
+  original canvas IDs and field-name spellings.
 - Both commands fail when one workflow or slice has two or more actors.
 - Do not use `export` and `import` to repair a model. Edit the HCL.
