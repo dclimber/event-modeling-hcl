@@ -3,24 +3,26 @@ name: event-modeling-hcl
 description: >-
   Turn product ideas, requirements, workshop notes, user stories, domain prose,
   existing behavior, or event-driven designs into valid Event Modeling HCL
-  v0.3.0 `.em.hcl` files. Use this skill whenever the user asks to create,
-  extend, repair, review, validate, format, or explain an Event Model or
-  `.em.hcl` file, or mentions Events, Commands, Read Models, State Change,
-  State View, Automation, Translation, Event Modeling slices, information
-  completeness, or Given/When/Then scenarios—even if they do not name HCL.
+  v0.4.0 models: one `.em.hcl` file or a folder of `.em.hcl` files. Use this
+  skill whenever the user asks to create, extend, split, repair, review,
+  validate, format, import, export, or explain an Event Model or `.em.hcl`
+  file, or mentions Events, Commands, Read Models, State Change, State View,
+  Automation, Translation, Event Modeling slices, information completeness, or
+  Given/When/Then scenarios—even if they do not name HCL.
 compatibility: >-
-  Targets Event Modeling HCL Specification v0.3.0. For machine verification,
-  use emhcl v0.4.0 or newer implementing specification v0.3.0.
+  Targets Event Modeling HCL Specification v0.4.0. For machine verification,
+  use emhcl v0.9.0 or newer. emhcl v0.8.0 and older cannot load a folder model.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   author: workspace
   specification: "https://github.com/event-modeling-hcl/spec"
 ---
 
 # Event Modeling HCL
 
-Create one coherent, hand-authored `.em.hcl` document from the user's domain
-input. Preserve Event Modeling's business-first discovery process: model facts
+Create one coherent, hand-authored Event Modeling HCL model from the user's
+domain input. The model is one `.em.hcl` file or one folder of `.em.hcl`
+files. Preserve Event Modeling's business-first discovery process: model facts
 and information flow before implementation structure, then encode the result in
 the strict native HCL language.
 
@@ -29,20 +31,21 @@ the strict native HCL language.
 - Read [references/methodology.md](references/methodology.md) when discovering a
   new model, interpreting prose, choosing slice boundaries, reviewing model
   quality, honoring status locks, or recording evidence provenance.
-- Read [references/language-v0.3.md](references/language-v0.3.md) before writing
-  or repairing HCL. It is the local syntax and validation reference.
+- Read [references/language-v0.4.md](references/language-v0.4.md) before writing
+  or repairing HCL, splitting a model into a folder, or converting JSON. It is
+  the local syntax and validation reference.
 - Read [references/patterns.md](references/patterns.md) when a pattern shape or
   scenario form is uncertain. Adapt examples to the domain; never copy their
   placeholder vocabulary into the output.
 
-For conflicts, the normative Event Modeling HCL v0.3.0 specification wins over
+For conflicts, the normative Event Modeling HCL v0.4.0 specification wins over
 examples, existing files, or general HCL knowledge.
 
 ## Rules that are not syntax
 
 Apply three layers, in this order when they conflict:
 
-1. Validator and v0.3.0 grammar. Illegal HCL is never "more faithful".
+1. Validator and v0.4.0 grammar. Illegal HCL is never "more faithful".
 2. Methodology judgment in `references/methodology.md`. A valid file can still
    be a poor model.
 3. Canvas layout (columns, lanes, stickies). It has no attributes. Encode the
@@ -54,8 +57,8 @@ The current CLI accepts an unchecked `mapping` string; do not add one.
 
 ## Deliverable
 
-Produce or update the requested `.em.hcl` file. A model is not complete merely
-because a diagram or prose explanation looks plausible.
+Produce or update the requested `.em.hcl` file or model folder. A model is not
+complete merely because a diagram or prose explanation looks plausible.
 
 Unless the user asks for a workshop-only draft, the delivered model must:
 
@@ -72,6 +75,17 @@ Unless the user asks for a workshop-only draft, the delivered model must:
 Strict validation treats an open hotspot as an error. Keep the hotspot on a
 workshop draft. Do not invent the missing rule to make strict pass, and do not
 call the model implementation-ready while a material hotspot is open.
+
+Choose the model shape:
+
+- Keep an existing model in its current shape. Do not split a file or merge a
+  folder unless the user asks.
+- Write a new model as one file, unless the user asks for a folder or the
+  model has many workflows or several owners.
+- In a folder model, put catalog blocks in one file, all `chapter` blocks in
+  one file, and each workflow in its own file. Name files with a number prefix
+  so that the file name order is the reading order. Put every workflow in a
+  chapter. See "Folder models" in `references/language-v0.4.md`.
 
 Do not create implementation code, database schemas, brokers, APIs, retries, or
 framework architecture unless the user explicitly asks. `api_endpoint` may
@@ -99,8 +113,15 @@ hypotheses; an explicit stakeholder rule outranks them. Keep document
 thresholds and dates verbatim.
 
 When extending an existing model, preserve its valid identity vocabulary and
-source-order story. Migrate every affected reference; do not leave obsolete
-aliases or duplicate contracts.
+business-time story. In a folder model, IDs are global across files, so search
+every member file before you add an ID. Add a new workflow to the chapter where
+it belongs. Migrate every affected reference; do not leave obsolete aliases or
+duplicate contracts.
+
+When the input is Event Modeling JSON, run `emhcl import` to get a first draft.
+Then review it with this skill as you would review any other model. Read each
+import warning. Import does not keep canvas IDs, and it does not invent missing
+targets.
 
 Honor workflow `status` before editing. Absent or `created` may be edited.
 `planned`, `assigned`, `in_progress`, `review`, `blocked`, `done`, and
@@ -246,37 +267,51 @@ model.
 
 ### 9. Format, validate, and repair the source
 
-Prefer a repository-local compatible binary, then a PATH-installed binary. Do
-not install tooling or execute untrusted downloads without the user's request.
+Prefer a repository-local compatible binary, then a PATH-installed binary.
+Check the version with `emhcl version`. A folder model needs v0.9.0 or newer.
+Do not install tooling or execute untrusted downloads without the user's
+request.
 
-Run:
+Run, for a one-file model:
 
 ```text
 emhcl fmt -w <model.em.hcl>
 emhcl validate <model.em.hcl>
 ```
 
+For a folder model, `fmt` refuses the folder. Format each member file, then
+validate the folder:
+
+```text
+emhcl fmt -w <folder>/<file>.em.hcl   # once for each member file
+emhcl validate <folder>
+```
+
 For an implementation-ready model, also run:
 
 ```text
-emhcl validate --profile strict <model.em.hcl>
+emhcl validate --profile strict <model.em.hcl | folder>
 ```
 
 Repair source errors rather than suppressing diagnostics. Stable diagnostic
 families are: `EM0xx` structure, `EM1xx` references, `EM2xx` flow, `EM3xx`
-scenarios, and `EM4xx` modeling judgment.
+scenarios, and `EM4xx` modeling judgment. In a folder model, each diagnostic
+names its member file. Folder-only codes are `EM013` (chapters in several
+files), `EM014` (workflow in two chapters), and `EM407` (workflow in no chapter,
+an error in `strict`).
 
 If no compatible CLI is available, perform the complete static checklist in
-`references/language-v0.3.md` and report that machine validation was not run.
+`references/language-v0.4.md` and report that machine validation was not run.
 Never claim validation from inspection alone.
 
 ### 10. Report precisely
 
 State:
 
-- the output file path;
+- the output file path, or the folder path and its member files;
 - the modeled bounded contexts and workflows;
 - unresolved hotspots;
 - exact formatter/validator commands run and their observed result.
 
-Keep the final explanation short. The `.em.hcl` file is the primary artifact.
+Keep the final explanation short. The model file or folder is the primary
+artifact.

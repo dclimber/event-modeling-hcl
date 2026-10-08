@@ -1,7 +1,7 @@
 # Event Modeling methodology
 
 Use this reference to turn incomplete domain input into a coherent business-time
-model, then encode it with the blocks in `language-v0.3.md`. It is not a second
+model, then encode it with the blocks in `language-v0.4.md`. It is not a second
 syntax manual.
 
 Authoritative source:
@@ -10,7 +10,7 @@ Where that guide's sources disagree, its Appendix C states the tension and the
 operative rule. Follow Appendix C over a conflicting worked example. HCL
 grammar still wins over both when the operative rule is not legal syntax.
 
-The canvas method is technology-agnostic. HCL v0.3.0 is the encoding. When they
+The canvas method is technology-agnostic. HCL v0.4.0 is the encoding. When they
 disagree, write legal HCL and keep the methodology rule as judgment, a
 `description`, a scenario `comment`, or a `hotspot`. Never invent an attribute
 to close the gap.
@@ -58,7 +58,7 @@ These methodology words are not HCL attributes or block kinds. Do not add them.
 | Storyline / beats | Several `scenario` blocks, or one scenario with ordered `given` events | `storyline { }` |
 | Field lineage expressions | Same `field_type` / field name across the connected edge; `generated = true` when the system fills the value; prose in `description`, `comment`, or `hotspot` | `mapping = "session:…"`, `latest:`, `derived:`, `aggregate:`, or any other mapping DSL |
 | Invisible signal / timer | A real `event` that opens work, then a `processor` | `triggers = ["daily"]` as the only cause; a pseudo-screen for a scheduler |
-| Role catalog | `actor` / `system` / `team` plus `description` of can and cannot | `roles = […]` (not in v0.3.0) |
+| Role catalog | `actor` / `system` / `team` plus `description` of can and cannot | `roles = […]` (not in v0.4.0) |
 | Notes lane | `chapter.description`, element `description`, scenario `comment`, `hotspot` | `note` blocks |
 | Spec lane wiring | Scenarios are nested in the workflow and have no `from` / `to` | Edges into scenarios |
 | Query / When-query | State view has no `when` | `query`, a `Get…` command |
@@ -226,7 +226,7 @@ HCL checks that references resolve. It does not check lineage. You check it:
 - Reuse one realistic example value along a chain (`jane@example.com` stays
   that email). Do not overwrite a non-empty example. No `foo` / `test`.
 - Prefer `Decimal` for money. Map prose types onto the built-ins in
-  `language-v0.3.md` (`Date` vs `DateTime`, `Int` / `Long` / `Double` /
+  `language-v0.4.md` (`Date` vs `DateTime`, `Int` / `Long` / `Double` /
   `Decimal`). There is no `Text` or `Number` type.
 - Identity is `id_attribute = true`. Two identity fields are a compound
   identity. Do not invent a compound-key block.
@@ -246,7 +246,7 @@ user confirms the locked part.
 Author scenarios with the HCL grammar. The canvas sources use a different
 Given/When/Then for automations and errors. Do not copy those forms.
 
-| | Methodology sources | HCL v0.3.0 (required) |
+| | Methodology sources | HCL v0.4.0 (required) |
 | --- | --- | --- |
 | State change | Given events; When at most one command; Then events or an "empty" error flag | Zero or more `given` events; **exactly one** `when` command; one or more `then` events **or** `then { error = "…" }` |
 | State view | Given events; **empty When**; Then **exactly one** read model | One or more `given` events; **no `when`**; one or more `then` read models or errors. Zero givens is `EM301`. |
@@ -526,6 +526,7 @@ Do not "resolve" these by adding syntax. The operative rule is already above.
   not invent a separate slice block.
 - One command per screen **state**. Several actions mean several screens.
 - Chapter-at-a-time (documents) vs all-timelines-then-detail (workshops) is a
-  process choice. Source order still reads as business time.
+  process choice. Model order still reads as business time. In a folder model,
+  the chapter lists set that order.
 - Planning numbers in the sources are illustrations. Estimate in workflows if
   asked; do not invent velocity.

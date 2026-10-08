@@ -1,7 +1,8 @@
 # Canonical workflow patterns
 
 These are shape references, not vocabulary to copy. Each snippet assumes the
-referenced catalog declarations exist in the same document.
+referenced catalog declarations exist in the same model, in the same file or in
+another member file of the same folder.
 
 
 Shapes below are legal HCL. Methodology additions (todo-list read models, one

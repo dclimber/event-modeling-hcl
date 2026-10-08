@@ -1,13 +1,17 @@
-# Event Modeling HCL v0.3.0 reference
+# Event Modeling HCL v0.4.0 reference
 
-This is a compact authoring checklist derived from the normative v0.3.0
-specification. One model is one `.em.hcl` document.
+This is a compact authoring checklist derived from the normative v0.4.0
+specification. A model is one `.em.hcl` file or a folder of `.em.hcl` files.
+v0.4.0 adds only folder models. Every v0.3.0 file stays valid and keeps its
+meaning.
 
 ## Language principles
 
 - Block kind expresses the concept; quoted labels are stable identity.
 - Labels match `^[a-z][a-z0-9_]*$`.
-- Source order is model order; preserve the business-time story.
+- Model order is file name order, then source order inside each file. Preserve
+  the business-time story. In a folder model with two or more files, chapters
+  set the workflow order (see "Folder models").
 - Unknown syntax, unresolved references, wrong-kind references, computed values,
   variables, functions, and interpolation are errors.
 - Relationships are unquoted traversals, not strings.
@@ -129,7 +133,8 @@ field "customer_id" {
 ```
 
 The current CLI also accepts unchecked `mapping` and `schema` strings. They are
-not v0.3.0 contracts and not methodology lineage. Do not add them. Do not write
+not v0.4.0 contracts and not methodology lineage. `emhcl import` can write them
+to keep JSON data. Keep them in an imported file, but do not add new ones. Do not write
 `session:`, `latest:`, `derived:`, or `aggregate:` expressions. Record a
 derivation in `description`, a scenario `comment`, or a `hotspot`.
 `generated = true` means the system fills the value; it is not a source link.
@@ -142,8 +147,9 @@ field "order_id" {}
 ```
 
 Inside an Event/subfield, inference resolves in the owning context. On workflow
-elements, tables, and scenario steps it resolves by unique document-wide name;
-write the full type traversal if ambiguous or differently named.
+elements, tables, and scenario steps it resolves by a unique name in the whole
+model, across all files of a folder model. If the name is ambiguous or
+different, write the full type traversal.
 
 Use `fields` for several reusable types with no per-field overrides:
 
@@ -301,7 +307,9 @@ chapter "checkout" {
 }
 ```
 
-Chapter workflows must be a non-empty contiguous source-order range.
+In a one-file model, the chapter workflows must be a non-empty contiguous
+source-order range (`EM006`). In a folder model, `EM006` does not apply. The
+chapter lists set the workflow order instead.
 
 ```hcl
 hotspot "payment_authority" {
@@ -315,9 +323,56 @@ hotspot "payment_authority" {
 `hotspot.on` can reference catalog/workshop declarations, a workflow, or a
 workflow-qualified element such as `processor.capture_payment.gateway`.
 
+## Folder models
+
+A model path is a file or a folder. Use a folder when one file is too large to
+read, or when different people own different contexts or workflows.
+
+The member files of a folder model obey these rules:
+
+- A member file is a regular file directly in the folder. Its name ends in
+  `.em.hcl` and does not start with `.`. A symlink to a file counts.
+  Subfolders and other files are not members.
+- The tool sorts member files by name, byte by byte. A number prefix such as
+  `10-` is not language syntax. It only sets the file order.
+- The model is the union of the top-level blocks of all files. A reference in
+  one file can point to a block in any other file. Every check runs on the
+  whole model. Each file must parse on its own.
+- A block never spans files. Thus a `bounded_context` and all its events,
+  aggregates, and field types are in one file.
+- IDs are global across files. Each block kind has its own ID space, as in a
+  one-file model. All workflow kinds share one space. The same ID twice is
+  `EM002`. The detail names the first declaration as `file:line:column`.
+- A folder with no member file is `EM001`. A folder with exactly one member
+  file behaves exactly like that file. The chapter rules below apply only to
+  two or more files.
+- All `chapter` blocks are in one file. Chapters in several files are `EM013`.
+  A workflow in two chapters is `EM014`.
+- The workflow order is the chapter order in their file, then the order of each
+  `workflows` list. A workflow in no chapter is judgment diagnostic `EM407`. It
+  comes after all chaptered workflows, in model order.
+- Each diagnostic names the member file of the source that it points at.
+
+The language has no `include` or `import` block, no subfolder members, no
+modules or name spaces, and no cross-folder references.
+
+Use this layout when you split a model:
+
+```text
+model/
+  00-catalog.em.hcl      # bounded_context, actor, team, system
+  01-chapters.em.hcl     # every chapter block
+  10-register-pet.em.hcl # one workflow per file
+  11-pet-directory.em.hcl
+  90-hotspots.em.hcl     # hotspot blocks
+```
+
+Put every workflow in a chapter. Move each block whole.
+
 ## Static completion checklist
 
-- File name ends in `.em.hcl`; model is one complete document.
+- Each file name ends in `.em.hcl`. The model is one complete file or one
+  complete folder.
 - All labels are lower snake case and unique in their scope.
 - Events, aggregates, and field types are owned by bounded contexts.
 - All references are unquoted, resolvable, correctly qualified, and right-kind.
@@ -329,22 +384,51 @@ workflow-qualified element such as `processor.capture_payment.gateway`.
 - Scenario cardinality and targets match the workflow pattern.
 - Field examples match effective type/cardinality; no duplicate shorthand
   fields.
-- Chapter ranges are contiguous.
+- In a one-file model, chapter ranges are contiguous. In a folder model, all
+  chapters are in one file, no workflow is in two chapters, and every workflow
+  is in a chapter.
 - Genuine unknowns are hotspots, not weakened or invented contracts.
-- Source order reads as business time.
+- Model order (file order, then source order, or chapter order in a folder
+  model) reads as business time.
 
 ## Tooling
 
-Use a CLI implementing specification v0.3.0 (implementation v0.4.0+):
+Use emhcl v0.9.0 or newer. It implements specification v0.4.0. Release v0.8.0
+and older load one file only.
 
 ```text
 emhcl fmt -w model.em.hcl
 emhcl validate model.em.hcl
 emhcl validate --profile strict model.em.hcl
 emhcl diagram model.em.hcl -o model.html
+emhcl serve model.em.hcl
 ```
 
-Profiles: `workshop` reports judgment diagnostics as information; default
-`valid` reports them as warnings; `strict` escalates unreasoned Commands and
-open hotspots to errors. Formatting is idempotent and preserves block/scenario
-order.
+`validate`, `diagram`, `serve`, and `export` accept a file or a folder in
+place of `model.em.hcl`. `fmt` formats one file and refuses a folder. For a
+folder model, run `fmt -w` on each member file. `serve` reloads the page when a
+member file is added, removed, renamed, or edited.
+
+Profiles: `workshop` reports judgment diagnostics as information. The default
+`valid` reports them as warnings. `strict` makes unreasoned Commands (`EM404`),
+open hotspots (`EM406`), and unchaptered workflows in a folder model (`EM407`)
+errors. Formatting is idempotent and preserves block and scenario order.
+
+### JSON conversion
+
+emhcl v0.8.0 and newer convert slice-based Event Modeling JSON. JSON
+conversion is a tool feature, not part of the language.
+
+```text
+emhcl import model.json -o model.em.hcl
+emhcl export model.em.hcl -o model.json
+```
+
+- `import` writes one formatted file and validates it. It exits with code 1 if
+  the result has validation errors. Repair the written source.
+- `export` accepts a file or a folder. It refuses an `-o` target that ends in
+  `.em.hcl` or that is the source file.
+- Conversion is not lossless. Read each warning. Chapters, hotspots, teams,
+  systems, read-model questions, and canvas IDs have no JSON equivalent.
+- Both commands fail when one workflow or slice has two or more actors.
+- Do not use `export` and `import` to repair a model. Edit the HCL.

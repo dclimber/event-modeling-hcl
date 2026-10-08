@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Create `borrowing.em.hcl` for a library. A member uses a checkout screen to borrow an available book copy. Borrow Book produces Book Borrowed; reject an attempt when the copy is already on loan. Members can view their current loans. When a loan becomes overdue, the system should request an overdue notice without human input. Include UUID member_id and copy_id contracts, concrete Read Model questions, and scenarios. Write the file in the current directory and validate it if the Event Modeling HCL CLI is available.",
-      "expected_output": "A coherent valid v0.3.0 model containing State Change, State View, and Automation workflows with owned Events, reusable field types, canonical flows, and pattern-correct scenarios.",
+      "expected_output": "A coherent valid v0.4.0 model containing State Change, State View, and Automation workflows with owned Events, reusable field types, canonical flows, and pattern-correct scenarios.",
       "files": [],
       "expectations": [
         "The output is a `.em.hcl` file with lower-snake-case block labels and context-owned Events.",
@@ -42,8 +42,7 @@
         "Both scenarios use Given Event then Read Model and contain no When step.",
         "order_id and status have valid field typing and their Read Model provenance is visible without a mapping attribute."
       ]
-    }
-    ,
+    },
     {
       "id": 4,
       "prompt": "This model already has state_change \"place_order\" with status = \"done\" and a created state_view \"view_order\". Add the supplied loyalty_id field to the view only. Do not reopen completed work. The place-order screen currently issues both place_order and apply_coupon; leave that screen locked, but say what is wrong with it.",
@@ -54,6 +53,20 @@
         "The created state view is updated with loyalty_id and a traceable source or an explicit gap. No mapping DSL, linked_copy, or storyline attribute is added.",
         "The reply identifies the locked screen's two commands as a bed, meaning any second command, and does not silently split that locked workflow.",
         "No implementation code is generated."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Split `clinic.em.hcl` into a folder model `clinic/` so that each team can own its own workflows. The file has a `clinic` bounded context, a `receptionist` actor, the workflows `register_pet`, `pet_directory`, and `notify_owner`, one chapter that lists them, and an open hotspot on the notify_owner processor. Keep the board order the same and validate the folder if the CLI is available.",
+      "expected_output": "A folder of member `.em.hcl` files with the same blocks and the same board order, which validates as one folder model with no EM013, EM014, or EM407 diagnostic.",
+      "files": [],
+      "expectations": [
+        "Every block moves whole into a file directly in `clinic/`. No block spans two files, and no `include` or `import` block is invented.",
+        "The bounded context with all its events, aggregates, and field types is in one file.",
+        "All chapter blocks are in one file, every workflow is in exactly one chapter, and the chapter list keeps the original workflow order.",
+        "File names use a prefix so that file name order is the reading order. No ID is declared twice across files.",
+        "Each member file is formatted with `emhcl fmt -w <file>` because fmt refuses a folder, and the folder is validated with `emhcl validate clinic` (emhcl v0.9.0 or newer).",
+        "The open hotspot stays open, and the reply does not call the model implementation-ready."
       ]
     }
   ]
