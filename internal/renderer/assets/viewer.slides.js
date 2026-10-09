@@ -204,11 +204,7 @@
       `<nav class="sl-nav" aria-label="Slides">${navLink("prev", prev.href, prev.label, prev.title)}`+
         `${navLink("next", next.href, next.label, next.title)}</nav>`;
 
-    if(window.renderSliceDiagram){
-      const diagram = window.renderSliceDiagram(slice);
-      diagram.querySelector("h3")?.remove();
-      host.querySelector(".sl-diagram").appendChild(diagram);
-    }
+    host.querySelector(".sl-diagram").appendChild(EMC.sliceTimeline(slice));
     host.querySelectorAll(".sl-shot img").forEach(image=>{
       const fail = ()=>image.closest(".sl-shot").classList.add("failed");
       if(image.complete && image.naturalWidth === 0) fail();

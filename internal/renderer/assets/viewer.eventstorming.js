@@ -355,7 +355,6 @@
     };
 
     function applyStormingFilters(state){
-      if(!state) return;
       EMC.MODEL.slices.forEach((slice, i) => {
         const status = slice.status || "created";
         const rowVisible = state.statuses.size === 0 || state.statuses.has(status);
@@ -371,7 +370,6 @@
       });
       window.relayoutEventStorming && window.relayoutEventStorming();
     }
-    window.applyStormingFilters = applyStormingFilters;
 
     function setHover(note, active){
       const id = note.dataset.id || note.dataset.relatedId;
@@ -423,7 +421,7 @@
       (actors?`<div class="grp"><h4>Actors</h4>${actors}</div>`:"")+
       `<div class="grp"><h4>Patterns (slice types)</h4>${patterns}</div><div class="grp"><h4>Slice status</h4>${statuses}</div>`+
       (other?`<div class="grp"><h4>Other hotspots</h4>${other}</div>`:"");
-    applyStormingFilters(EMC.filterState);
+    EMC.onFilterChange(applyStormingFilters);
     layoutRows();
     requestAnimationFrame(drawWires);
   };

@@ -380,7 +380,7 @@
 
     LEGENDS.compact = legendHTML();
 
-    window.applyCompactFilters(EMC.filterState || {statuses:new Set(), context:"__all"});
+    EMC.onFilterChange(applyCompactFilters);
   }
 
   /* --------------------------- wires --------------------------- */
@@ -469,8 +469,7 @@
   }
 
   /* --------------------------- filters --------------------------- */
-  window.applyCompactFilters = function(state){
-    if(!built) return;
+  function applyCompactFilters(state){
     const MODEL = EMC.MODEL;
     MODEL.slices.forEach((s,i)=>{
       const st = s.status||"created";
@@ -491,7 +490,7 @@
       box.classList.toggle("lane-dim", state.context !== "__all" && box.dataset.ctx !== state.context);
     });
     requestAnimationFrame(drawWires);
-  };
+  }
 
   /* --------------------------- legend --------------------------- */
   function legendHTML(){

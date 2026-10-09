@@ -141,6 +141,62 @@ DP3 influences FR7.4. `import_policy.go` repeats the flow rules of `internal/val
 
 DP4 influences FR7.3. Export reads JSON values from the canonical model. `jsonValue` in `internal/model` builds each value from the HCL source text. It does not convert the value through `cty` first, because `cty` normalizes Unicode keys. Normalization would merge the keys `é` and `e\u0301`.
 
+`internal/serve` imports `internal/syntax` only for the `syntax.File` type that `app.ReadModel` returns. It hashes those files to detect a change. It does not parse or select member files, so the loader rules R1 to R4 keep one owner.
+
+## Requirements for the diagram viewer
+
+FR5 includes the HTML diagram. `internal/renderer` writes one file that holds the model as JSON and the viewer scripts in `internal/renderer/assets`. The browser runs the viewer. The viewer has eight child requirements.
+
+| Child FR | Acceptance criterion | DP | Location |
+| --- | --- | --- | --- |
+| FR5.1: Scope each page to one chapter or to the whole model | A fragment gives the same chapter every time. Slices outside every chapter form an Ungrouped chapter. | DP5.1: Route grammar and load-time scoping | `parseHash`, `normalizeChapters`, and `MODEL` at the top of `viewer.js` |
+| FR5.2: Give every view the same read-only facts | Each view reads elements, edges, labels, and the slice timeline from one place | DP5.2: Shared index and helpers | `ELEMENTS`, `EDGES`, `NEIGHBORS`, and `EMC.sliceTimeline` in `viewer.js` |
+| FR5.3: Show the details of one slice on request | The drawer shows the scenarios and elements of the slice that the reader selects | DP5.3: Detail drawer | `openSlice` in `viewer.js` |
+| FR5.4: Filter the boards by status and bounded context | One filter state applies to every board. The controls offer only values on the current board. | DP5.4: Filter owner | `filterState`, `applyFilters`, and `EMC.onFilterChange` in `viewer.js` |
+| FR5.5: Draw the Model, Compact, Storming, and Context Map boards | Each board renders on its own and applies the filter state | DP5.5: Board renderers | `renderEventModel` in `viewer.js`, `viewer.compact.js`, `viewer.eventstorming.js`, `viewer.contextmap.js` |
+| FR5.6: Preview every chapter | Each card shows the first and last slice of its chapter | DP5.6: Chapter overview | `viewer.chapters.js` |
+| FR5.7: Present one slice to readers who do not know Event Modeling | The slide shows the screen, then the examples, then the event model of the slice | DP5.7: Slides | `viewer.slides.js` |
+| FR5.8: Navigate between pages and views | Each fragment shows one page. Browser Back works. Links work inside the sandboxed `srcdoc` frame of the playground. | DP5.8: Navigation | `parseRoute`, `renderNavigation`, `showPage`, and the fragment click handler in `viewer.js` |
+
+## Independence matrix for the diagram viewer
+
+| FR \ DP | DP5.1 Scope | DP5.2 Index | DP5.3 Drawer | DP5.4 Filters | DP5.5 Boards | DP5.6 Overview | DP5.7 Slides | DP5.8 Navigation |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| FR5.1 Scope | X | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| FR5.2 Shared facts | X | X | 0 | 0 | 0 | 0 | 0 | 0 |
+| FR5.3 Detail drawer | X | X | X | 0 | 0 | 0 | 0 | 0 |
+| FR5.4 Filters | X | X | 0 | X | 0 | 0 | 0 | 0 |
+| FR5.5 Boards | X | X | X | X | X | 0 | 0 | 0 |
+| FR5.6 Overview | X | X | 0 | 0 | 0 | X | 0 | 0 |
+| FR5.7 Slides | X | X | 0 | 0 | 0 | 0 | X | 0 |
+| FR5.8 Navigation | X | 0 | 0 | 0 | X | X | X | X |
+
+The matrix is lower triangular, so the viewer is decoupled. Set the DPs in this order: scope, shared index, drawer, filters, boards, overview, slides, navigation.
+
+The off-diagonal entries are these influences:
+
+- Every view reads the scoped `MODEL`, so DP5.1 influences FR5.2 to FR5.7. Navigation reads the route grammar of DP5.1.
+- The boards open the drawer when the reader clicks a slice, and they apply the filter state of DP5.4.
+- The overview and the slides draw a slice with `EMC.sliceTimeline` from DP5.2.
+- Navigation calls the render function of the page that it shows, so DP5.5, DP5.6, and DP5.7 influence FR5.8.
+
+The important zeros are these:
+
+- No board influences another board. Each board registers its own filter function with `EMC.onFilterChange` when it renders. A Storming page that you open directly does not render the Model board.
+- The slides do not use the filter state. They show every fact of one slice.
+- The overview does not influence the slides. The slice timeline belongs to DP5.2, not to the overview.
+- Navigation does not change what a view draws. It only selects the page and passes the route values, such as the slide number.
+
+The viewer had three couplings that this decomposition removed:
+
+- The filter state and its controls were inside `renderEventModel`. That function also called the filter functions of the Storming and Compact boards. Thus FR5.4 depended on the Model board, and the Storming and Compact pages rendered the Model board first. Now DP5.4 owns the state and the controls, and each board registers itself.
+- The slides used a function that the overview script exported. A change to the overview changed the slides. Now both use `EMC.sliceTimeline` and the shared `.timeline` styles.
+- Two regular expressions defined the route grammar: one for load-time scoping and one for navigation. A new route needed two changes. Now `parseHash` is the only grammar.
+
+Chapter scoping is set when the page loads, before every other DP. When the reader opens another chapter, navigation reloads the page at the new fragment. This reload is the control junction that keeps the decoupled order. A change of view inside the same chapter does not reload the page.
+
+Some residual shared items are intentional. Each board places hotspots by its own layout rules, but DP5.1 decides which hotspots are in scope. Each view writes its own entry in the shared `LEGENDS` object. The drawer and the popovers both close on Escape.
+
 ## Module contracts
 
 | Module | Owns | Input | Output and failure contract |
@@ -150,7 +206,7 @@ DP4 influences FR7.3. Export reads JSON values from the canonical model. `jsonVa
 | `internal/validator` | Structural, reference, scenario, and smell policy | Decoded source and a profile | Diagnostics. Without errors, also a `ValidatedDocument`. |
 | `internal/model` | Canonical model for renderers and interchange, with normalized edges | `ValidatedDocument` | The same `Model` for the same input. No parsing, no validation, no I/O. |
 | `internal/formatter` | Canonical HCL layout | Source bytes | Formatted bytes or parse diagnostics |
-| `internal/renderer` | Standalone HTML | Canonical `Model` | HTML, or a template or serialization error |
+| `internal/renderer` | Standalone HTML and the viewer scripts | Canonical `Model` | HTML, or a template or serialization error. The viewer obeys the matrix for the diagram viewer. |
 | `internal/interchange` | Schema check and conversion for slice-based JSON | JSON bytes, or a canonical `Model` | A document or unformatted HCL with warnings. A returned error means that the input has no correct conversion. No I/O. |
 | `internal/app` | Use-case sequence and plain diagnostics | Source in memory, or a model path (one file or one folder) | Results for validate, format, render, import, and export that all adapters share |
 | CLI, WASM, `internal/serve` | Actions for each runtime | Arguments, files, signals, HTTP, JavaScript values | Exit codes, files, browser values, and server lifecycle |
@@ -183,6 +239,10 @@ The CLI owns output-file safety. `emhcl export` refuses an `-o` target that has 
 11. If you change a flow rule in `internal/validator`, change `import_policy.go` in the same change.
 12. After each change to the interchange mapping, make sure that the round trip stays stable. Do this for each file in `examples/` and `testdata/valid/`.
 13. Renaming a member file keeps the order of chaptered workflows, because chapters set that order. It can move unchaptered workflows, because they follow file name order. It can also change which duplicate declaration EM002 reports as the first one.
+14. Add a route only in `parseHash`. Load-time scoping and navigation read the same grammar.
+15. A board must not render or call another board. A new board registers its filter function with `EMC.onFilterChange` and its layout function with a `relayout` hook.
+16. Put a slice presentation that two views share in `viewer.js` under `EMC`. Do not export it from one view to another.
+17. Change the fragment with `location.hash` or `replaceHash`. Do not let the browser follow a fragment link, because inside the `srcdoc` frame of the playground the link loads the playground page.
 
 A change breaks the Independence Axiom when, for example:
 
@@ -191,6 +251,8 @@ A change breaks the Independence Axiom when, for example:
 - Model construction accepts HCL that the validator did not accept.
 - A grammar fact gets two owners.
 - The importer writes a model that the validator did not accept.
+- A viewer page renders another board to get filters, data, or a helper.
+- A viewer route gets a second parser.
 
 ## Information Axiom and evidence
 
@@ -211,5 +273,7 @@ The interchange module has this evidence:
 - Import, `ajv`, and round-trip runs on the five fixtures in `testdata/valid/`. The source files and the exported files pass `ajv`, and the second export is identical to the first.
 
 Some limits are known. String values (not keys) pass through `cty` on both import and export. Thus Unicode normalization can change the text of a string value. Two read models in the Cart fixtures have different `aggregate` metadata. No evidence shows which value is correct.
+
+The diagram viewer has less evidence. The Go tests check that the HTML contains the viewer code and the model JSON. No automated test runs the viewer in a browser. The matrix for the viewer comes from a manual browser check: a Storming page that opened directly rendered no Model board and applied the context filter. The route checks covered valid, unknown, and malformed fragments. A browser test of the routes, the filters, and the slides would turn these checks into repeatable evidence.
 
 To compare this architecture with an alternative under the Information Axiom, measure release history, escaped defect counts, flaky-test rates, and change lead time.

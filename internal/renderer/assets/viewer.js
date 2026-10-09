@@ -20,8 +20,18 @@ const normalizeChapters = model => {
 };
 const chapters = normalizeChapters(FULL_MODEL);
 const chapterHref = id => "#chapter/" + encodeURIComponent(id);
-const routeAtLoad = location.hash.match(/^#chapter\/([^/]+)(?:\/(?:model|compact|storming|slides(?:\/\d+)?))?$/);
-const requestedChapter = (()=>{ try{return routeAtLoad ? decodeURIComponent(routeAtLoad[1]) : null;}catch(_){return null;} })();
+// The route grammar has one owner. Load-time chapter scoping and navigation both read it.
+//   #chapters | #contextmap | #chapter/<id>[/<view>] | #<view>   with  #…/slides/<n>
+function parseHash(hash){
+  if(hash === "#chapters") return {page:"chapters"};
+  if(hash === "#contextmap") return {page:"contextmap"};
+  const match = hash.match(/^#(?:chapter\/([^/]+)\/?)?(model|compact|storming|slides)?(?:\/(\d+))?$/);
+  if(!match || (!match[1] && !match[2]) || (match[3] && match[2] !== "slides")) return null;
+  let chapterId = null;
+  if(match[1]){ try{ chapterId = decodeURIComponent(match[1]); }catch(_){ return null; } }
+  return {page:"board", chapterId, view:match[2] || "model", slide:+match[3] || 1};
+}
+const requestedChapter = (parseHash(location.hash) || {}).chapterId || null;
 const activeChapter = chapters.find(chapter => chapter.id === requestedChapter);
 const sliceById = new Map(FULL_MODEL.slices.map(slice => [slice.id, slice]));
 const scopedSlices = activeChapter ? activeChapter.slices.map(id => sliceById.get(id)).filter(Boolean) : FULL_MODEL.slices;
@@ -187,6 +197,101 @@ EMC.rectIn = (container, node) => {
   return { x:(r.left-cr.left)/s, y:(r.top-cr.top)/s, w:r.width/s, h:r.height/s,
            cx:(r.left-cr.left+r.width/2)/s, cy:(r.top-cr.top+r.height/2)/s };
 };
+
+/* --------------------------- slice timeline (overview and slides) --------------------------- */
+// One slice in time order: a lane per element group, a column per stage.
+const TIMELINE_LANES = [
+  {name:"Screens", kinds:["screen","screen_image"]},
+  {name:"Processors", kinds:["processor"]},
+  {name:"Model", kinds:["command","readmodel","table"]},
+  {name:"Events", kinds:["event"]},
+];
+const TIMELINE_KIND_LABEL = {screen:"Screen", screen_image:"Image", processor:"Processor", command:"Command", readmodel:"Read model", table:"Table", event:"Event"};
+EMC.sliceTimeline = slice => {
+  const elements = slice.elements || [];
+  const maxStage = elements.reduce((max,element)=>Math.max(max,element.stage||0),0);
+  const timeline = el("div","timeline");
+  timeline.style.setProperty("--timeline-stages", maxStage+1);
+  TIMELINE_LANES.forEach(lane=>{
+    const laneElements = elements.filter(element=>lane.kinds.includes(element.kind))
+      .sort((a,b)=>lane.kinds.indexOf(a.kind)-lane.kinds.indexOf(b.kind));
+    if(!laneElements.length) return;
+    const row = el("div","timeline-lane");
+    row.appendChild(el("span","timeline-lane-label",esc(lane.name)));
+    const track = el("div","timeline-track");
+    const byStage = new Map();
+    laneElements.forEach(element=>{
+      const stage = Math.max(0,element.stage||0);
+      if(!byStage.has(stage)) byStage.set(stage,[]);
+      byStage.get(stage).push(element);
+    });
+    [...byStage.entries()].sort((a,b)=>a[0]-b[0]).forEach(([stage,elementsAtStage])=>{
+      const column = el("div","timeline-stage");
+      column.style.gridColumn = stage+1;
+      elementsAtStage.forEach(element=>{
+        const kind = element.kind === "screen_image" ? "screen" : element.kind;
+        const node = el("div",`timeline-node ${kind}${element.external ? " external" : ""}`,
+          `<span class="timeline-node-kind">${esc(TIMELINE_KIND_LABEL[element.kind] || element.kind)}</span>`+
+          `<span class="timeline-node-title">${esc(element.title || element.id)}</span>`);
+        node.dataset.elementId = element.id;
+        column.appendChild(node);
+      });
+      track.appendChild(column);
+    });
+    row.appendChild(track);
+    timeline.appendChild(row);
+  });
+  return timeline.childElementCount ? timeline : el("p","timeline-empty","No elements in this slice");
+};
+
+/* --------------------------- filters --------------------------- */
+// One owner for the filter state and its controls. Each board registers how it applies
+// the state when the board is built, so no board needs another board to exist.
+const filterState = {statuses:new Set(), context:"__all"};
+const filterAppliers = [];
+function applyFilters(){
+  filterAppliers.forEach(apply=>apply(filterState));
+  updateFiltersCount();
+}
+EMC.filterState = filterState;
+EMC.onFilterChange = apply => { filterAppliers.push(apply); apply(filterState); };
+(function buildFilterControls(){
+  // status chips (only statuses present; one status cannot narrow anything)
+  const fStatus = $("#f-status");
+  const present = [...new Set(MODEL.slices.map(s=>s.status||"created"))];
+  fStatus.hidden = present.length < 2;
+  present.forEach(st=>{
+    const chip = el("button","chip", `<span class="sw" style="--c:${statusVar(st)}"></span>${STATUS_LABEL[st]}`);
+    chip.type = "button";
+    chip.setAttribute("aria-pressed","true"); chip.dataset.st=st;
+    chip.onclick=()=>{
+      const on = chip.getAttribute("aria-pressed")==="true";
+      // treat as an active-set: click toggles membership; empty set = show all
+      if(filterState.statuses.size===0){ present.forEach(s=>filterState.statuses.add(s)); }
+      if(on){ filterState.statuses.delete(st); } else { filterState.statuses.add(st); }
+      if(filterState.statuses.size===present.length) filterState.statuses.clear();
+      fStatus.querySelectorAll(".chip").forEach(c=>{
+        const active = filterState.statuses.size===0 || filterState.statuses.has(c.dataset.st);
+        c.setAttribute("aria-pressed", active?"true":"false");
+      });
+      applyFilters();
+    };
+    fStatus.appendChild(chip);
+  });
+
+  // context segmented (only contexts used on this board)
+  const fContext = $("#f-context");
+  const usedCtx = new Set(Object.values(ELEMENTS).map(e=>e.ctx).filter(Boolean));
+  const ctxEntries = Object.entries(MODEL.contexts).filter(([id])=>usedCtx.has(id));
+  fContext.hidden = ctxEntries.length < 2;
+  const ctxs = [["__all","All"], ...ctxEntries.map(([id,c])=>[id, c.title+(c.external?" ↗":"")])];
+  ctxs.forEach(([v,lab])=>{
+    const b = el("button","btn", esc(lab)); b.type="button"; b.dataset.v=v;
+    b.setAttribute("aria-pressed", v==="__all"?"true":"false");
+    b.onclick=()=>{ filterState.context=v; fContext.querySelectorAll(".btn").forEach(x=>x.setAttribute("aria-pressed", x.dataset.v===v?"true":"false")); applyFilters(); };
+    fContext.appendChild(b);
+  });
+})();
 
 /* --------------------------- legend content per active view --------------------------- */
 const LEGENDS = {};
@@ -570,9 +675,7 @@ function renderEventModel(){
   });
 
   /* --------------------------- filters --------------------------- */
-  const state = EMC.filterState = {statuses:new Set(), context:"__all"};
-
-  function applyFilters(){
+  EMC.onFilterChange(state=>{
     MODEL.slices.forEach((s,i)=>{
       const st = s.status||"created";
       const sliceVisible = state.statuses.size===0 || state.statuses.has(st);
@@ -588,45 +691,6 @@ function renderEventModel(){
       n.classList.toggle("lane-dim", state.context !== "__all" && n.dataset.ctx !== state.context);
     });
     requestAnimationFrame(drawWires);
-    window.applyStormingFilters && window.applyStormingFilters(state);
-    window.applyCompactFilters && window.applyCompactFilters(state);
-    updateFiltersCount();
-  }
-
-
-  // status chips (only statuses present; one status cannot narrow anything)
-  const fStatus = $("#f-status");
-  const present = [...new Set(MODEL.slices.map(s=>s.status||"created"))];
-  fStatus.hidden = present.length < 2;
-  present.forEach(st=>{
-    const chip = el("button","chip", `<span class="sw" style="--c:${statusVar(st)}"></span>${STATUS_LABEL[st]}`);
-    chip.setAttribute("aria-pressed","true"); chip.dataset.st=st;
-    chip.onclick=()=>{
-      const on = chip.getAttribute("aria-pressed")==="true";
-      // treat as an active-set: click toggles membership; empty set = show all
-      if(state.statuses.size===0){ present.forEach(s=>state.statuses.add(s)); }
-      if(on){ state.statuses.delete(st); } else { state.statuses.add(st); }
-      if(state.statuses.size===present.length) state.statuses.clear();
-      fStatus.querySelectorAll(".chip").forEach(c=>{
-        const active = state.statuses.size===0 || state.statuses.has(c.dataset.st);
-        c.setAttribute("aria-pressed", active?"true":"false");
-      });
-      applyFilters();
-    };
-    fStatus.appendChild(chip);
-  });
-
-  // context segmented (only contexts used on this board)
-  const fContext = $("#f-context");
-  const usedCtx = new Set(Object.values(ELEMENTS).map(e=>e.ctx).filter(Boolean));
-  const ctxEntries = Object.entries(MODEL.contexts).filter(([id])=>usedCtx.has(id));
-  fContext.hidden = ctxEntries.length < 2;
-  const ctxs = [["__all","All"], ...ctxEntries.map(([id,c])=>[id, c.title+(c.external?" ↗":"")])];
-  ctxs.forEach(([v,lab])=>{
-    const b = el("button","btn", esc(lab)); b.type="button"; b.dataset.v=v;
-    b.setAttribute("aria-pressed", v==="__all"?"true":"false");
-    b.onclick=()=>{ state.context=v; fContext.querySelectorAll(".btn").forEach(x=>x.setAttribute("aria-pressed", x.dataset.v===v?"true":"false")); applyFilters(); };
-    fContext.appendChild(b);
   });
 
   /* --------------------------- click to open drawer --------------------------- */
@@ -661,8 +725,6 @@ function renderEventModel(){
     `<div class="grp"><h4>Patterns (slice types)</h4>${patLeg}</div>`+
     `<div class="grp"><h4>Slice status</h4>${stLeg}</div>`+
     (hotspotLeg?`<div class="grp"><h4>Other hotspots</h4>${hotspotLeg}</div>`:"");
-
-  applyFilters();      // paints filters + first wire pass
 }
 
 /* --------------------------- meta (view-independent chrome) --------------------------- */
@@ -868,19 +930,13 @@ const isCanvasView = name => name === "model" || name === "compact" || name === 
 
 const viewHref = (view, chapter) => chapter ? chapterHref(chapter.id) + "/" + view : "#" + view;
 function parseRoute(hash){
-  if(hash === "#chapters") return chapters.length > 1 ? {page:"chapters"} : null;
-  if(hash === "#contextmap") return {page:"contextmap"};
-  const chapterMatch = hash.match(/^#chapter\/([^/]+)(?:\/(model|compact|storming|slides)(?:\/(\d+))?)?$/);
-  if(chapterMatch){
-    let id;
-    try{ id = decodeURIComponent(chapterMatch[1]); }catch(_){ return null; }
-    const chapter = chapters.find(item=>item.id === id);
-    if(!chapter || (chapterMatch[3] && chapterMatch[2] !== "slides")) return null;
-    return {page:"board", chapter, view:chapterMatch[2] || "model", slide:+chapterMatch[3] || 1};
-  }
-  const viewMatch = hash.match(/^#(model|compact|storming|slides)(?:\/(\d+))?$/);
-  if(!viewMatch || chapters.length || (viewMatch[2] && viewMatch[1] !== "slides")) return null;
-  return {page:"board", chapter:null, view:viewMatch[1], slide:+viewMatch[2] || 1};
+  const route = parseHash(hash);
+  if(!route) return null;
+  if(route.page === "chapters") return chapters.length > 1 ? route : null;
+  if(route.page !== "board") return route;
+  if(route.chapterId === null) return chapters.length === 0 ? {...route, chapter:null} : null;
+  const chapter = chapters.find(item=>item.id === route.chapterId);
+  return chapter ? {...route, chapter} : null;
 }
 function defaultHash(){
   if(chapters.length > 1) return "#chapters";
@@ -954,14 +1010,14 @@ function showPage(name, route){
     renderSlidesFor(route);
     return;
   }
-  if(name === "model" || name === "storming" || name === "compact"){
-    renderEventModel(); // builds the shared filters and drawer index used by every board
+  if(isCanvasView(name)){
     const showFields = fieldPrefs[name];
     $("#t-fields").checked = showFields;
     const board = name === "model" ? boardModel : (name === "storming" ? boardES : boardCompact);
     board.classList.toggle("show-fields", showFields);
   }
-  if(name === "storming") window.renderEventStorming && window.renderEventStorming();
+  if(name === "model") renderEventModel();
+  else if(name === "storming") window.renderEventStorming && window.renderEventStorming();
   else if(name === "contextmap") window.renderContextMap && window.renderContextMap();
   else if(name === "compact") window.renderCompact && window.renderCompact();
   LP.innerHTML = LEGENDS[name] || `<div class="empty">No legend available for this view.</div>`;

@@ -1,76 +1,13 @@
 /* Chapter overview: one card per chapter, previewing its first and last slice. */
 (function(){
-  const lanes = [
-    {name:"Screens", kinds:["screen","screen_image"]},
-    {name:"Processors", kinds:["processor"]},
-    {name:"Model", kinds:["command","readmodel","table"]},
-    {name:"Events", kinds:["event"]}
-  ];
-  const kindLabels = {screen:"Screen",screen_image:"Image",processor:"Processor",command:"Command",readmodel:"Read model",table:"Table",event:"Event"};
-  const kindOrder = Object.fromEntries(lanes.flatMap((lane,index)=>lane.kinds.map(kind=>[kind,index])));
-  const kindCss = kind => kind === "screen_image" ? "screen" : kind;
   function sliceSummary(slice){
     const node = document.createElement("section");
     node.className = "chapter-slice";
     const heading = document.createElement("h3");
     heading.textContent = slice.title || slice.id;
-    node.appendChild(heading);
-    const elements = (slice.elements || []).slice().sort((a,b)=>(a.stage||0)-(b.stage||0)||(kindOrder[a.kind]??9)-(kindOrder[b.kind]??9));
-    const maxStage = elements.reduce((max,element)=>Math.max(max,element.stage||0),0);
-    const diagram = document.createElement("div");
-    diagram.className = "chapter-diagram";
-    diagram.style.setProperty("--chapter-stages", maxStage+1);
-    lanes.forEach(lane=>{
-      const laneElements = elements.filter(element=>lane.kinds.includes(element.kind));
-      if(!laneElements.length) return;
-      const row = document.createElement("div");
-      row.className = "chapter-lane";
-      const label = document.createElement("span");
-      label.className = "chapter-lane-label";
-      label.textContent = lane.name;
-      row.appendChild(label);
-      const track = document.createElement("div");
-      track.className = "chapter-lane-track";
-      const byStage = new Map();
-      laneElements.forEach(element=>{
-        const stage = Math.max(0,element.stage||0);
-        if(!byStage.has(stage)) byStage.set(stage,[]);
-        byStage.get(stage).push(element);
-      });
-      [...byStage.entries()].forEach(([stage,elementsAtStage])=>{
-        const stageColumn = document.createElement("div");
-        stageColumn.className = "chapter-stage";
-        stageColumn.style.gridColumn = (stage+1);
-        elementsAtStage.forEach(element=>{
-          const card = document.createElement("div");
-          card.className = `chapter-node ${kindCss(element.kind)}${element.external ? " external" : ""}`;
-          card.dataset.elementId = element.id;
-          const kind = document.createElement("span");
-          kind.className = "chapter-node-kind";
-          kind.textContent = kindLabels[element.kind] || element.kind;
-          const title = document.createElement("span");
-          title.className = "chapter-node-title";
-          title.textContent = element.title || element.id;
-          card.append(kind,title);
-          
-          stageColumn.appendChild(card);
-        });
-        track.appendChild(stageColumn);
-      });
-      row.appendChild(track);
-      diagram.appendChild(row);
-    });
-    if(diagram.childElementCount) {
-      node.appendChild(diagram);
-    } else {
-      const empty = document.createElement("p");
-      empty.className = "chapter-empty";
-      empty.textContent = "No elements in this slice";
-      node.appendChild(empty);
-    }
+    node.append(heading, EMC.sliceTimeline(slice));
     return node;
   }
-  window.renderSliceDiagram = sliceSummary; // also used by the slides
   window.renderChapters = function(){
     const host = document.getElementById("board-chapters");
     const source = window.EMC && EMC.FULL_MODEL;
