@@ -22,6 +22,10 @@ This release reorganizes the standalone HTML diagram around chapters. The Event 
 - Header counts describe the current chapter on chapter pages and the whole model on the overview and Context Map.
 - Storming rows within a flow run in causal order from top left, so a board no longer opens on empty space.
 
+### Fixed
+
+- CI verification, cross-platform builds, and release builds explicitly select Go 1.26.9 rather than allowing a cached vulnerable Go 1.26 patch.
+
 ## [v0.9.0] - 2026-10-07
 
 This release implements Event Modeling HCL Specification v0.4.0. A model can be one `.em.hcl` file or a folder of `.em.hcl` files.
