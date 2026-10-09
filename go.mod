@@ -2,7 +2,7 @@ module github.com/event-modeling-hcl/eventmodeling-hcl
 
 go 1.25.0
 
-toolchain go1.26.6
+toolchain go1.26.9
 
 require (
 	github.com/hashicorp/hcl/v2 v2.24.0
