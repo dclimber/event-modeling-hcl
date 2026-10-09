@@ -6,6 +6,10 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ## [Unreleased]
 
+## [v0.10.0] - 2026-10-09
+
+This release reorganizes the standalone HTML diagram around chapters. The Event Modeling HCL language is unchanged (Specification v0.4.0).
+
 ### Added
 
 - Chapters as the top-level navigation of the standalone HTML diagram: a chapter picker with previous/next arrows that keep the current view, bookmarkable fragment links, and browser Back navigation.
