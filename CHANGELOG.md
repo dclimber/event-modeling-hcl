@@ -6,6 +6,18 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ## [Unreleased]
 
+### Added
+
+- Chapters as the top-level navigation of the standalone HTML diagram: a chapter picker with previous/next arrows that keep the current view, bookmarkable fragment links, and browser Back navigation.
+- An All chapters overview with one card per chapter, previewing its first and last slice and the number of slices between them.
+
+### Changed
+
+- Model, Compact, and Storming diagrams show only the selected chapter instead of dimming other chapters, and no longer repeat the chapter title as a band. Context Map covers the whole model. Single-chapter models open their chapter directly; models without chapters keep whole-model diagrams.
+- The diagram toolbar stays on one row on desktop: status, bounded-context, and field-detail options moved into a **Filters** popover with an active-filter count, and only statuses and contexts present on the current board are offered.
+- Header counts describe the current chapter on chapter pages and the whole model on the overview and Context Map.
+- Storming rows within a flow run in causal order from top left, so a board no longer opens on empty space.
+
 ## [v0.9.0] - 2026-10-07
 
 This release implements Event Modeling HCL Specification v0.4.0. A model can be one `.em.hcl` file or a folder of `.em.hcl` files.

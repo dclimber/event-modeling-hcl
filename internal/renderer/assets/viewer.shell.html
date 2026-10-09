@@ -18,22 +18,36 @@ __STYLES_COMPACT__</style>
     <span class="sub">model <b id="m-title">—</b> · HCL Spec <span class="mono" id="m-version">—</span></span>
   </div>
   <div class="meta" id="m-stats"></div>
-
-    <button class="toolbtn" id="t-theme" title="Cycle theme"><span class="gl" id="theme-gl">◐</span><span id="theme-tx">Auto</span></button>
-  <div class="tools">
+  <button class="toolbtn" id="t-theme" title="Cycle theme"><span class="gl" id="theme-gl">◐</span><span id="theme-tx">Auto</span></button>
+  <nav class="tools" aria-label="Diagram navigation">
+    <div class="chapter-nav" id="chapter-nav" hidden>
+      <a class="btn chapter-step" id="chapter-prev" aria-label="Previous chapter" title="Previous chapter">‹</a>
+      <details class="popover chapter-picker" id="chapter-picker">
+        <summary class="toolbtn"><span class="fkey">Chapter</span><span class="chapter-current" id="chapter-current"></span><span class="cv" aria-hidden="true">▾</span></summary>
+        <div class="popover-panel chapter-menu" id="chapter-menu"></div>
+      </details>
+      <a class="btn chapter-step" id="chapter-next" aria-label="Next chapter" title="Next chapter">›</a>
+    </div>
     <div class="seg" id="f-view"><span class="fkey">View</span></div>
+    <a class="toolbtn" id="t-contextmap" href="#contextmap" title="Bounded contexts of the whole model">Context Map</a>
     <div class="seg" id="f-zoom"><span class="fkey">Zoom</span><button class="btn" id="z-out" title="Zoom out (-)" aria-label="Zoom out">−</button><button class="btn zoom-level" id="z-reset" title="Reset zoom to 100% (0)" aria-label="Reset zoom">100%</button><button class="btn" id="z-in" title="Zoom in (+)" aria-label="Zoom in">+</button><button class="btn" id="z-fit" title="Fit width (F)" aria-label="Fit to width">Fit</button></div>
-    <div class="seg" id="f-chapter"><span class="fkey">Chapter</span></div>
-    <div class="chips" id="f-status"><span class="fkey">Status</span></div>
-    <div class="seg" id="f-context"><span class="fkey">Context</span></div>
-    <label class="switch" id="f-fields-switch" title="Show field details on cards">
-      <input type="checkbox" id="t-fields">
-      <div class="track"></div>
-    </label>
-  </div>
+    <details class="popover filters" id="f-filters">
+      <summary class="toolbtn">Filters<span class="filters-count" id="filters-count" hidden></span><span class="cv" aria-hidden="true">▾</span></summary>
+      <div class="popover-panel filters-panel">
+        <div class="chips" id="f-status"><span class="fkey">Status</span></div>
+        <div class="seg" id="f-context"><span class="fkey">Context</span></div>
+        <label class="switch" id="f-fields-switch">
+          <input type="checkbox" id="t-fields">
+          <span class="track"></span>
+          <span>Field details on cards</span>
+        </label>
+      </div>
+    </details>
+  </nav>
 </header>
 
 <div class="workspace">
+  <main class="chapter-overview-scroll" id="board-chapters" aria-label="Chapter overview" hidden></main>
   <div class="canvas-scroll">
     <div class="board show-fields" id="board" aria-label="Event model canvas">
       <svg class="wires" id="wires" aria-hidden="true">
@@ -102,8 +116,8 @@ __STYLES_COMPACT__</style>
 
 <footer class="foot">
   <span class="label" style="color:var(--ink-soft)">How to read</span>
-  <span id="foot-hint"></span>
-  <span style="margin-left:auto" class="mono">rendered by emhcl diagram</span>
+  <span class="foot-hint" id="foot-hint"></span>
+  <span class="mono foot-credit">rendered by emhcl diagram</span>
 </footer>
 
 <script>
@@ -114,5 +128,7 @@ __SCRIPT_ES__</script>
 __SCRIPT_CM__</script>
 <script>
 __SCRIPT_COMPACT__</script>
+<script>
+__SCRIPT_CHAPTERS__</script>
 </body>
 </html>

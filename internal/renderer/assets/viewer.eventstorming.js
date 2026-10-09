@@ -238,12 +238,19 @@
     return {flowBySlice, columnBySlice:sccOf.map(scc=>columnBySCC[scc])};
   }
 
-  function chapterFor(title, indices, graph){
-    const chapter = EMC.el("section", "es-chapter");
-    chapter.appendChild(EMC.el("div", "es-chapter-label", EMC.esc(title)));
+  // One board shows one chapter (or the whole chapterless model), so the rows need no
+  // chapter label. Within each flow, rows run top-left to bottom-right in causal column
+  // order so the earliest work is where the reader starts.
+  function flowSection(indices, graph){
+    const section = EMC.el("section", "es-section");
     const rows = EMC.el("div", "es-rows");
     const groups = new Map();
-    indices.forEach(i => {
+    const flowOrder = [];
+    indices.forEach(i => { if(!flowOrder.includes(graph.flowBySlice[i])) flowOrder.push(graph.flowBySlice[i]); });
+    const ordered = indices.slice().sort((a,b)=>
+      flowOrder.indexOf(graph.flowBySlice[a]) - flowOrder.indexOf(graph.flowBySlice[b]) ||
+      graph.columnBySlice[a] - graph.columnBySlice[b] || a - b);
+    ordered.forEach(i => {
       const slice = EMC.MODEL.slices[i];
       const flowID = graph.flowBySlice[i];
       if(!groups.has(flowID)){
@@ -272,8 +279,8 @@
       row.appendChild(flow);
       groups.get(flowID).appendChild(row);
     });
-    chapter.appendChild(rows);
-    return chapter;
+    section.appendChild(rows);
+    return section;
   }
 
   window.renderEventStorming = function(){
@@ -283,15 +290,8 @@
     const wires = document.querySelector("#wires-es");
     if(!board || !wires) return;
     const graph = buildStormingGraph();
-    const used = new Set();
     const fragment = document.createDocumentFragment();
-    (EMC.MODEL.chapters || []).forEach(chapter => {
-      const indices = (chapter.slices || []).map(id=>EMC.MODEL.slices.findIndex(slice=>slice.id===id)).filter(i=>i>=0 && !used.has(i));
-      indices.forEach(i=>used.add(i));
-      if(indices.length) fragment.appendChild(chapterFor(chapter.title, indices, graph));
-    });
-    const ungrouped = EMC.MODEL.slices.map((_,i)=>i).filter(i=>!used.has(i));
-    if(ungrouped.length) fragment.appendChild(chapterFor("Ungrouped", ungrouped, graph));
+    fragment.appendChild(flowSection(EMC.MODEL.slices.map((_,i)=>i), graph));
     board.appendChild(fragment);
 
     const unpinned = [];
@@ -357,11 +357,8 @@
     function applyStormingFilters(state){
       if(!state) return;
       EMC.MODEL.slices.forEach((slice, i) => {
-        const inChapter = state.chapter === "__all" ||
-          (EMC.MODEL.chapters.find(c => c.id === state.chapter)?.slices.includes(slice.id));
         const status = slice.status || "created";
-        const okStatus = state.statuses.size === 0 || state.statuses.has(status);
-        const rowVisible = inChapter && okStatus;
+        const rowVisible = state.statuses.size === 0 || state.statuses.has(status);
         board.querySelectorAll('.es-row-head[data-slice="'+i+'"]').forEach(head => head.classList.toggle("filtered", !rowVisible));
         slice.elements.forEach(element => {
           const note = board.querySelector('.es-note[data-id="'+element.id+'"]');

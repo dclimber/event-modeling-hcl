@@ -3,7 +3,38 @@
    typed IR and injected here as
    JSON. The browser only handles layout and interaction.
    ===================================================================== */
-const MODEL = __MODEL_JSON__;
+const FULL_MODEL = __MODEL_JSON__;
+const normalizeChapters = model => {
+  const chapters = (model.chapters || []).map(chapter => ({
+    id: String(chapter.id), title: chapter.title, slices: chapter.slices.slice(),
+  }));
+  if (!chapters.length) return chapters;
+  const covered = new Set(chapters.flatMap(chapter => chapter.slices));
+  const ungrouped = model.slices.filter(slice => !covered.has(slice.id)).map(slice => slice.id);
+  if (ungrouped.length) {
+    let id = "__ungrouped";
+    while (chapters.some(chapter => chapter.id === id)) id += "_";
+    chapters.push({id, title:"Ungrouped", slices:ungrouped});
+  }
+  return chapters;
+};
+const chapters = normalizeChapters(FULL_MODEL);
+const chapterHref = id => "#chapter/" + encodeURIComponent(id);
+const routeAtLoad = location.hash.match(/^#chapter\/([^/]+)(?:\/(model|compact|storming))?$/);
+const requestedChapter = (()=>{ try{return routeAtLoad ? decodeURIComponent(routeAtLoad[1]) : null;}catch(_){return null;} })();
+const activeChapter = chapters.find(chapter => chapter.id === requestedChapter);
+const sliceById = new Map(FULL_MODEL.slices.map(slice => [slice.id, slice]));
+const scopedSlices = activeChapter ? activeChapter.slices.map(id => sliceById.get(id)).filter(Boolean) : FULL_MODEL.slices;
+const scopedElementIds = new Set(scopedSlices.flatMap(slice => slice.elements.map(element => element.id)));
+const MODEL = activeChapter ? {
+  ...FULL_MODEL,
+  slices: scopedSlices,
+  chapters: [activeChapter],
+  edges: (FULL_MODEL.edges || []).filter(edge => scopedElementIds.has(edge.from) && scopedElementIds.has(edge.to)),
+  hotspots: (FULL_MODEL.hotspots || []).filter(hotspot =>
+    scopedElementIds.has(hotspot.onId) || scopedSlices.some(slice => hotspot.onId === "slice__" + slice.id)),
+} : FULL_MODEL;
+
 
 /* --------------------------- constants --------------------------- */
 const BAND = {screen:"screens", screen_image:"screens", command:"domain", readmodel:"domain", processor:"processors", table:"domain", event:"events"};
@@ -38,37 +69,40 @@ MODEL.slices.forEach((s, si) => s.elements.forEach(e => { ELEMENTS[e.id]=e; SLIC
 
 /* ---- bounded-context / aggregate index for the event lanes ---- */
 const titleize = s => String(s).replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-const CTX_AGGS = {};                       // context id -> [aggregate id], first-seen order
+const CTX_AGGS = {};
 (function(){
   const seen = new Set();
-  MODEL.slices.forEach(s => s.elements.forEach(e => {
-    if (e.kind !== "event") return;
-    const ctx = (e.ctx && MODEL.contexts[e.ctx]) ? e.ctx : "__unmapped";
-    const agg = e.agg || "__none";
-    const key = ctx + " " + agg;
+  MODEL.slices.forEach(slice => slice.elements.forEach(element => {
+    if (element.kind !== "event") return;
+    const context = element.ctx && MODEL.contexts[element.ctx] ? element.ctx : "__unmapped";
+    const aggregate = element.agg || "__none";
+    const key = context + " " + aggregate;
     if (seen.has(key)) return;
     seen.add(key);
-    (CTX_AGGS[ctx] = CTX_AGGS[ctx] || []).push(agg);
+    (CTX_AGGS[context] = CTX_AGGS[context] || []).push(aggregate);
   }));
 })();
 const CTX_ORDER = [
-  ...Object.keys(MODEL.contexts).filter(c => CTX_AGGS[c]),
+  ...Object.keys(MODEL.contexts).filter(context => CTX_AGGS[context]),
   ...(CTX_AGGS["__unmapped"] ? ["__unmapped"] : []),
 ];
-const ctxTitle = c => c === "__unmapped" ? "Unmapped" : ((MODEL.contexts[c] && MODEL.contexts[c].title) || titleize(c));
-const ctxExternal = c => !!(MODEL.contexts[c] && MODEL.contexts[c].external);
-const aggTitle = a => a === "__none" ? "No aggregate" : titleize(a);
-const eventCtx = e => (e.ctx && MODEL.contexts[e.ctx]) ? e.ctx : "__unmapped";
-
-// directed edges from the canonical typed IR, de-duplicated defensively
+const ctxTitle = context => context === "__unmapped" ? "Unmapped" : ((MODEL.contexts[context] && MODEL.contexts[context].title) || titleize(context));
+const ctxExternal = context => !!(MODEL.contexts[context] && MODEL.contexts[context].external);
+const aggTitle = aggregate => aggregate === "__none" ? "No aggregate" : titleize(aggregate);
+const eventCtx = event => (event.ctx && MODEL.contexts[event.ctx]) ? event.ctx : "__unmapped";
 const EDGES = [];
 (function(){
   const seen = new Set();
-  const add = (a,b) => { if(a&&b&&ELEMENTS[a]&&ELEMENTS[b]){ const k=a+">"+b; if(!seen.has(k)){seen.add(k); EDGES.push([a,b]);} } };
-  (MODEL.edges||[]).forEach(edge => add(edge.from, edge.to));
+  const add = (from,to) => {
+    if(from && to && ELEMENTS[from] && ELEMENTS[to]){
+      const key=from+">"+to;
+      if(!seen.has(key)){ seen.add(key); EDGES.push([from,to]); }
+    }
+  };
+  (MODEL.edges||[]).forEach(edge=>add(edge.from,edge.to));
 })();
 const NEIGHBORS = {};
-EDGES.forEach(([a,b]) => { (NEIGHBORS[a]=NEIGHBORS[a]||new Set()).add(b); (NEIGHBORS[b]=NEIGHBORS[b]||new Set()).add(a); });
+EDGES.forEach(([from,to])=>{ (NEIGHBORS[from]=NEIGHBORS[from]||new Set()).add(to); (NEIGHBORS[to]=NEIGHBORS[to]||new Set()).add(from); });
 
 /* --------------------------- shared drawer (used by every view) --------------------------- */
 const drawer = $("#drawer"), scrim = $("#scrim");
@@ -140,11 +174,12 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDrawer(); })
 
 /* --------------------------- shared namespace for the other views --------------------------- */
 const EMC = {
-  MODEL, ELEMENTS, SLICE_OF, EDGES, NEIGHBORS,
+  MODEL, FULL_MODEL, chapters, chapterHref, ELEMENTS, SLICE_OF, EDGES, NEIGHBORS,
   el, esc, titleize, statusVar, openSlice,
   KIND_LABEL, PAT_SVG, PATTERN_LABEL, STATUS_LABEL, ACTOR_SVG, GEAR_SVG,
   ctxTitle, ctxExternal, aggTitle, eventCtx,
 };
+window.EMC = EMC;
 // generalized nodeCenterEdges: rect of `node` relative to `container`
 EMC.rectIn = (container, node) => {
   const cr = container.getBoundingClientRect(), r = node.getBoundingClientRect();
@@ -252,28 +287,10 @@ function renderEventModel(){
     return button;
   }
 
-  // --- header rows + band rows, cell by cell in grid order ---
+  // --- header row + band rows, cell by cell in grid order ---
   const frag = document.createDocumentFragment();
 
-  // Row 1: chapter band. Rail corner + one cell per slice, chapters span their ranges.
-  const corner1 = el("div","cell rail-corner r-chapter"); frag.appendChild(corner1);
-  const sliceIndexById = {}; MODEL.slices.forEach((s,i)=>sliceIndexById[s.id]=i);
-  const chapterCells = MODEL.slices.map(()=>null);
-  MODEL.chapters.forEach(ch => {
-    const idxs = ch.slices.map(id=>sliceIndexById[id]).filter(i=>i!=null).sort((a,b)=>a-b);
-    if(!idxs.length) return;
-    const start=idxs[0], span=idxs[idxs.length-1]-idxs[0]+1;
-    const cell = el("div","cell chap-row-cell");
-    cell.style.gridColumn = (start+2)+" / span "+span;
-    cell.appendChild(el("div","chapter",
-      `<span class="arw">▸</span><span class="nm">${esc(ch.title)}</span><span class="ct">${span} slice${span>1?"s":""}</span>`));
-    chapterCells[start] = cell;
-  });
-  MODEL.slices.forEach((s,i)=>{ if(chapterCells[i]) frag.appendChild(chapterCells[i]); else {
-    const gap = el("div","cell chap-row-cell"); gap.style.gridColumn=(i+2)+" / span 1"; frag.appendChild(gap);
-  }});
-
-  // Row 2: slice headers
+  // Row 1: slice headers
   const corner2 = el("div","cell rail-corner r-header"); frag.appendChild(corner2);
   MODEL.slices.forEach((s,i)=>{
     const h = el("div","cell slice-head");
@@ -288,7 +305,7 @@ function renderEventModel(){
     frag.appendChild(h);
   });
 
-  // Rows 3-6: element swimlanes
+  // Rows 2-5: element swimlanes
   const BANDS = [
     {key:"screens",    name:"Screens",    sub:"interfaces"},
     {key:"processors", name:"Processors", sub:"automation"},
@@ -297,7 +314,7 @@ function renderEventModel(){
   const sliceHotspots = new Map();
   const placedSliceHotspots = new Set();
   MODEL.hotspots.forEach(h => {
-    const i = MODEL.slices.findIndex(s => h.onId === "slice__"+s.id);
+    const i = MODEL.slices.findIndex(s => h.onId === "slice__" + s.id);
     if(i < 0) return;
     if(!sliceHotspots.has(i)) sliceHotspots.set(i, []);
     sliceHotspots.get(i).push(h);
@@ -553,15 +570,12 @@ function renderEventModel(){
   });
 
   /* --------------------------- filters --------------------------- */
-  const state = EMC.filterState = {chapter:"__all", statuses:new Set(), context:"__all"};
+  const state = EMC.filterState = {statuses:new Set(), context:"__all"};
 
   function applyFilters(){
     MODEL.slices.forEach((s,i)=>{
-      const inChapter = state.chapter==="__all" ||
-        (MODEL.chapters.find(c=>c.id===state.chapter)?.slices.includes(s.id));
       const st = s.status||"created";
-      const okStatus = state.statuses.size===0 || state.statuses.has(st);
-      const sliceVisible = inChapter && okStatus;
+      const sliceVisible = state.statuses.size===0 || state.statuses.has(st);
       board.querySelector('.slice-head[data-slice="'+i+'"]').classList.toggle("filtered", !sliceVisible);
       board.querySelectorAll('.actor-card[data-slice="'+i+'"]').forEach(actor=>actor.classList.toggle("filtered", !sliceVisible));
       s.elements.forEach(e=>{
@@ -576,19 +590,14 @@ function renderEventModel(){
     requestAnimationFrame(drawWires);
     window.applyStormingFilters && window.applyStormingFilters(state);
     window.applyCompactFilters && window.applyCompactFilters(state);
+    updateFiltersCount();
   }
 
-  // chapter segmented
-  const fChapter = $("#f-chapter");
-  [["__all","All"], ...MODEL.chapters.map(c=>[c.id,c.title])].forEach(([v,lab],i)=>{
-    const b = el("button","btn"+(v==="__all"?" on":""), esc(lab)); b.dataset.v=v;
-    b.onclick=()=>{ state.chapter=v; fChapter.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); applyFilters(); };
-    fChapter.appendChild(b);
-  });
 
-  // status chips (only statuses present)
+  // status chips (only statuses present; one status cannot narrow anything)
   const fStatus = $("#f-status");
   const present = [...new Set(MODEL.slices.map(s=>s.status||"created"))];
+  fStatus.hidden = present.length < 2;
   present.forEach(st=>{
     const chip = el("button","chip", `<span class="sw" style="--c:${statusVar(st)}"></span>${STATUS_LABEL[st]}`);
     chip.setAttribute("aria-pressed","true"); chip.dataset.st=st;
@@ -607,12 +616,16 @@ function renderEventModel(){
     fStatus.appendChild(chip);
   });
 
-  // context segmented
+  // context segmented (only contexts used on this board)
   const fContext = $("#f-context");
-  const ctxs = [["__all","All"], ...Object.entries(MODEL.contexts).map(([id,c])=>[id, c.title+(c.external?" ↗":"")])];
+  const usedCtx = new Set(Object.values(ELEMENTS).map(e=>e.ctx).filter(Boolean));
+  const ctxEntries = Object.entries(MODEL.contexts).filter(([id])=>usedCtx.has(id));
+  fContext.hidden = ctxEntries.length < 2;
+  const ctxs = [["__all","All"], ...ctxEntries.map(([id,c])=>[id, c.title+(c.external?" ↗":"")])];
   ctxs.forEach(([v,lab])=>{
-    const b = el("button","btn"+(v==="__all"?" on":""), esc(lab)); b.dataset.v=v;
-    b.onclick=()=>{ state.context=v; fContext.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); applyFilters(); };
+    const b = el("button","btn", esc(lab)); b.type="button"; b.dataset.v=v;
+    b.setAttribute("aria-pressed", v==="__all"?"true":"false");
+    b.onclick=()=>{ state.context=v; fContext.querySelectorAll(".btn").forEach(x=>x.setAttribute("aria-pressed", x.dataset.v===v?"true":"false")); applyFilters(); };
     fContext.appendChild(b);
   });
 
@@ -655,11 +668,18 @@ function renderEventModel(){
 /* --------------------------- meta (view-independent chrome) --------------------------- */
 $("#m-title").textContent = MODEL.title;
 $("#m-version").textContent = MODEL.version;
-const counts = {slices:MODEL.slices.length, actors:Object.keys(MODEL.actors).length};
-["command","event","readmodel","processor","screen"].forEach(k=>counts[k]=0);
-Object.values(ELEMENTS).forEach(e=>{ if(counts[e.kind]!=null) counts[e.kind]++; });
-const statBits = [["slices","Slice","Slices"],["actors","Actor","Actors"],["event","Event","Events"],["command","Command","Commands"],["readmodel","Read model","Read models"],["processor","Processor","Processors"]];
-$("#m-stats").innerHTML = statBits.map(([k,one,many])=>`<div class="stat"><span class="n">${counts[k]}</span><span class="k">${counts[k]===1?one:many}</span></div>`).join("");
+// Counts describe what the current page shows: one chapter, or the whole model.
+function renderStats(model, scope){
+  const elements = model.slices.flatMap(s=>s.elements);
+  const counts = {slices:model.slices.length,
+    actors:model === FULL_MODEL ? Object.keys(model.actors).length : new Set(elements.map(e=>e.actor).filter(Boolean)).size};
+  ["command","event","readmodel","processor"].forEach(k=>counts[k]=0);
+  elements.forEach(e=>{ if(counts[e.kind]!=null) counts[e.kind]++; });
+  const statBits = [["slices","Slice","Slices"],["actors","Actor","Actors"],["event","Event","Events"],["command","Command","Commands"],["readmodel","Read model","Read models"],["processor","Processor","Processors"]];
+  const stats = $("#m-stats");
+  stats.title = "Counts for " + scope;
+  stats.innerHTML = statBits.map(([k,one,many])=>`<div class="stat"><span class="n">${counts[k]}</span><span class="k">${counts[k]===1?one:many}</span></div>`).join("");
+}
 
 /* --------------------------- theme --------------------------- */
 const THEMES = [["auto","◐","Auto"],["light","☀","Light"],["dark","☾","Dark"]];
@@ -767,11 +787,27 @@ document.addEventListener("keydown", e=>{
   e.preventDefault();
 });
 
-/* --------------------------- view switcher --------------------------- */
+/* --------------------------- navigation --------------------------- */
+// Chapters are the top-level navigation: Model, Compact, and Storming always show one
+// chapter (or the whole model when it declares no chapters). The overview and the
+// Context Map cover the whole model. Each page is scoped to its chapter when the
+// document loads, so moving to another chapter reloads the page at the new fragment.
 const boardModel = $("#board"), boardES = $("#board-es"), boardCM = $("#board-cm"), boardCompact = $("#board-compact");
-const fChapterEl = $("#f-chapter"), fStatusEl = $("#f-status"), fContextEl = $("#f-context"), fFieldsEl = $("#f-fields-switch");
-const fieldPrefs = {model:true, storming:false, compact:true};
+const overviewEl = $("#board-chapters"), canvasEl = $(".canvas-scroll"), legendEl = $("#legend");
+const fView = $("#f-view"), fFiltersEl = $("#f-filters"), contextMapLink = $("#t-contextmap");
+const chapterNav = $("#chapter-nav"), chapterPicker = $("#chapter-picker"), chapterMenu = $("#chapter-menu");
+const chapterPrev = $("#chapter-prev"), chapterNext = $("#chapter-next");
+const BOARD_VIEWS = [["model","Model"],["compact","Compact"],["storming","Storming"]];
+BOARD_VIEWS.forEach(([view,label])=>{
+  const link = el("a","btn",label);
+  link.dataset.v = view;
+  fView.appendChild(link);
+});
+chapterNav.hidden = chapters.length === 0;
+chapterPicker.classList.toggle("static", chapters.length === 1);
+let lastBoardView = "model";
 
+const fieldPrefs = {model:true, storming:false, compact:true};
 $("#t-fields").addEventListener("change", e=>{
   const view = document.body.dataset.view;
   if(view !== "model" && view !== "storming" && view !== "compact") return;
@@ -780,50 +816,172 @@ $("#t-fields").addEventListener("change", e=>{
   board.classList.toggle("show-fields", e.target.checked);
   relayoutAll();
 });
-
-function setFiltersVisible(visible){
-  [fChapterEl, fStatusEl, fContextEl, fFieldsEl].forEach(node=>{ if(node) node.style.display = visible?"":"none"; });
+function updateFiltersCount(){
+  const state = EMC.filterState;
+  const active = state ? (state.statuses.size ? 1 : 0) + (state.context !== "__all" ? 1 : 0) : 0;
+  const badge = $("#filters-count");
+  badge.hidden = active === 0;
+  badge.textContent = String(active);
+  badge.setAttribute("aria-label", active + " active");
 }
+
+/* popovers (chapter picker, filters): one open at a time, dismissed by outside click or Escape */
+const popovers = [...document.querySelectorAll("details.popover")];
+function closePopovers(except){ popovers.forEach(p=>{ if(p!==except) p.open = false; }); }
+popovers.forEach(p=>p.addEventListener("toggle", ()=>{ if(p.open) closePopovers(p); }));
+chapterPicker.querySelector("summary").addEventListener("click", e=>{ if(chapterPicker.classList.contains("static")) e.preventDefault(); });
+document.addEventListener("click", e=>{ if(!e.target.closest("details.popover")) closePopovers(); });
+chapterMenu.addEventListener("click", e=>{ if(e.target.closest("a")) closePopovers(); });
+document.addEventListener("keydown", e=>{
+  if(e.key !== "Escape") return;
+  const open = popovers.find(p=>p.open);
+  if(!open) return;
+  open.open = false;
+  open.querySelector("summary").focus();
+});
+
+// Fragment links resolve against the base URL, which inside the playground's srcdoc
+// iframe is the parent page; following them would load the parent into the frame.
+// Setting location.hash keeps every route a same-document navigation.
+document.addEventListener("click", e=>{
+  const link = e.target.closest('a[href^="#"]');
+  if(!link || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  const hash = link.getAttribute("href");
+  if(location.hash !== hash) location.hash = hash;
+});
+const replaceHash = hash => location.replace(location.href.replace(/#.*$/, "") + hash);
 
 const VIEW_HINTS = {
   model: "Time flows left → right; columns are slices; events are grouped by bounded context, then aggregate.",
   compact: "Same slices with one events row. Each bounded context is a dashed box; the aggregate or external system is the sticky on top of its event.",
   storming: "Adjacent notes show local flow; dashed arrows connect sequential workflows; independent flows run in parallel.",
-  contextmap: "Bounded contexts and the upstream → downstream relationships derived from cross-context event consumption.",
+  contextmap: "Bounded contexts of the whole model and the upstream → downstream relationships derived from cross-context event consumption.",
+  chapters: "Each chapter previews its first and last slice. Open a chapter to see its Model, Compact, and Storming boards.",
 };
+const BOARD_HINT = " Hover to trace a flow · click for scenarios · Ctrl/⌘ + scroll to zoom, +/−/0 keys.";
 
-function setView(name){
+const viewHref = (view, chapter) => chapter ? chapterHref(chapter.id) + "/" + view : "#" + view;
+function parseRoute(hash){
+  if(hash === "#chapters") return chapters.length > 1 ? {page:"chapters"} : null;
+  if(hash === "#contextmap") return {page:"contextmap"};
+  const chapterMatch = hash.match(/^#chapter\/([^/]+)(?:\/(model|compact|storming))?$/);
+  if(chapterMatch){
+    let id;
+    try{ id = decodeURIComponent(chapterMatch[1]); }catch(_){ return null; }
+    const chapter = chapters.find(item=>item.id === id);
+    return chapter ? {page:"board", chapter, view:chapterMatch[2] || "model"} : null;
+  }
+  const viewMatch = hash.match(/^#(model|compact|storming)$/);
+  return viewMatch && chapters.length === 0 ? {page:"board", chapter:null, view:viewMatch[1]} : null;
+}
+function defaultHash(){
+  if(chapters.length > 1) return "#chapters";
+  return chapters.length === 1 ? viewHref("model", chapters[0]) : "#model";
+}
+
+function renderNavigation(route){
+  const chapter = route.chapter || null;
+  const view = route.page === "board" ? route.view : lastBoardView;
+  if(chapters.length){
+    $("#chapter-current").textContent = chapter ? chapter.title : route.page === "chapters" ? "All chapters" : "Select a chapter";
+    chapterPicker.querySelector("summary").title = chapter ? chapter.title : "";
+    const items = [];
+    if(chapters.length > 1){
+      items.push(`<a href="#chapters"${route.page==="chapters"?' aria-current="page"':""}><span class="n"></span><span class="t">All chapters</span><span class="c">overview</span></a>`);
+    }
+    chapters.forEach((item, index)=>{
+      const count = item.slices.length;
+      items.push(`<a href="${esc(viewHref(view, item))}"${item===chapter?' aria-current="page"':""}>`+
+        `<span class="n">${String(index+1).padStart(2,"0")}</span><span class="t">${esc(item.title)}</span>`+
+        `<span class="c">${count} slice${count===1?"":"s"}</span></a>`);
+    });
+    chapterMenu.innerHTML = items.join("");
+    const index = chapter ? chapters.indexOf(chapter) : -1;
+    [[chapterPrev, chapters[index-1]], [chapterNext, chapters[index+1]]].forEach(([link, target])=>{
+      link.hidden = !chapter || chapters.length < 2;
+      if(target){
+        link.href = viewHref(view, target);
+        link.removeAttribute("aria-disabled");
+        link.title = (link === chapterPrev ? "Previous" : "Next") + " chapter: " + target.title;
+      } else {
+        link.removeAttribute("href");
+        link.setAttribute("aria-disabled", "true");
+        link.title = link === chapterPrev ? "This is the first chapter" : "This is the last chapter";
+      }
+    });
+  }
+  // Board views always stay reachable. From the overview or the Context Map they open
+  // the chapter this page was loaded for, or the first chapter.
+  const boardChapter = chapter || activeChapter || chapters[0] || null;
+  fView.querySelectorAll("a[data-v]").forEach(link=>{
+    link.href = viewHref(link.dataset.v, boardChapter);
+    link.title = route.page === "board" || !boardChapter ? "" : "Open “" + boardChapter.title + "”";
+    if(route.page === "board" && link.dataset.v === route.view) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+  if(route.page === "contextmap") contextMapLink.setAttribute("aria-current", "page");
+  else contextMapLink.removeAttribute("aria-current");
+  fZoomEl.hidden = route.page !== "board";
+  fFiltersEl.hidden = route.page !== "board";
+}
+
+function showPage(name){
   document.body.dataset.view = name;
+  const overview = name === "chapters";
+  overviewEl.hidden = !overview;
+  canvasEl.hidden = overview;
+  legendEl.hidden = overview;
   boardModel.hidden = name !== "model";
   boardES.hidden = name !== "storming";
   boardCM.hidden = name !== "contextmap";
   boardCompact.hidden = name !== "compact";
-  setFiltersVisible(name !== "contextmap");
-  fZoomEl.style.display = (name === "model" || name === "storming" || name === "compact") ? "" : "none";
-  updateZoomLabel();
+  $("#foot-hint").textContent = (VIEW_HINTS[name] || "") + (name === "model" || name === "compact" || name === "storming" ? BOARD_HINT : "");
+  if(overview){
+    window.renderChapters && window.renderChapters();
+    return;
+  }
   if(name === "model" || name === "storming" || name === "compact"){
+    renderEventModel(); // builds the shared filters and drawer index used by every board
     const showFields = fieldPrefs[name];
     $("#t-fields").checked = showFields;
     const board = name === "model" ? boardModel : (name === "storming" ? boardES : boardCompact);
     board.classList.toggle("show-fields", showFields);
   }
-  if(name === "model") renderEventModel();
-  else if(name === "storming") window.renderEventStorming && window.renderEventStorming();
+  if(name === "storming") window.renderEventStorming && window.renderEventStorming();
   else if(name === "contextmap") window.renderContextMap && window.renderContextMap();
   else if(name === "compact") window.renderCompact && window.renderCompact();
   LP.innerHTML = LEGENDS[name] || `<div class="empty">No legend available for this view.</div>`;
-  $("#foot-hint").textContent = (VIEW_HINTS[name] || "") + (name === "contextmap" ? "" : " Hover to trace a flow · click for scenarios · Ctrl/⌘ + scroll to zoom, +/−/0 keys.");
+  updateZoomLabel();
   relayoutAll();
 }
 
-const fView = $("#f-view");
-[["model","Model"],["compact","Compact"],["storming","Storming"],["contextmap","Context Map"]].forEach(([v,lab])=>{
-  const b = el("button","btn"+(v==="model"?" on":""), esc(lab)); b.dataset.v=v;
-  b.onclick=()=>{ fView.querySelectorAll(".btn").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); setView(v); };
-  fView.appendChild(b);
-});
+function renderRoute(){
+  closePopovers();
+  const route = parseRoute(location.hash || "");
+  if(!route){ replaceHash(defaultHash()); return; }
+  if(route.page === "board" && route.chapter && route.chapter !== activeChapter){ location.reload(); return; }
+  if(route.page === "board") lastBoardView = route.view;
+  renderNavigation(route);
+  if(route.page === "chapters"){
+    document.title = "All chapters · " + FULL_MODEL.title;
+    renderStats(FULL_MODEL, "the whole model");
+    showPage("chapters");
+  } else if(route.page === "contextmap"){
+    document.title = "Context Map · " + FULL_MODEL.title;
+    renderStats(FULL_MODEL, "the whole model");
+    showPage("contextmap");
+  } else {
+    const label = BOARD_VIEWS.find(([view])=>view === route.view)[1];
+    document.title = (route.chapter ? route.chapter.title + " · " : "") + label + " · " + FULL_MODEL.title;
+    renderStats(MODEL, route.chapter ? "chapter “" + route.chapter.title + "”" : "the whole model");
+    showPage(route.view);
+  }
+}
 
-/* --------------------------- go --------------------------- */
 window.addEventListener("resize", relayoutAll);
-setView("model");
-setTimeout(relayoutAll, 60);   // after fonts/layout settle
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderRoute, {once:true});
+else setTimeout(renderRoute, 0);
+window.addEventListener("hashchange", renderRoute);
+setTimeout(relayoutAll, 60);
+

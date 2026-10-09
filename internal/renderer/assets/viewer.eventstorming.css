@@ -37,8 +37,7 @@
 .es-disclaimer li:last-child{margin-bottom:0}
 .es-disclaimer b{font-weight:750}
 
-.es-chapter{position:relative; z-index:1; min-width:780px; margin:0 0 38px; border:0; border-radius:0; background:transparent; box-shadow:none; overflow:visible}
-.es-chapter-label{padding:7px 5px 8px; border-bottom:2px dotted #d3ccbf; background:transparent; color:var(--es-board-muted); font-family:var(--font-cond); font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:.12em}
+.es-section{position:relative; z-index:1; min-width:780px; margin:0 0 38px; overflow:visible}
 .es-rows{display:flex; flex-direction:column; gap:32px; padding:20px 5px 8px}
 .es-flow-group{display:grid; grid-auto-flow:row; gap:34px 72px; align-items:start; width:max-content}
 .es-row{display:grid; grid-template-columns:max-content; grid-template-rows:auto auto; align-items:start; width:max-content; min-height:170px; border:0; border-radius:0; position:relative}
@@ -103,7 +102,7 @@
 
 @media (max-width:850px){
   .board-es{padding:24px 28px 54px}
-  .es-chapter{min-width:620px}
+  .es-section{min-width:620px}
   .es-flow-group{gap:30px 58px}
   .es-note{flex-basis:150px; width:150px}
   .es-event.external{flex-basis:172px;width:172px}

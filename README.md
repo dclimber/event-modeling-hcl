@@ -79,8 +79,8 @@ Model files must use the `.em.hcl` extension. HCL is the language; the suffix
 identifies a complete Event Modeling document to this validator. Check the
 installed binary version with `emhcl version`.
 
-Render a valid model as a self-contained, interactive HTML canvas with four
-switchable views and a shared detail drawer for each slice's scenarios:
+Render a valid model as a self-contained, interactive HTML canvas with chapter
+pages, four diagram views, and a shared detail drawer for each slice's scenarios:
 
 ```bash
 emhcl diagram examples/complete.em.hcl -o complete.html
@@ -92,6 +92,26 @@ rendering. Errors prevent output; modeling warnings are reported without
 blocking the diagram. The generated file embeds its CSS, JavaScript, and model
 data; nothing loads over the network except a user-supplied `screen_image`
 URL, if present.
+
+Chapters are the top-level navigation. The **Chapter** picker in the toolbar
+lists every chapter, and the ‹ › arrows step to the previous or next chapter
+while keeping the current view. Model, Compact, and Storming always show only the
+selected chapter's slices; **Context Map** always covers the whole model. Status,
+bounded-context, and field-detail options live behind **Filters**, which shows how
+many filters are active.
+
+When a model has several chapters, the canvas opens an **All chapters** overview.
+Each card previews the chapter's first and last slice in stage order, with the
+number of slices in between. Select a card to open that chapter. On the overview
+and the Context Map, **Model**, **Compact**, and **Storming** open the chapter you
+came from, or the first chapter.
+
+Chapter pages stay inside the same HTML file. Their URL fragments can be
+bookmarked or shared with the file, and browser Back works between them. A model
+with one chapter opens that chapter directly. Workflows outside declared chapters
+appear as an **Ungrouped** chapter; models without chapters show the whole model
+in every view. Overview previews show stage order, not causal connections between
+chapters.
 
 - **Model** — content-adaptive slices, left-to-right flow stages, dedicated
   screen, processor, model, and event swimlanes, and typed flow arrows. Domain

@@ -36,17 +36,21 @@ var viewerCompactCSS string
 //go:embed assets/viewer.compact.js
 var viewerCompactJS string
 
+//go:embed assets/viewer.chapters.js
+var viewerChaptersJS string
+
 const (
-	stylesMarker        = "__STYLES__"
-	stylesESMarker      = "__STYLES_ES__"
-	stylesCMMarker      = "__STYLES_CM__"
-	scriptMarker        = "__SCRIPT__"
-	scriptESMarker      = "__SCRIPT_ES__"
-	scriptCMMarker      = "__SCRIPT_CM__"
-	stylesCompactMarker = "__STYLES_COMPACT__"
-	scriptCompactMarker = "__SCRIPT_COMPACT__"
-	modelMarker         = "__MODEL_JSON__"
-	specVersionMarker   = "__SPEC_VERSION__"
+	stylesMarker         = "__STYLES__"
+	stylesESMarker       = "__STYLES_ES__"
+	stylesCMMarker       = "__STYLES_CM__"
+	scriptMarker         = "__SCRIPT__"
+	scriptESMarker       = "__SCRIPT_ES__"
+	scriptCMMarker       = "__SCRIPT_CM__"
+	stylesCompactMarker  = "__STYLES_COMPACT__"
+	scriptCompactMarker  = "__SCRIPT_COMPACT__"
+	scriptChaptersMarker = "__SCRIPT_CHAPTERS__"
+	modelMarker          = "__MODEL_JSON__"
+	specVersionMarker    = "__SPEC_VERSION__"
 )
 
 func RenderHTML(view *ViewModel) (string, error) {
@@ -62,6 +66,7 @@ func RenderHTML(view *ViewModel) (string, error) {
 	doc = strings.Replace(doc, scriptESMarker, viewerEventStormingJS, 1)
 	doc = strings.Replace(doc, scriptCMMarker, viewerContextMapJS, 1)
 	doc = strings.Replace(doc, scriptCompactMarker, viewerCompactJS, 1)
+	doc = strings.Replace(doc, scriptChaptersMarker, viewerChaptersJS, 1)
 	doc = strings.Replace(doc, specVersionMarker, version.Spec, 1)
 	return strings.Replace(doc, modelMarker, string(encoded), 1), nil
 }

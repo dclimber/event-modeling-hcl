@@ -287,25 +287,7 @@
 
     const frag = document.createDocumentFragment();
 
-    // Row 1: chapters
-    frag.appendChild(EMC.el("div","cell rail-corner r-chapter"));
-    const sliceIndexById = {}; MODEL.slices.forEach((s,i)=>sliceIndexById[s.id]=i);
-    const chapterCells = MODEL.slices.map(()=>null);
-    MODEL.chapters.forEach(ch=>{
-      const idxs = ch.slices.map(id=>sliceIndexById[id]).filter(i=>i!=null).sort((a,b)=>a-b);
-      if(!idxs.length) return;
-      const start = idxs[0], span = idxs[idxs.length-1]-idxs[0]+1;
-      const cell = EMC.el("div","cell chap-row-cell");
-      cell.style.gridColumn = (start+2)+" / span "+span;
-      cell.appendChild(EMC.el("div","chapter",
-        `<span class="arw">▸</span><span class="nm">${EMC.esc(ch.title)}</span><span class="ct">${span} slice${span>1?"s":""}</span>`));
-      chapterCells[start] = cell;
-    });
-    MODEL.slices.forEach((s,i)=>{ if(chapterCells[i]) frag.appendChild(chapterCells[i]); else {
-      const gap = EMC.el("div","cell chap-row-cell"); gap.style.gridColumn=(i+2)+" / span 1"; frag.appendChild(gap);
-    }});
-
-    // Row 2: slice headers
+    // Row 1: slice headers
     frag.appendChild(EMC.el("div","cell rail-corner r-header"));
     MODEL.slices.forEach((s,i)=>{
       const h = EMC.el("div","cell slice-head");
@@ -376,7 +358,7 @@
       });
     });
 
-    // Row 6: the single events row
+    // Last row: the single events row
     const evRail = EMC.el("div","cell rail-lane");
     evRail.appendChild(EMC.el("div","txt","Events"));
     frag.appendChild(evRail);
@@ -398,7 +380,7 @@
 
     LEGENDS.compact = legendHTML();
 
-    window.applyCompactFilters(EMC.filterState || {chapter:"__all", statuses:new Set(), context:"__all"});
+    window.applyCompactFilters(EMC.filterState || {statuses:new Set(), context:"__all"});
   }
 
   /* --------------------------- wires --------------------------- */
@@ -491,11 +473,8 @@
     if(!built) return;
     const MODEL = EMC.MODEL;
     MODEL.slices.forEach((s,i)=>{
-      const chapter = MODEL.chapters.find(c=>c.id===state.chapter);
-      const inChapter = state.chapter==="__all" || !!(chapter && chapter.slices.includes(s.id));
       const st = s.status||"created";
-      const okStatus = state.statuses.size===0 || state.statuses.has(st);
-      const sliceVisible = inChapter && okStatus;
+      const sliceVisible = state.statuses.size===0 || state.statuses.has(st);
       const head = board.querySelector('.slice-head[data-slice="'+i+'"]');
       if(head) head.classList.toggle("filtered", !sliceVisible);
       board.querySelectorAll('.actor-card[data-slice="'+i+'"]').forEach(actor=>actor.classList.toggle("filtered", !sliceVisible));
