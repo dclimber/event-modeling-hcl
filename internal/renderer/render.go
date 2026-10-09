@@ -39,6 +39,12 @@ var viewerCompactJS string
 //go:embed assets/viewer.chapters.js
 var viewerChaptersJS string
 
+//go:embed assets/viewer.slides.css
+var viewerSlidesCSS string
+
+//go:embed assets/viewer.slides.js
+var viewerSlidesJS string
+
 const (
 	stylesMarker         = "__STYLES__"
 	stylesESMarker       = "__STYLES_ES__"
@@ -49,6 +55,8 @@ const (
 	stylesCompactMarker  = "__STYLES_COMPACT__"
 	scriptCompactMarker  = "__SCRIPT_COMPACT__"
 	scriptChaptersMarker = "__SCRIPT_CHAPTERS__"
+	stylesSlidesMarker   = "__STYLES_SLIDES__"
+	scriptSlidesMarker   = "__SCRIPT_SLIDES__"
 	modelMarker          = "__MODEL_JSON__"
 	specVersionMarker    = "__SPEC_VERSION__"
 )
@@ -67,6 +75,8 @@ func RenderHTML(view *ViewModel) (string, error) {
 	doc = strings.Replace(doc, scriptCMMarker, viewerContextMapJS, 1)
 	doc = strings.Replace(doc, scriptCompactMarker, viewerCompactJS, 1)
 	doc = strings.Replace(doc, scriptChaptersMarker, viewerChaptersJS, 1)
+	doc = strings.Replace(doc, stylesSlidesMarker, viewerSlidesCSS, 1)
+	doc = strings.Replace(doc, scriptSlidesMarker, viewerSlidesJS, 1)
 	doc = strings.Replace(doc, specVersionMarker, version.Spec, 1)
 	return strings.Replace(doc, modelMarker, string(encoded), 1), nil
 }

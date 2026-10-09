@@ -6,6 +6,10 @@ and typed IR. The authoritative Event Modeling HCL language history is in the
 
 ## [Unreleased]
 
+### Added
+
+- A Slides view in the HTML diagram for readers who do not know Event Modeling. It shows one slice per slide: the screenshot or a wireframe of the screen first, then the Given / When / Then examples, then the event model steps and their fields. Arrow keys, buttons, a slide list, and swipes move between slides and continue into the next chapter.
+
 ## [v0.10.0] - 2026-10-09
 
 This release reorganizes the standalone HTML diagram around chapters. The Event Modeling HCL language is unchanged (Specification v0.4.0).

@@ -80,7 +80,7 @@ identifies a complete Event Modeling document to this validator. Check the
 installed binary version with `emhcl version`.
 
 Render a valid model as a self-contained, interactive HTML canvas with chapter
-pages, four diagram views, and a shared detail drawer for each slice's scenarios:
+pages, five views, and a shared detail drawer for each slice's scenarios:
 
 ```bash
 emhcl diagram examples/complete.em.hcl -o complete.html
@@ -95,7 +95,7 @@ URL, if present.
 
 Chapters are the top-level navigation. The **Chapter** picker in the toolbar
 lists every chapter, and the ‹ › arrows step to the previous or next chapter
-while keeping the current view. Model, Compact, and Storming always show only the
+while keeping the current view. Model, Compact, Storming, and Slides always show only the
 selected chapter's slices; **Context Map** always covers the whole model. Status,
 bounded-context, and field-detail options live behind **Filters**, which shows how
 many filters are active.
@@ -103,8 +103,8 @@ many filters are active.
 When a model has several chapters, the canvas opens an **All chapters** overview.
 Each card previews the chapter's first and last slice in stage order, with the
 number of slices in between. Select a card to open that chapter. On the overview
-and the Context Map, **Model**, **Compact**, and **Storming** open the chapter you
-came from, or the first chapter.
+and the Context Map, **Model**, **Compact**, **Storming**, and **Slides** open the
+chapter you came from, or the first chapter.
 
 Chapter pages stay inside the same HTML file. Their URL fragments can be
 bookmarked or shared with the file, and browser Back works between them. A model
@@ -133,6 +133,18 @@ chapters.
   and both the relationship labels and the layout may change in a future
   release.
 - **Compact** — the same slices and cards as Model, with one events row instead of a lane per aggregate. Within a slice, a bounded context's box always sits to the right of the command that emits its events and to the left of the read model its events feed; an automation or translation slice therefore shows the upstream (given) event's box first, left of its read model, then the box for the event the command produces. Each bounded context is a dashed, rounded rectangle with a translucent colour and its title. Colours are assigned in context order (colour 1 to the first non-external context, colour 2 to the next); they are not part of the HCL spec. External bounded contexts are always pink. Arrows go from commands to events (solid) and from events to read models, exactly as in Model. The event's aggregate (cube icon) is a sticky stuck on top of the event with no arrows of its own; an external event carries a pink external-system sticky (globe icon) in its place.
+- **Slides** — one slice per slide, for readers who do not know Event Modeling.
+  Each slide shows the slice's screen first: the `screen_image` screenshot,
+  with the fields of the screen at the same stage, or a wireframe made from the
+  screen's fields. Next to it are the slice's scenarios as Given / When / Then
+  examples, with example data as name and value rows. Below them are the open
+  hotspot questions, the slice's event model in time order, and every command,
+  event, read model, table, and processor with its fields. Use ← and →, Page Up
+  and Page Down, Home and End, the buttons at the bottom, the slide list, or a
+  swipe on a touch screen. The last slide of a chapter leads to the first slide
+  of the next chapter. Slide links replace the current history entry, so browser
+  Back leaves the slides. **Full screen** hides the toolbar where the browser
+  allows full screen.
 
 For a local edit-and-render loop, serve one model and keep the browser open
 while the file changes:

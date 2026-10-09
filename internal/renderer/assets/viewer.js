@@ -20,7 +20,7 @@ const normalizeChapters = model => {
 };
 const chapters = normalizeChapters(FULL_MODEL);
 const chapterHref = id => "#chapter/" + encodeURIComponent(id);
-const routeAtLoad = location.hash.match(/^#chapter\/([^/]+)(?:\/(model|compact|storming))?$/);
+const routeAtLoad = location.hash.match(/^#chapter\/([^/]+)(?:\/(?:model|compact|storming|slides(?:\/\d+)?))?$/);
 const requestedChapter = (()=>{ try{return routeAtLoad ? decodeURIComponent(routeAtLoad[1]) : null;}catch(_){return null;} })();
 const activeChapter = chapters.find(chapter => chapter.id === requestedChapter);
 const sliceById = new Map(FULL_MODEL.slices.map(slice => [slice.id, slice]));
@@ -788,16 +788,16 @@ document.addEventListener("keydown", e=>{
 });
 
 /* --------------------------- navigation --------------------------- */
-// Chapters are the top-level navigation: Model, Compact, and Storming always show one
-// chapter (or the whole model when it declares no chapters). The overview and the
+// Chapters are the top-level navigation: Model, Compact, Storming, and Slides always show
+// one chapter (or the whole model when it declares no chapters). The overview and the
 // Context Map cover the whole model. Each page is scoped to its chapter when the
 // document loads, so moving to another chapter reloads the page at the new fragment.
 const boardModel = $("#board"), boardES = $("#board-es"), boardCM = $("#board-cm"), boardCompact = $("#board-compact");
-const overviewEl = $("#board-chapters"), canvasEl = $(".canvas-scroll"), legendEl = $("#legend");
+const overviewEl = $("#board-chapters"), slidesEl = $("#board-slides"), canvasEl = $(".canvas-scroll"), legendEl = $("#legend");
 const fView = $("#f-view"), fFiltersEl = $("#f-filters"), contextMapLink = $("#t-contextmap");
 const chapterNav = $("#chapter-nav"), chapterPicker = $("#chapter-picker"), chapterMenu = $("#chapter-menu");
 const chapterPrev = $("#chapter-prev"), chapterNext = $("#chapter-next");
-const BOARD_VIEWS = [["model","Model"],["compact","Compact"],["storming","Storming"]];
+const BOARD_VIEWS = [["model","Model"],["compact","Compact"],["storming","Storming"],["slides","Slides"]];
 BOARD_VIEWS.forEach(([view,label])=>{
   const link = el("a","btn",label);
   link.dataset.v = view;
@@ -825,16 +825,19 @@ function updateFiltersCount(){
   badge.setAttribute("aria-label", active + " active");
 }
 
-/* popovers (chapter picker, filters): one open at a time, dismissed by outside click or Escape */
-const popovers = [...document.querySelectorAll("details.popover")];
-function closePopovers(except){ popovers.forEach(p=>{ if(p!==except) p.open = false; }); }
-popovers.forEach(p=>p.addEventListener("toggle", ()=>{ if(p.open) closePopovers(p); }));
+/* popovers (chapter picker, filters, slide list): one open at a time, dismissed by outside click or Escape */
+const openPopovers = () => [...document.querySelectorAll("details.popover[open]")];
+function closePopovers(except){ openPopovers().forEach(p=>{ if(p!==except) p.open = false; }); }
+// "toggle" does not bubble, so listen in the capture phase to cover popovers that views add later.
+document.addEventListener("toggle", e=>{ if(e.target.matches && e.target.matches("details.popover") && e.target.open) closePopovers(e.target); }, true);
 chapterPicker.querySelector("summary").addEventListener("click", e=>{ if(chapterPicker.classList.contains("static")) e.preventDefault(); });
-document.addEventListener("click", e=>{ if(!e.target.closest("details.popover")) closePopovers(); });
-chapterMenu.addEventListener("click", e=>{ if(e.target.closest("a")) closePopovers(); });
+document.addEventListener("click", e=>{
+  const inside = e.target.closest("details.popover");
+  if(!inside || e.target.closest(".popover-panel a")) closePopovers();
+});
 document.addEventListener("keydown", e=>{
   if(e.key !== "Escape") return;
-  const open = popovers.find(p=>p.open);
+  const open = openPopovers()[0];
   if(!open) return;
   open.open = false;
   open.querySelector("summary").focus();
@@ -857,23 +860,27 @@ const VIEW_HINTS = {
   compact: "Same slices with one events row. Each bounded context is a dashed box; the aggregate or external system is the sticky on top of its event.",
   storming: "Adjacent notes show local flow; dashed arrows connect sequential workflows; independent flows run in parallel.",
   contextmap: "Bounded contexts of the whole model and the upstream → downstream relationships derived from cross-context event consumption.",
-  chapters: "Each chapter previews its first and last slice. Open a chapter to see its Model, Compact, and Storming boards.",
+  chapters: "Each chapter previews its first and last slice. Open a chapter to see its Model, Compact, Storming, and Slides views.",
+  slides: "One slice per slide: the screen, the examples, then the steps behind the screen. Use ← and → or the buttons at the bottom.",
 };
 const BOARD_HINT = " Hover to trace a flow · click for scenarios · Ctrl/⌘ + scroll to zoom, +/−/0 keys.";
+const isCanvasView = name => name === "model" || name === "compact" || name === "storming";
 
 const viewHref = (view, chapter) => chapter ? chapterHref(chapter.id) + "/" + view : "#" + view;
 function parseRoute(hash){
   if(hash === "#chapters") return chapters.length > 1 ? {page:"chapters"} : null;
   if(hash === "#contextmap") return {page:"contextmap"};
-  const chapterMatch = hash.match(/^#chapter\/([^/]+)(?:\/(model|compact|storming))?$/);
+  const chapterMatch = hash.match(/^#chapter\/([^/]+)(?:\/(model|compact|storming|slides)(?:\/(\d+))?)?$/);
   if(chapterMatch){
     let id;
     try{ id = decodeURIComponent(chapterMatch[1]); }catch(_){ return null; }
     const chapter = chapters.find(item=>item.id === id);
-    return chapter ? {page:"board", chapter, view:chapterMatch[2] || "model"} : null;
+    if(!chapter || (chapterMatch[3] && chapterMatch[2] !== "slides")) return null;
+    return {page:"board", chapter, view:chapterMatch[2] || "model", slide:+chapterMatch[3] || 1};
   }
-  const viewMatch = hash.match(/^#(model|compact|storming)$/);
-  return viewMatch && chapters.length === 0 ? {page:"board", chapter:null, view:viewMatch[1]} : null;
+  const viewMatch = hash.match(/^#(model|compact|storming|slides)(?:\/(\d+))?$/);
+  if(!viewMatch || chapters.length || (viewMatch[2] && viewMatch[1] !== "slides")) return null;
+  return {page:"board", chapter:null, view:viewMatch[1], slide:+viewMatch[2] || 1};
 }
 function defaultHash(){
   if(chapters.length > 1) return "#chapters";
@@ -922,23 +929,29 @@ function renderNavigation(route){
   });
   if(route.page === "contextmap") contextMapLink.setAttribute("aria-current", "page");
   else contextMapLink.removeAttribute("aria-current");
-  fZoomEl.hidden = route.page !== "board";
-  fFiltersEl.hidden = route.page !== "board";
+  const canvasBoard = route.page === "board" && isCanvasView(route.view);
+  fZoomEl.hidden = !canvasBoard;
+  fFiltersEl.hidden = !canvasBoard;
 }
 
-function showPage(name){
+function showPage(name, route){
   document.body.dataset.view = name;
-  const overview = name === "chapters";
+  const overview = name === "chapters", slides = name === "slides";
   overviewEl.hidden = !overview;
-  canvasEl.hidden = overview;
-  legendEl.hidden = overview;
+  slidesEl.hidden = !slides;
+  canvasEl.hidden = overview || slides;
+  legendEl.hidden = overview || slides;
   boardModel.hidden = name !== "model";
   boardES.hidden = name !== "storming";
   boardCM.hidden = name !== "contextmap";
   boardCompact.hidden = name !== "compact";
-  $("#foot-hint").textContent = (VIEW_HINTS[name] || "") + (name === "model" || name === "compact" || name === "storming" ? BOARD_HINT : "");
+  $("#foot-hint").textContent = (VIEW_HINTS[name] || "") + (isCanvasView(name) ? BOARD_HINT : "");
   if(overview){
     window.renderChapters && window.renderChapters();
+    return;
+  }
+  if(slides){
+    renderSlidesFor(route);
     return;
   }
   if(name === "model" || name === "storming" || name === "compact"){
@@ -975,8 +988,21 @@ function renderRoute(){
     const label = BOARD_VIEWS.find(([view])=>view === route.view)[1];
     document.title = (route.chapter ? route.chapter.title + " · " : "") + label + " · " + FULL_MODEL.title;
     renderStats(MODEL, route.chapter ? "chapter “" + route.chapter.title + "”" : "the whole model");
-    showPage(route.view);
+    showPage(route.view, route);
   }
+}
+
+function renderSlidesFor(route){
+  const chapter = route.chapter;
+  const index = chapter ? chapters.indexOf(chapter) : -1;
+  const prev = chapters[index-1], next = chapters[index+1];
+  const slideHref = n => viewHref("slides", chapter) + "/" + n;
+  window.renderSlides && window.renderSlides(route.slide, {
+    slideHref,
+    prevChapter: chapter && prev ? {title:prev.title, href:viewHref("slides", prev) + "/" + prev.slices.length} : null,
+    nextChapter: chapter && next ? {title:next.title, href:viewHref("slides", next) + "/1"} : null,
+    go: replaceHash,
+  });
 }
 
 window.addEventListener("resize", relayoutAll);

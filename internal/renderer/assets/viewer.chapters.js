@@ -70,6 +70,7 @@
     }
     return node;
   }
+  window.renderSliceDiagram = sliceSummary; // also used by the slides
   window.renderChapters = function(){
     const host = document.getElementById("board-chapters");
     const source = window.EMC && EMC.FULL_MODEL;
